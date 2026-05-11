@@ -10,24 +10,27 @@
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "tsc -p tsconfig.renderer.json && vite build",
     "dev": "npm run build:main && concurrently -k \"tsc -p tsconfig.main.json --watch\" \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
+    "package:mac": "npm run build && electron-builder --mac dir --arm64 --config electron-builder.yml",
     "start": "npm run build:main && electron .",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.1",
-    "vite": "^7.2.7",
-    "typescript": "^5.9.3",
-    "electron": "^39.2.7",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "lucide-react": "^0.561.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "lucide-react": "^0.561.0",
-    "concurrently": "^9.2.1",
-    "wait-on": "^9.0.3",
-    "cross-env": "^10.1.0"
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7",
+    "wait-on": "^9.0.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.2",
     "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3"
-  }
+    "@types/react-dom": "^19.2.3",
+    "electron-builder": "^26.8.1",
+    "electron": "^39.2.7"
+  },
+  "author": "Modi"
 }

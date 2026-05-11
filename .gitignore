@@ -1,5 +1,6 @@
 node_modules/
 dist/
 dist-electron/
+dist-app/
 .DS_Store
 npm-debug.log*

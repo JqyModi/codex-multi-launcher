@@ -1,0 +1,16 @@
+appId: local.codexprofilemanager.app
+productName: Codex Profile Manager
+directories:
+  output: dist-app
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+mac:
+  target:
+    - dir
+  category: public.app-category.developer-tools
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  identity: null
+asar: true
