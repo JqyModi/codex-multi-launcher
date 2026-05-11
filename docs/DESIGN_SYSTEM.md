@@ -22,6 +22,20 @@ Qclaw is a useful reference for product structure: setup wizard, environment che
 - Make destructive or risky states visually distinct.
 - Show technical paths in monospace text with copy/reveal actions.
 
+### Current Product Direction
+
+The MVP now follows a light macOS utility style inspired by QClaw's product rhythm, not its exact visuals:
+
+- A translucent left sidebar anchors profile navigation and creation entry.
+- The main workspace should stay focused on the selected profile after setup.
+- Setup flows, environment checks, and auxiliary diagnostics should appear in modals instead of permanently occupying the dashboard.
+- Summary cards may show high-level profile count, runtime count, and environment state.
+- Dialogs should use soft white surfaces, 16-22px radius, subtle blur overlays, and compact controls.
+- Primary actions use blue; success/warning/danger states remain semantic and restrained.
+- Empty states should be compact and useful, never a marketing landing page.
+- Global utility controls such as language, environment, refresh, and diagnostics belong in the top toolbar.
+- For Chinese users, Simplified Chinese is the default UI language. English is available as a secondary global toggle.
+
 ## 3. Layout
 
 ### App Shell
@@ -39,19 +53,21 @@ Comfortable: 1180 x 760
 
 ### Setup Wizard
 
-Use a two-column layout:
+The setup wizard should be opened on demand from "Create Profile" and shown as a modal.
 
-- Left: step list and current progress.
-- Right: form, validation, and preview.
+The dashboard should not permanently show the wizard after a profile exists. Users can edit generated profiles from the selected profile detail panel.
 
 Steps:
 
-1. Environment
-2. Profile
-3. Provider
-4. Test
-5. Launcher
-6. Finish
+Steps:
+
+1. Profile
+2. Provider
+3. Test
+4. Launcher
+5. Generate
+
+Environment is a global modal, not a wizard step.
 
 ### Dashboard
 
@@ -126,12 +142,28 @@ Do not scale font size with viewport width.
 
 Buttons should have 6px radius and stable height.
 
+Current shell controls use 10px radius for compact toolbar and sidebar buttons, and 16px+ radius for larger panels/dialogs.
+
 ### Inputs
 
 - Text input with label, description, validation message.
 - Password input with reveal toggle.
 - Select for provider type and model presets.
 - File/path picker with reveal button.
+
+### Toggles
+
+- Use compact switch rows for boolean settings.
+- The switch should be visually smaller than the label text.
+- The label and description carry the meaning; the switch only shows state.
+- Avoid oversized native checkboxes that compete with the setting text.
+
+### Global Language Switch
+
+- Place language switching in the top toolbar as a compact segmented control.
+- Default to Simplified Chinese.
+- Keep labels short: `中文` and `EN`.
+- Do not place language switching inside profile setup; it is an app-level preference.
 
 ### Status Badges
 
@@ -154,6 +186,8 @@ Diagnostics should use grouped rows:
 - Result.
 - Explanation.
 - Suggested action.
+
+Environment checks are diagnostics. They should be available from a toolbar status button and shown in a modal.
 
 ## 7. Interaction Rules
 

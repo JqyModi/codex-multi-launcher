@@ -6,6 +6,7 @@ import {
   Folder,
   FolderOpen,
   Info,
+  Languages,
   Play,
   Plus,
   RefreshCcw,
@@ -27,14 +28,166 @@ import type {
 } from "../shared/types";
 
 type WizardStep = "profile" | "provider" | "test" | "launcher" | "generate";
+type Language = "zh" | "en";
 
-const WIZARD_STEPS: Array<{ id: WizardStep; label: string }> = [
-  { id: "profile", label: "Profile" },
-  { id: "provider", label: "Provider" },
-  { id: "test", label: "Test" },
-  { id: "launcher", label: "Launcher" },
-  { id: "generate", label: "Generate" }
-];
+const WIZARD_STEPS: WizardStep[] = ["profile", "provider", "test", "launcher", "generate"];
+
+const TEXT: Record<Language, Record<string, string>> = {
+  zh: {
+    appTitle: "Codex Profiles",
+    appSubtitle: "本地多开配置管理",
+    pageTitle: "Profile Manager",
+    pageSubtitle: "创建隔离的 Codex 桌面窗口，并为每个窗口使用独立配置。",
+    createProfile: "创建 Profile",
+    showRemoved: "显示已移除",
+    noProfiles: "暂无 Profile",
+    refresh: "刷新",
+    refreshing: "刷新中",
+    copyDiagnostics: "复制诊断",
+    copied: "已复制",
+    profiles: "Profiles",
+    running: "运行中",
+    environment: "环境",
+    environmentOk: "环境正常",
+    checking: "检查中",
+    selectedProfile: "选中的 Profile",
+    revealFiles: "显示文件",
+    restore: "恢复",
+    remove: "移除",
+    open: "打开",
+    noProfilesTitle: "还没有 Profile",
+    noProfilesBody: "创建一个拥有独立 API Key、Provider、配置和启动器的 Codex Profile。",
+    createProfileTitle: "创建 Profile",
+    createProfileSubtitle: "生成一个隔离的 Codex App 工作配置。",
+    apiKeyEncrypted: "API Key 本地加密保存",
+    environmentSubtitle: "生成 Profile 时依赖的本地环境检查。",
+    profile: "Profile",
+    provider: "Provider",
+    test: "测试",
+    launcher: "启动器",
+    generate: "生成",
+    back: "上一步",
+    next: "下一步",
+    generating: "生成中",
+    profileName: "Profile 名称",
+    inheritConfig: "继承默认 Codex 配置",
+    inheritConfigDesc: "保留已有插件、MCP 服务、可信项目和功能开关。",
+    profileNameNote: "该名称会用于侧边栏列表和生成的启动器 App。",
+    providerType: "Provider 类型",
+    thirdPartyResponses: "第三方 Responses 兼容接口",
+    officialOpenAI: "官方 OpenAI API Key",
+    providerName: "Provider 名称",
+    baseUrl: "Base URL",
+    model: "模型",
+    apiKey: "API Key",
+    testProvider: "测试 Provider",
+    testing: "测试中",
+    testNote: "生成前建议测试 Provider。即使测试失败也可以继续，但 Provider 需要支持 Responses API 后启动器才能正常工作。",
+    launcherDirectory: "启动器目录",
+    launcherPlaceholder: "默认：~/Applications/Codex Profiles/",
+    launcherNote: "留空会使用默认启动器目录，也可以选择自定义文件夹。",
+    providerTypeReview: "Provider 类型",
+    inheritConfigReview: "继承配置",
+    providerTestReview: "Provider 测试",
+    missing: "缺失",
+    yes: "是",
+    no: "否",
+    notTested: "未测试",
+    noProviderTest: "还未运行 Provider 测试。",
+    models: "models",
+    responses: "responses",
+    tested: "tested",
+    notTestedShort: "not tested",
+    recentBackups: "最近配置备份",
+    noBackups: "暂无快照。每次配置变更前会自动创建快照。",
+    editProvider: "编辑 Provider",
+    newApiKey: "新的 API Key",
+    keepCurrentKey: "留空则保留当前 Key",
+    saveProvider: "保存 Provider",
+    saving: "保存中",
+    notChecked: "未检查",
+    never: "从未启动",
+    diagnosticsCopied: "诊断报告已复制，不包含 API Key。",
+    loadingChecks: "正在加载检查项..."
+  },
+  en: {
+    appTitle: "Codex Profiles",
+    appSubtitle: "Local multi-instance manager",
+    pageTitle: "Profile Manager",
+    pageSubtitle: "Create isolated Codex desktop windows with separate provider configuration.",
+    createProfile: "Create Profile",
+    showRemoved: "Show removed",
+    noProfiles: "No profiles yet.",
+    refresh: "Refresh",
+    refreshing: "Refreshing...",
+    copyDiagnostics: "Copy Diagnostics",
+    copied: "Copied",
+    profiles: "Profiles",
+    running: "Running",
+    environment: "Environment",
+    environmentOk: "Environment OK",
+    checking: "Checking",
+    selectedProfile: "Selected Profile",
+    revealFiles: "Reveal Files",
+    restore: "Restore",
+    remove: "Remove",
+    open: "Open",
+    noProfilesTitle: "No profiles yet",
+    noProfilesBody: "Create a Codex profile with its own API key, provider, config, and launcher.",
+    createProfileTitle: "Create Profile",
+    createProfileSubtitle: "Generate an isolated Codex app profile.",
+    apiKeyEncrypted: "API key encrypted locally",
+    environmentSubtitle: "Local prerequisites used by generated profiles.",
+    profile: "Profile",
+    provider: "Provider",
+    test: "Test",
+    launcher: "Launcher",
+    generate: "Generate",
+    back: "Back",
+    next: "Next",
+    generating: "Generating...",
+    profileName: "Profile name",
+    inheritConfig: "Inherit my default Codex config",
+    inheritConfigDesc: "Keep existing plugins, MCP servers, trusted projects, and feature flags.",
+    profileNameNote: "This name is used for the dashboard row and generated launcher app.",
+    providerType: "Provider type",
+    thirdPartyResponses: "Third-party Responses-compatible",
+    officialOpenAI: "Official OpenAI API key",
+    providerName: "Provider name",
+    baseUrl: "Base URL",
+    model: "Model",
+    apiKey: "API key",
+    testProvider: "Test Provider",
+    testing: "Testing...",
+    testNote: "Test the provider before generation. You can continue even if the test fails, but the launcher may not work until the provider supports Responses API.",
+    launcherDirectory: "Launcher directory",
+    launcherPlaceholder: "Default: ~/Applications/Codex Profiles/",
+    launcherNote: "Leave empty to use the default launcher directory, or pick a folder for the generated launcher app.",
+    providerTypeReview: "Provider type",
+    inheritConfigReview: "Inherit config",
+    providerTestReview: "Provider test",
+    missing: "Missing",
+    yes: "Yes",
+    no: "No",
+    notTested: "Not tested",
+    noProviderTest: "No provider test has been run yet.",
+    models: "models",
+    responses: "responses",
+    tested: "tested",
+    notTestedShort: "not tested",
+    recentBackups: "Recent Config Backups",
+    noBackups: "No snapshots yet. A snapshot is created before config changes.",
+    editProvider: "Edit Provider",
+    newApiKey: "New API key",
+    keepCurrentKey: "Leave empty to keep current key",
+    saveProvider: "Save Provider",
+    saving: "Saving...",
+    notChecked: "Not checked",
+    never: "Never",
+    diagnosticsCopied: "Diagnostics report copied. API keys are not included.",
+    loadingChecks: "Loading checks..."
+  }
+};
 
 const DEFAULT_FORM = {
   name: "Codex Sandbox",
@@ -64,6 +217,7 @@ export function App() {
   const [isCopyingDiagnostics, setIsCopyingDiagnostics] = useState(false);
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   const [isEnvironmentOpen, setIsEnvironmentOpen] = useState(false);
+  const [language, setLanguage] = useState<Language>("zh");
   const [providerTest, setProviderTest] = useState<ProviderTestResult | null>(null);
   const [editProviderTest, setEditProviderTest] = useState<ProviderTestResult | null>(null);
   const [editForm, setEditForm] = useState({
@@ -79,10 +233,11 @@ export function App() {
     [profiles, selectedProfileId]
   );
 
-  const currentStepIndex = WIZARD_STEPS.findIndex((step) => step.id === wizardStep);
+  const currentStepIndex = WIZARD_STEPS.findIndex((step) => step === wizardStep);
   const canGoBack = currentStepIndex > 0;
   const canGoNext = currentStepIndex < WIZARD_STEPS.length - 1 && isCurrentStepValid(wizardStep, form);
-  const environmentSummary = useMemo(() => summarizeEnvironment(environment), [environment]);
+  const t = TEXT[language];
+  const environmentSummary = useMemo(() => summarizeEnvironment(environment, t), [environment, t]);
 
   async function refresh() {
     setIsRefreshing(true);
@@ -119,12 +274,12 @@ export function App() {
 
   function nextStep() {
     if (!canGoNext) return;
-    setWizardStep(WIZARD_STEPS[currentStepIndex + 1].id);
+    setWizardStep(WIZARD_STEPS[currentStepIndex + 1]);
   }
 
   function previousStep() {
     if (!canGoBack) return;
-    setWizardStep(WIZARD_STEPS[currentStepIndex - 1].id);
+    setWizardStep(WIZARD_STEPS[currentStepIndex - 1]);
   }
 
   async function createProfile() {
@@ -280,7 +435,7 @@ export function App() {
     try {
       const report = await window.codexProfileManager.getDiagnosticsReport();
       await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-      setMessage("Diagnostics report copied. API keys are not included.");
+      setMessage(t.diagnosticsCopied);
     } finally {
       setIsCopyingDiagnostics(false);
     }
@@ -294,7 +449,7 @@ export function App() {
       profileId: backup.profileId,
       backupPath: backup.backupPath
     });
-    setMessage("Config backup restored. Restart this Codex profile for the restored config to take effect.");
+    setMessage(language === "zh" ? "配置备份已恢复。重启该 Codex Profile 后生效。" : "Config backup restored. Restart this Codex profile for the restored config to take effect.");
     setConfigBackups(await window.codexProfileManager.listConfigBackups(backup.profileId));
   }
 
@@ -306,23 +461,23 @@ export function App() {
             <Rocket size={18} />
           </div>
           <div>
-            <h1>Codex Profiles</h1>
-            <p>Local multi-instance manager</p>
+            <h1>{t.appTitle}</h1>
+            <p>{t.appSubtitle}</p>
           </div>
         </div>
 
         <button className="sidebar-action" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
           <Plus size={16} />
-          Create Profile
+          {t.createProfile}
         </button>
         <label className="sidebar-toggle">
           <input checked={showDeletedProfiles} onChange={(event) => setShowDeletedProfiles(event.target.checked)} type="checkbox" />
-          Show removed
+          {t.showRemoved}
         </label>
 
         <div className="profile-list">
           {profiles.length === 0 ? (
-            <p className="empty-text">No profiles yet.</p>
+            <p className="empty-text">{t.noProfiles}</p>
           ) : (
             profiles.map((profile) => (
               <button
@@ -344,8 +499,13 @@ export function App() {
       <section className="content">
         <header className="toolbar">
           <div>
-            <h2>Profile Manager</h2>
-            <p>Create isolated Codex desktop windows with separate provider configuration.</p>
+            <h2>{t.pageTitle}</h2>
+            <p>{t.pageSubtitle}</p>
+          </div>
+          <div className="language-switch" aria-label="Language">
+            <Languages size={15} />
+            <button className={language === "zh" ? "active" : ""} onClick={() => setLanguage("zh")} type="button">中文</button>
+            <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")} type="button">EN</button>
           </div>
           <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
             {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
@@ -353,11 +513,11 @@ export function App() {
           </button>
           <button className="button secondary" disabled={isRefreshing} onClick={() => void refresh()} type="button">
             <RefreshCcw size={15} />
-            {isRefreshing ? "Refreshing..." : "Refresh"}
+            {isRefreshing ? t.refreshing : t.refresh}
           </button>
           <button className="button secondary" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
             <Copy size={15} />
-            {isCopyingDiagnostics ? "Copied" : "Copy Diagnostics"}
+            {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
           </button>
         </header>
 
@@ -365,41 +525,41 @@ export function App() {
 
         <section className="status-strip">
           <div>
-            <span className="status-kicker">Profiles</span>
+            <span className="status-kicker">{t.profiles}</span>
             <strong>{profiles.filter((profile) => profile.status !== "deleted").length}</strong>
           </div>
           <div>
-            <span className="status-kicker">Running</span>
+            <span className="status-kicker">{t.running}</span>
             <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
           </div>
           <div>
-            <span className="status-kicker">Environment</span>
+            <span className="status-kicker">{t.environment}</span>
             <strong>{environmentSummary.shortLabel}</strong>
           </div>
         </section>
 
         <section className="panel detail-panel">
           <div className="panel-heading">
-            <h3>Selected Profile</h3>
+            <h3>{t.selectedProfile}</h3>
             {selectedProfile?.status === "deleted" ? (
               <div className="detail-actions">
                 <button className="button secondary" onClick={() => void revealPath(selectedProfile.paths.codexHome)} type="button">
                   <FolderOpen size={15} />
-                  Reveal Files
+                  {t.revealFiles}
                 </button>
                 <button className="button primary" onClick={() => void restoreSelectedProfile()} type="button">
-                  Restore
+                  {t.restore}
                 </button>
               </div>
             ) : selectedProfile ? (
               <div className="detail-actions">
                 <button className="button danger" onClick={() => void deleteSelectedProfile()} type="button">
                   <Trash2 size={15} />
-                  Remove
+                  {t.remove}
                 </button>
                 <button className="button primary" onClick={() => void openSelectedProfile()} type="button">
                   <Play size={15} />
-                  Open
+                  {t.open}
                 </button>
               </div>
             ) : null}
@@ -412,12 +572,12 @@ export function App() {
               <PathRow label="Provider" value={`${selectedProfile.provider.displayName} (${selectedProfile.provider.wireApi})`} />
               <PathRow label="Base URL" value={selectedProfile.provider.baseUrl ?? "Official OpenAI"} />
               <PathRow label="Env key" value={selectedProfile.provider.envKeyName} />
-              <PathRow label="Last launched" value={selectedProfile.launch.lastLaunchedAt ? new Date(selectedProfile.launch.lastLaunchedAt).toLocaleString() : "Never"} />
-              <PathRow label="Runtime" value={runtimeStatuses.find((item) => item.profileId === selectedProfile.id)?.detail ?? "Not checked"} />
+              <PathRow label="Last launched" value={selectedProfile.launch.lastLaunchedAt ? new Date(selectedProfile.launch.lastLaunchedAt).toLocaleString() : t.never} />
+              <PathRow label="Runtime" value={runtimeStatuses.find((item) => item.profileId === selectedProfile.id)?.detail ?? t.notChecked} />
               <div className="backup-list">
-                <h4>Recent Config Backups</h4>
+                <h4>{t.recentBackups}</h4>
                 {configBackups.length === 0 ? (
-                  <p className="empty-text">No snapshots yet. A snapshot is created before config changes.</p>
+                  <p className="empty-text">{t.noBackups}</p>
                 ) : (
                   configBackups.slice(0, 3).map((backup) => (
                     <div className="backup-row" key={backup.backupPath}>
@@ -429,66 +589,67 @@ export function App() {
                         <FolderOpen size={15} />
                       </button>
                       <button className="button secondary compact" onClick={() => void restoreBackup(backup)} type="button">
-                        Restore
+                        {t.restore}
                       </button>
                     </div>
                   ))
                 )}
               </div>
               <div className="edit-box">
-                <h4>Edit Provider</h4>
+                <h4>{t.editProvider}</h4>
                 <label>
-                  Provider name
+                  {t.providerName}
                   <input value={editForm.providerName} onChange={(event) => setEditForm({ ...editForm, providerName: event.target.value })} />
                 </label>
                 <label>
-                  Base URL
+                  {t.baseUrl}
                   <input value={editForm.baseUrl} onChange={(event) => setEditForm({ ...editForm, baseUrl: event.target.value })} />
                 </label>
                 <label>
-                  Model
+                  {t.model}
                   <input value={editForm.model} onChange={(event) => setEditForm({ ...editForm, model: event.target.value })} />
                 </label>
                 <label>
-                  New API key
-                  <input placeholder="Leave empty to keep current key" type="password" value={editForm.apiKey} onChange={(event) => setEditForm({ ...editForm, apiKey: event.target.value })} />
+                  {t.newApiKey}
+                  <input placeholder={t.keepCurrentKey} type="password" value={editForm.apiKey} onChange={(event) => setEditForm({ ...editForm, apiKey: event.target.value })} />
                 </label>
                 <div className="button-row">
                   <button className="button secondary" disabled={isTestingEditProvider || !editForm.baseUrl || !editForm.model} onClick={() => void testEditProvider()} type="button">
                     <TestTube2 size={15} />
-                    {isTestingEditProvider ? "Testing..." : "Test"}
+                    {isTestingEditProvider ? t.testing : t.test}
                   </button>
                   <button className="button secondary" disabled={isUpdatingProfile || !editForm.providerName || !editForm.baseUrl || !editForm.model} onClick={() => void saveSelectedProfile()} type="button">
-                    {isUpdatingProfile ? "Saving..." : "Save Provider"}
+                    {isUpdatingProfile ? t.saving : t.saveProvider}
                   </button>
                 </div>
-                <ProviderTestBox providerTest={editProviderTest} />
+                <ProviderTestBox providerTest={editProviderTest} t={t} />
               </div>
             </div>
           ) : (
             <div className="empty-state">
               <div className="empty-mark"><Rocket size={24} /></div>
-              <h3>No profiles yet</h3>
-              <p>Create a Codex profile with its own API key, provider, config, and launcher.</p>
+              <h3>{t.noProfilesTitle}</h3>
+              <p>{t.noProfilesBody}</p>
               <button className="button primary" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
                 <Plus size={15} />
-                Create Profile
+                {t.createProfile}
               </button>
             </div>
           )}
         </section>
       </section>
       {isCreateProfileOpen ? (
-        <Modal title="Create Profile" subtitle="Generate an isolated Codex app profile." onClose={() => setIsCreateProfileOpen(false)}>
+        <Modal title={t.createProfileTitle} subtitle={t.createProfileSubtitle} onClose={() => setIsCreateProfileOpen(false)}>
           <div className="modal-badge-row">
-            <span className="badge success">API key encrypted locally</span>
+            <span className="badge success">{t.apiKeyEncrypted}</span>
           </div>
-          <WizardNav current={wizardStep} />
+          <WizardNav current={wizardStep} t={t} />
           <WizardBody
             form={form}
             providerTest={providerTest}
             isTestingProvider={isTestingProvider}
             wizardStep={wizardStep}
+            t={t}
             onChange={setForm}
             onPickLauncherDirectory={() => void pickLauncherDirectory()}
             onTestProvider={() => void testProvider()}
@@ -496,16 +657,16 @@ export function App() {
           <div className="wizard-actions">
             <button className="button secondary" disabled={!canGoBack} onClick={previousStep} type="button">
               <ChevronLeft size={15} />
-              Back
+              {t.back}
             </button>
             {wizardStep === "generate" ? (
               <button className="button primary" disabled={isCreating || !isCurrentStepValid(wizardStep, form)} onClick={() => void createProfile()} type="button">
                 <Plus size={16} />
-                {isCreating ? "Generating..." : "Generate"}
+                {isCreating ? t.generating : t.generate}
               </button>
             ) : (
               <button className="button primary" disabled={!canGoNext} onClick={nextStep} type="button">
-                Next
+                {t.next}
                 <ChevronRight size={15} />
               </button>
             )}
@@ -513,7 +674,7 @@ export function App() {
         </Modal>
       ) : null}
       {isEnvironmentOpen ? (
-        <Modal title="Environment" subtitle="Local prerequisites used by generated profiles." onClose={() => setIsEnvironmentOpen(false)}>
+        <Modal title={t.environment} subtitle={t.environmentSubtitle} onClose={() => setIsEnvironmentOpen(false)}>
           <div className="checks">
             {environment?.checks.map((check) => (
               <div className="check-row" key={check.id}>
@@ -528,7 +689,7 @@ export function App() {
                   {check.path ? <code>{check.path}</code> : null}
                 </div>
               </div>
-            )) ?? <p className="empty-text">Loading checks...</p>}
+            )) ?? <p className="empty-text">{t.loadingChecks}</p>}
           </div>
         </Modal>
       ) : null}
@@ -558,13 +719,13 @@ function Modal({ children, onClose, subtitle, title }: { children: React.ReactNo
   );
 }
 
-function WizardNav({ current }: { current: WizardStep }) {
+function WizardNav({ current, t }: { current: WizardStep; t: Record<string, string> }) {
   return (
     <ol className="wizard-nav">
       {WIZARD_STEPS.map((step, index) => (
-        <li className={step.id === current ? "current" : ""} key={step.id}>
+        <li className={step === current ? "current" : ""} key={step}>
           <span>{index + 1}</span>
-          {step.label}
+          {t[step]}
         </li>
       ))}
     </ol>
@@ -576,6 +737,7 @@ function WizardBody({
   providerTest,
   isTestingProvider,
   wizardStep,
+  t,
   onChange,
   onPickLauncherDirectory,
   onTestProvider
@@ -584,6 +746,7 @@ function WizardBody({
   providerTest: ProviderTestResult | null;
   isTestingProvider: boolean;
   wizardStep: WizardStep;
+  t: Record<string, string>;
   onChange: (nextForm: typeof DEFAULT_FORM) => void;
   onPickLauncherDirectory: () => void;
   onTestProvider: () => void;
@@ -592,15 +755,18 @@ function WizardBody({
     return (
       <div className="form">
         <label>
-          Profile name
+          {t.profileName}
           <input value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} />
         </label>
-        <label className="checkbox-label">
+        <label className="toggle-card">
           <input checked={form.inheritDefaultConfig} onChange={(event) => onChange({ ...form, inheritDefaultConfig: event.target.checked })} type="checkbox" />
-          Inherit my default Codex config
+          <span className="switch-track" aria-hidden="true"><span /></span>
+          <span className="toggle-copy">
+            <strong>{t.inheritConfig}</strong>
+            <small>{t.inheritConfigDesc}</small>
+          </span>
         </label>
-        <p className="field-note">This name is used for the dashboard row and generated launcher app.</p>
-        <p className="field-note">Inherited config keeps existing plugins, MCP servers, trusted projects, and feature flags when available.</p>
+        <p className="field-note">{t.profileNameNote}</p>
       </div>
     );
   }
@@ -609,28 +775,28 @@ function WizardBody({
     return (
       <div className="form">
         <label>
-          Provider type
+          {t.providerType}
           <select value={form.providerType} onChange={(event) => onChange({ ...form, providerType: event.target.value as typeof form.providerType })}>
-            <option value="third_party_responses">Third-party Responses-compatible</option>
-            <option value="official_openai">Official OpenAI API key</option>
+            <option value="third_party_responses">{t.thirdPartyResponses}</option>
+            <option value="official_openai">{t.officialOpenAI}</option>
           </select>
         </label>
         <label>
-          Provider name
+          {t.providerName}
           <input value={form.providerName} onChange={(event) => onChange({ ...form, providerName: event.target.value })} />
         </label>
         {form.providerType === "third_party_responses" ? (
           <label>
-            Base URL
+            {t.baseUrl}
             <input value={form.baseUrl} onChange={(event) => onChange({ ...form, baseUrl: event.target.value })} />
           </label>
         ) : null}
         <label>
-          Model
+          {t.model}
           <input value={form.model} onChange={(event) => onChange({ ...form, model: event.target.value })} />
         </label>
         <label>
-          API key
+          {t.apiKey}
           <input type="password" value={form.apiKey} onChange={(event) => onChange({ ...form, apiKey: event.target.value })} />
         </label>
       </div>
@@ -640,12 +806,12 @@ function WizardBody({
   if (wizardStep === "test") {
     return (
       <div className="form">
-        <p className="field-note">Test the provider before generation. You can continue even if the test fails, but the launcher may not work until the provider supports Responses API.</p>
+        <p className="field-note">{t.testNote}</p>
         <button className="button secondary full-width" disabled={isTestingProvider || (form.providerType === "third_party_responses" && !form.baseUrl) || !form.apiKey || !form.model} onClick={onTestProvider} type="button">
           <TestTube2 size={16} />
-          {isTestingProvider ? "Testing..." : "Test Provider"}
+          {isTestingProvider ? t.testing : t.testProvider}
         </button>
-        <ProviderTestBox providerTest={providerTest} />
+        <ProviderTestBox providerTest={providerTest} t={t} />
       </div>
     );
   }
@@ -654,10 +820,10 @@ function WizardBody({
     return (
       <div className="form">
         <label>
-          Launcher directory
+          {t.launcherDirectory}
           <div className="input-action-row">
             <input
-              placeholder="Default: ~/Applications/Codex Profiles/"
+              placeholder={t.launcherPlaceholder}
               value={form.launcherDirectory}
               onChange={(event) => onChange({ ...form, launcherDirectory: event.target.value })}
             />
@@ -666,28 +832,28 @@ function WizardBody({
             </button>
           </div>
         </label>
-        <p className="field-note">Leave empty to use the default launcher directory, or pick a folder for the generated launcher app.</p>
+        <p className="field-note">{t.launcherNote}</p>
       </div>
     );
   }
 
   return (
     <div className="review-box">
-      <PathRow label="Profile" value={form.name || "Missing"} />
-      <PathRow label="Provider" value={form.providerName || "Missing"} />
-      <PathRow label="Provider type" value={form.providerType === "official_openai" ? "Official OpenAI" : "Third-party Responses"} />
-      <PathRow label="Base URL" value={form.providerType === "third_party_responses" ? form.baseUrl || "Missing" : "https://api.openai.com/v1"} />
-      <PathRow label="Model" value={form.model || "Missing"} />
-      <PathRow label="Launcher directory" value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
-      <PathRow label="Inherit config" value={form.inheritDefaultConfig ? "Yes" : "No"} />
-      <PathRow label="Provider test" value={providerTest ? providerTest.summary : "Not tested"} />
+      <PathRow label={t.profile} value={form.name || t.missing} />
+      <PathRow label={t.provider} value={form.providerName || t.missing} />
+      <PathRow label={t.providerTypeReview} value={form.providerType === "official_openai" ? t.officialOpenAI : t.thirdPartyResponses} />
+      <PathRow label={t.baseUrl} value={form.providerType === "third_party_responses" ? form.baseUrl || t.missing : "https://api.openai.com/v1"} />
+      <PathRow label={t.model} value={form.model || t.missing} />
+      <PathRow label={t.launcherDirectory} value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
+      <PathRow label={t.inheritConfigReview} value={form.inheritDefaultConfig ? t.yes : t.no} />
+      <PathRow label={t.providerTestReview} value={providerTest ? providerTest.summary : t.notTested} />
     </div>
   );
 }
 
-function ProviderTestBox({ providerTest }: { providerTest: ProviderTestResult | null }) {
+function ProviderTestBox({ providerTest, t }: { providerTest: ProviderTestResult | null; t: Record<string, string> }) {
   if (!providerTest) {
-    return <p className="empty-text">No provider test has been run yet.</p>;
+    return <p className="empty-text">{t.noProviderTest}</p>;
   }
 
   return (
@@ -698,7 +864,7 @@ function ProviderTestBox({ providerTest }: { providerTest: ProviderTestResult | 
       </div>
       <p>{providerTest.details}</p>
       <span>
-        models: {providerTest.testedModelsEndpoint ? "tested" : "not tested"} / responses: {providerTest.testedResponsesEndpoint ? "tested" : "not tested"}
+        {t.models}: {providerTest.testedModelsEndpoint ? t.tested : t.notTestedShort} / {t.responses}: {providerTest.testedResponsesEndpoint ? t.tested : t.notTestedShort}
         {providerTest.httpStatus ? ` / HTTP ${providerTest.httpStatus}` : ""}
       </span>
     </div>
@@ -711,9 +877,9 @@ function RuntimeBadge({ runtime }: { runtime?: ProfileRuntimeInfo }) {
   return <span className={`runtime-badge ${status}`}>{label}</span>;
 }
 
-function summarizeEnvironment(environment: EnvironmentReport | null): { label: string; shortLabel: string; status: "pass" | "warn" | "fail" } {
+function summarizeEnvironment(environment: EnvironmentReport | null, t: Record<string, string>): { label: string; shortLabel: string; status: "pass" | "warn" | "fail" } {
   if (!environment) {
-    return { label: "Checking", shortLabel: "Checking", status: "warn" };
+    return { label: t.checking, shortLabel: t.checking, status: "warn" };
   }
 
   const failed = environment.checks.filter((check) => check.status === "fail").length;
@@ -727,7 +893,7 @@ function summarizeEnvironment(environment: EnvironmentReport | null): { label: s
     return { label: `${warned} warning${warned === 1 ? "" : "s"}`, shortLabel: `${warned} warn`, status: "warn" };
   }
 
-  return { label: "Environment OK", shortLabel: "OK", status: "pass" };
+  return { label: t.environmentOk, shortLabel: "OK", status: "pass" };
 }
 
 function PathRow({ icon, label, onReveal, value }: { icon?: React.ReactNode; label: string; onReveal?: () => void; value: string }) {
