@@ -29,6 +29,8 @@ export interface EnvironmentReport {
   codexExecutableExists: boolean;
   codexCliPath: string | null;
   codexCliVersion: string | null;
+  nodePath: string | null;
+  nodeVersion: string | null;
   checks: EnvironmentCheck[];
 }
 

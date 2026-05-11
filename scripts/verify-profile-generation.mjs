@@ -1,6 +1,10 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const testRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-manager-"));
 process.env.CODEX_PROFILE_MANAGER_HOME_OVERRIDE = testRoot;
@@ -91,6 +95,7 @@ assert(launcherRaw.startsWith("#!/bin/zsh"), "launcher should be a zsh script");
 assert(launcherRaw.includes("set -euo pipefail"), "launcher should use strict shell mode");
 assert(launcherRaw.includes(appPaths.masterKeyFile), "launcher should reference encrypted secret master key");
 assert(launcherRaw.includes(appPaths.secretsFile), "launcher should reference encrypted secrets file");
+await execFileAsync("zsh", ["-n", launcherScript]);
 
 const updatedKey = "sk-test-verify-profile-update";
 await updateProfile({

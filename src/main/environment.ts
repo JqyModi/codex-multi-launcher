@@ -6,17 +6,17 @@ import type { EnvironmentCheck, EnvironmentReport } from "../shared/types.js";
 
 const execFileAsync = promisify(execFile);
 
-async function findCodexCli(): Promise<{ path: string | null; version: string | null }> {
+async function findExecutable(command: string, versionArgs: string[] = ["--version"]): Promise<{ path: string | null; version: string | null }> {
   try {
-    const whichResult = await execFileAsync("which", ["codex"]);
-    const cliPath = whichResult.stdout.trim();
-    if (!cliPath) {
+    const whichResult = await execFileAsync("which", [command]);
+    const executablePath = whichResult.stdout.trim();
+    if (!executablePath) {
       return { path: null, version: null };
     }
 
-    const versionResult = await execFileAsync(cliPath, ["--version"]);
+    const versionResult = await execFileAsync(executablePath, versionArgs);
     return {
-      path: cliPath,
+      path: executablePath,
       version: versionResult.stdout.trim() || null
     };
   } catch {
@@ -33,11 +33,12 @@ function checkStatus(condition: boolean, failDetail: string, passDetail: string)
 export async function getEnvironmentReport(codexAppPath = DEFAULT_CODEX_APP_PATH): Promise<EnvironmentReport> {
   const appPaths = getAppPaths();
   const executablePath = codexExecutablePath(codexAppPath);
-  const [codexAppExists, codexExecutableExists, cli, launcherWritable, profileRootWritable, appDataWritable] =
+  const [codexAppExists, codexExecutableExists, cli, nodeRuntime, launcherWritable, profileRootWritable, appDataWritable] =
     await Promise.all([
       pathExists(codexAppPath),
       pathExists(executablePath),
-      findCodexCli(),
+      findExecutable("codex"),
+      findExecutable("node"),
       isWritableDirectory(appPaths.defaultLauncherRoot),
       isWritableDirectory(appPaths.defaultProfileRoot),
       isWritableDirectory(appPaths.appDataDir)
@@ -75,6 +76,15 @@ export async function getEnvironmentReport(codexAppPath = DEFAULT_CODEX_APP_PATH
       detail: cli.path ? `Detected ${cli.version ?? "unknown version"}.` : "Codex CLI was not found. Desktop profile launch can still work."
     },
     {
+      id: "node-runtime",
+      label: "Node runtime",
+      path: nodeRuntime.path ?? undefined,
+      status: nodeRuntime.path ? "pass" : "fail",
+      detail: nodeRuntime.path
+        ? `Detected ${nodeRuntime.version ?? "unknown version"}. Generated launchers use Node to decrypt local secrets.`
+        : "Node was not found. Generated profile launchers will not be able to decrypt local secrets."
+    },
+    {
       id: "launcher-root",
       label: "Launcher directory",
       path: appPaths.defaultLauncherRoot,
@@ -104,6 +114,8 @@ export async function getEnvironmentReport(codexAppPath = DEFAULT_CODEX_APP_PATH
     codexExecutableExists,
     codexCliPath: cli.path,
     codexCliVersion: cli.version,
+    nodePath: nodeRuntime.path,
+    nodeVersion: nodeRuntime.version,
     checks
   };
 }

@@ -75,7 +75,8 @@ set -euo pipefail
 
 ${envLines.join("\n")}
 USER_DATA_DIR=${shellQuote(profile.paths.userDataDir)}
-API_KEY="$(${decryptSnippet(profile)})"
+API_KEY=$(${decryptSnippet(profile)}
+)
 export ${profile.provider.envKeyName}="$API_KEY"
 
 mkdir -p "$CODEX_HOME" "$USER_DATA_DIR"
