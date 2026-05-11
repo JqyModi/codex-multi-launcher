@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { codexExecutablePath } from "./paths.js";
-import { listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexConfig } from "./codex-config.js";
+import { listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
 import { createProfileRecord, findProfile, listProfiles, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
 import { getApiKey, upsertApiKey } from "./secrets.js";
@@ -30,6 +30,7 @@ export async function createProfile(input: CreateProfileInput): Promise<CreatePr
     secretType: "api_key",
     value: input.provider.apiKey
   });
+  await writeCodexAuth(profile, input.provider.apiKey);
   const configPath = await writeCodexConfig(profile, { inheritDefaultConfig: input.inheritDefaultConfig });
   const launcher = await generateLauncher(profile);
 
@@ -56,6 +57,7 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
       secretType: "api_key",
       value: input.provider.apiKey
     });
+    await writeCodexAuth(profile, input.provider.apiKey);
   }
 
   const configPath = await writeCodexConfig(profile, { preserveExistingConfig: true });
@@ -81,6 +83,10 @@ export async function restoreProfile(profileId: string): Promise<{ ok: true }> {
 export async function openProfile(profileId: string): Promise<{ pid: number | null }> {
   const profile = await mustFindProfile(profileId);
   const apiKey = await getApiKey(profile.id, profile.provider.id);
+  await writeCodexConfig(profile, { preserveExistingConfig: true });
+  if (apiKey) {
+    await writeCodexAuth(profile, apiKey);
+  }
   const child = spawn(codexExecutablePath(profile.paths.codexAppPath), [`--user-data-dir=${profile.paths.userDataDir}`], {
     detached: true,
     stdio: "ignore",

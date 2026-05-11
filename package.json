@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:main && npm run build:renderer",
-    "build:main": "tsc -p tsconfig.main.json",
+    "build:main": "tsc -p tsconfig.main.json && cp src/preload/index.cjs dist-electron/preload/index.cjs",
     "build:renderer": "tsc -p tsconfig.renderer.json && vite build",
     "dev": "npm run build:main && concurrently -k \"tsc -p tsconfig.main.json --watch\" \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build:icon": "node scripts/build-icon.mjs",

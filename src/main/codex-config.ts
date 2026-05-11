@@ -22,7 +22,9 @@ function renderConfig(profile: ManagedProfile): string {
       `name = ${tomlString(profile.provider.displayName)}`,
       `base_url = ${tomlString(profile.provider.baseUrl ?? "")}`,
       `env_key = ${tomlString(profile.provider.envKeyName)}`,
+      `temp_env_key = ${tomlString(profile.provider.envKeyName)}`,
       `wire_api = "responses"`,
+      `requires_openai_auth = true`,
       ""
     );
   }
@@ -30,15 +32,52 @@ function renderConfig(profile: ManagedProfile): string {
   return `${lines.join("\n")}`;
 }
 
+function renderRootConfig(profile: ManagedProfile): string {
+  const lines = [
+    ...(profile.provider.type === "third_party_responses" ? [`model_provider = ${tomlString(profile.provider.id)}`] : []),
+    `model = ${tomlString(profile.provider.model)}`,
+    `model_reasoning_effort = ${tomlString(profile.provider.reasoningEffort)}`
+  ];
+  return lines.join("\n");
+}
+
+function renderProviderConfig(profile: ManagedProfile): string {
+  if (profile.provider.type !== "third_party_responses") {
+    return "";
+  }
+
+  return [
+    `[model_providers.${profile.provider.id}]`,
+    `name = ${tomlString(profile.provider.displayName)}`,
+    `base_url = ${tomlString(profile.provider.baseUrl ?? "")}`,
+    `env_key = ${tomlString(profile.provider.envKeyName)}`,
+    `temp_env_key = ${tomlString(profile.provider.envKeyName)}`,
+    `wire_api = "responses"`,
+    `requires_openai_auth = true`
+  ].join("\n");
+}
+
+export async function writeCodexAuth(profile: ManagedProfile, apiKey: string): Promise<string> {
+  await ensureDir(profile.paths.codexHome);
+  const authPath = path.join(profile.paths.codexHome, "auth.json");
+  await fs.writeFile(
+    authPath,
+    `${JSON.stringify({ auth_mode: "apikey", OPENAI_API_KEY: apiKey }, null, 2)}\n`,
+    { mode: 0o600 }
+  );
+  return authPath;
+}
+
 function renderManagedConfig(profile: ManagedProfile): string {
   return [
     "",
     "# --- Codex Profile Manager managed settings ---",
-    "# These settings are appended so this profile can override inherited defaults.",
-    renderConfig(profile).trimEnd(),
+    "# These settings are managed so this profile can override inherited defaults.",
+    renderRootConfig(profile),
+    renderProviderConfig(profile),
     "# --- End Codex Profile Manager managed settings ---",
     ""
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function stripManagedConfig(config: string): string {
@@ -48,6 +87,40 @@ function stripManagedConfig(config: string): string {
       "\n"
     )
     .trimEnd();
+}
+
+function removeInheritedRootOverrides(config: string): string {
+  const rootKeys = new Set(["model", "model_provider", "model_reasoning_effort"]);
+  const lines = config.split("\n");
+  let inRoot = true;
+
+  return lines
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        inRoot = false;
+      }
+      if (!inRoot || trimmed.startsWith("#")) {
+        return true;
+      }
+      const key = trimmed.match(/^([A-Za-z0-9_-]+)\s*=/)?.[1];
+      return !key || !rootKeys.has(key);
+    })
+    .join("\n")
+    .trimEnd();
+}
+
+function mergeManagedConfig(config: string, profile: ManagedProfile): string {
+  const cleanedConfig = removeInheritedRootOverrides(stripManagedConfig(config));
+  const firstTableIndex = cleanedConfig.search(/^\s*\[[^\]]+\]/m);
+
+  if (firstTableIndex === -1) {
+    return `${cleanedConfig}${renderManagedConfig(profile)}`;
+  }
+
+  const rootConfig = cleanedConfig.slice(0, firstTableIndex).trimEnd();
+  const tableConfig = cleanedConfig.slice(firstTableIndex).trimStart();
+  return `${rootConfig}${renderManagedConfig(profile)}${tableConfig}\n`;
 }
 
 export async function backupCodexConfig(profile: ManagedProfile, reason: string): Promise<string | null> {
@@ -111,13 +184,13 @@ export async function writeCodexConfig(profile: ManagedProfile, options: { inher
 
   if (options.preserveExistingConfig && await pathExists(configPath)) {
     const existingConfig = await fs.readFile(configPath, "utf8");
-    await fs.writeFile(configPath, `${stripManagedConfig(existingConfig)}${renderManagedConfig(profile)}`, { mode: 0o600 });
+    await fs.writeFile(configPath, mergeManagedConfig(existingConfig, profile), { mode: 0o600 });
     return configPath;
   }
 
   if (options.inheritDefaultConfig && await pathExists(defaultConfigPath)) {
     const inheritedConfig = await fs.readFile(defaultConfigPath, "utf8");
-    await fs.writeFile(configPath, `${stripManagedConfig(inheritedConfig)}${renderManagedConfig(profile)}`, { mode: 0o600 });
+    await fs.writeFile(configPath, mergeManagedConfig(inheritedConfig, profile), { mode: 0o600 });
     return configPath;
   }
 

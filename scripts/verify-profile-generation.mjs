@@ -51,16 +51,18 @@ assert(profiles.length === 1, "expected one profile in registry");
 assert(result.profile.id === "e2e-sandbox", "expected stable slug profile id");
 
 const configPath = path.join(result.profile.paths.codexHome, "config.toml");
+const authPath = path.join(result.profile.paths.codexHome, "auth.json");
 const launcherContents = path.join(result.profile.paths.launcherPath, "Contents");
 const launcherInfoPlist = path.join(launcherContents, "Info.plist");
 const launcherMacosDir = path.join(launcherContents, "MacOS");
 const launcherResourcesDir = path.join(launcherContents, "Resources");
 const launcherScript = path.join(result.profile.paths.launcherPath, "Contents", "MacOS", "launcher");
 
-const [registryRaw, secretsRaw, configRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat] = await Promise.all([
+const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat] = await Promise.all([
   fs.readFile(appPaths.profilesFile, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8"),
   fs.readFile(configPath, "utf8"),
+  fs.readFile(authPath, "utf8"),
   fs.readFile(launcherInfoPlist, "utf8"),
   fs.readFile(launcherScript, "utf8"),
   fs.stat(launcherScript),
@@ -72,14 +74,20 @@ const [registryRaw, secretsRaw, configRaw, launcherPlistRaw, launcherRaw, launch
 assert(registryRaw.includes("E2E Sandbox"), "registry should contain profile name");
 assert(configRaw.includes('model_provider = "proxy"'), "config should select proxy provider");
 assert(configRaw.includes('wire_api = "responses"'), "config should use responses API");
+assert(configRaw.includes('requires_openai_auth = true'), "config should satisfy desktop auth gating");
 assert(configRaw.includes("CODEX_PROFILE_E2E_SANDBOX_API_KEY"), "config should reference generated env key");
+assert(configRaw.includes('temp_env_key = "CODEX_PROFILE_E2E_SANDBOX_API_KEY"'), "config should include Codex temp env key");
 assert(configRaw.includes("[mcp_servers.example]"), "config should inherit default MCP server settings");
 assert(configRaw.includes("[features]"), "config should inherit default feature settings");
 assert(configRaw.includes("Codex Profile Manager managed settings"), "config should mark appended managed settings");
-assert(configRaw.lastIndexOf('model = "gpt-5.2"') > configRaw.indexOf('model = "gpt-5.5"'), "profile model override should be appended after inherited default");
+assert(!configRaw.includes('model = "gpt-5.5"'), "profile config should remove inherited root model to avoid duplicate TOML keys");
+assert(configRaw.indexOf('model_provider = "proxy"') < configRaw.indexOf("[mcp_servers.example]"), "profile provider selector should be written before inherited tables");
+assert(configRaw.indexOf('model = "gpt-5.2"') < configRaw.indexOf("[mcp_servers.example]"), "profile model should be written before inherited tables");
 assert(!configRaw.includes(fakeKey), "config must not contain plaintext API key");
 assert(!launcherRaw.includes(fakeKey), "launcher must not contain plaintext API key");
 assert(!secretsRaw.includes(fakeKey), "encrypted secrets file must not contain plaintext API key");
+assert(JSON.parse(authRaw).auth_mode === "apikey", "auth bootstrap should select API key mode");
+assert(JSON.parse(authRaw).OPENAI_API_KEY === fakeKey, "auth bootstrap should contain API key for Codex desktop login");
 assert(launcherRaw.includes("CODEX_HOME="), "launcher should set CODEX_HOME");
 assert(launcherRaw.includes("--user-data-dir="), "launcher should pass user-data-dir");
 assert(launcherContentsStat.isDirectory(), "launcher bundle should contain Contents directory");
@@ -109,8 +117,9 @@ await updateProfile({
   }
 });
 
-const [updatedConfigRaw, updatedLauncherRaw, updatedSecretsRaw] = await Promise.all([
+const [updatedConfigRaw, updatedAuthRaw, updatedLauncherRaw, updatedSecretsRaw] = await Promise.all([
   fs.readFile(configPath, "utf8"),
+  fs.readFile(authPath, "utf8"),
   fs.readFile(launcherScript, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8")
 ]);
@@ -121,6 +130,7 @@ assert(updatedConfigRaw.includes('name = "Updated Proxy"'), "updated config shou
 assert(updatedConfigRaw.includes('base_url = "https://updated.example.com/v1"'), "updated config should contain new base URL");
 assert(updatedConfigRaw.includes('model = "gpt-5.4"'), "updated config should contain new model");
 assert(updatedConfigRaw.includes('model_reasoning_effort = "high"'), "updated config should contain new reasoning effort");
+assert(updatedConfigRaw.includes('model_provider = "proxy"'), "updated config should keep selecting proxy provider");
 assert(!updatedConfigRaw.includes('base_url = "https://proxy.example.com/v1"'), "updated config should remove old managed base URL");
 assert(updatedConfigRaw.match(/# --- Codex Profile Manager managed settings ---/g)?.length === 1, "managed config block should not be duplicated");
 assert(updatedConfigRaw.includes("[mcp_servers.example]"), "update should preserve inherited MCP server settings");
@@ -128,6 +138,7 @@ assert(updatedStoredKey === updatedKey, "updated API key should be retrievable f
 assert(!updatedConfigRaw.includes(updatedKey), "updated config must not contain plaintext API key");
 assert(!updatedLauncherRaw.includes(updatedKey), "updated launcher must not contain plaintext API key");
 assert(!updatedSecretsRaw.includes(updatedKey), "updated encrypted secrets must not contain plaintext API key");
+assert(JSON.parse(updatedAuthRaw).OPENAI_API_KEY === updatedKey, "auth bootstrap should update API key for Codex desktop login");
 assert(backups.length >= 1, "profile update should create at least one config backup");
 assert(backups[0].reason === "before profile manager config write", "backup should record config write reason");
 assert(await fileExists(backups[0].backupPath), "backup config file should exist");
@@ -173,9 +184,11 @@ const officialResult = await createProfile({
   }
 });
 const officialConfigPath = path.join(officialResult.profile.paths.codexHome, "config.toml");
+const officialAuthPath = path.join(officialResult.profile.paths.codexHome, "auth.json");
 const officialLauncherScript = path.join(officialResult.profile.paths.launcherPath, "Contents", "MacOS", "launcher");
-const [officialConfigRaw, officialLauncherRaw] = await Promise.all([
+const [officialConfigRaw, officialAuthRaw, officialLauncherRaw] = await Promise.all([
   fs.readFile(officialConfigPath, "utf8"),
+  fs.readFile(officialAuthPath, "utf8"),
   fs.readFile(officialLauncherScript, "utf8")
 ]);
 const officialStoredKey = await getApiKey(officialResult.profile.id, officialResult.profile.provider.id);
@@ -188,6 +201,7 @@ assert(officialLauncherRaw.includes("export OPENAI_API_KEY="), "official launche
 assert(officialStoredKey === officialKey, "official API key should be retrievable from encrypted storage");
 assert(!officialConfigRaw.includes(officialKey), "official config must not contain plaintext API key");
 assert(!officialLauncherRaw.includes(officialKey), "official launcher must not contain plaintext API key");
+assert(JSON.parse(officialAuthRaw).OPENAI_API_KEY === officialKey, "official auth bootstrap should contain API key");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 

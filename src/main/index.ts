@@ -30,7 +30,7 @@ function createWindow(): void {
     title: "Codex Profile Manager",
     backgroundColor: "#F6F7F9",
     webPreferences: {
-      preload: path.join(__dirname, "../preload/index.js"),
+      preload: path.join(__dirname, "../preload/index.cjs"),
       contextIsolation: true,
       nodeIntegration: false
     }
