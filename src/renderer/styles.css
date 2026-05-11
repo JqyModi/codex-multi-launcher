@@ -212,31 +212,26 @@ code {
 .language-switch {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 36px;
+  gap: 5px;
+  height: 32px;
   border: 1px solid #dde3ed;
   border-radius: 999px;
-  padding: 3px 4px 3px 10px;
+  padding: 2px 7px;
   color: #667085;
   background: rgb(255 255 255 / 86%);
   box-shadow: 0 10px 24px rgb(15 23 42 / 4%);
 }
 
 .language-switch button {
-  height: 28px;
-  min-width: 42px;
+  height: 24px;
+  min-width: 32px;
   border: 0;
   border-radius: 999px;
-  padding: 0 10px;
-  color: #667085;
-  background: transparent;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.language-switch button.active {
+  padding: 0 4px;
   color: #1d4ed8;
   background: #edf4ff;
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .grid {
@@ -455,7 +450,7 @@ code {
 
 .toggle-card {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
   border: 1px solid #e2e8f0;

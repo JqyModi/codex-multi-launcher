@@ -504,8 +504,7 @@ export function App() {
           </div>
           <div className="language-switch" aria-label="Language">
             <Languages size={15} />
-            <button className={language === "zh" ? "active" : ""} onClick={() => setLanguage("zh")} type="button">中文</button>
-            <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")} type="button">EN</button>
+            <button onClick={() => setLanguage(language === "zh" ? "en" : "zh")} type="button">{language === "zh" ? "中文" : "EN"}</button>
           </div>
           <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
             {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
@@ -760,11 +759,11 @@ function WizardBody({
         </label>
         <label className="toggle-card">
           <input checked={form.inheritDefaultConfig} onChange={(event) => onChange({ ...form, inheritDefaultConfig: event.target.checked })} type="checkbox" />
-          <span className="switch-track" aria-hidden="true"><span /></span>
           <span className="toggle-copy">
             <strong>{t.inheritConfig}</strong>
             <small>{t.inheritConfigDesc}</small>
           </span>
+          <span className="switch-track" aria-hidden="true"><span /></span>
         </label>
         <p className="field-note">{t.profileNameNote}</p>
       </div>
