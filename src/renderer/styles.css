@@ -325,6 +325,34 @@ code {
   background: #ffffff;
 }
 
+.input-action-row,
+.path-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.input-action-row input {
+  min-width: 0;
+}
+
+.icon-button {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #d8dee8;
+  border-radius: 6px;
+  color: #334155;
+  background: #ffffff;
+}
+
+.icon-button:hover {
+  background: #f1f4f8;
+}
+
 .form input:focus {
   border-color: #93c5fd;
   box-shadow: 0 0 0 3px rgb(147 197 253 / 35%);
@@ -477,4 +505,9 @@ code {
   color: #667085;
   font-size: 12px;
   font-weight: 650;
+}
+
+.path-value code {
+  min-width: 0;
+  flex: 1;
 }

@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Folder,
+  FolderOpen,
   Play,
   Plus,
   RefreshCcw,
@@ -161,6 +162,16 @@ export function App() {
     await refresh();
   }
 
+  async function pickLauncherDirectory() {
+    const selectedDirectory = await window.codexProfileManager.pickLauncherDirectory();
+    if (!selectedDirectory) return;
+    setForm((current) => ({ ...current, launcherDirectory: selectedDirectory }));
+  }
+
+  async function revealPath(targetPath: string) {
+    await window.codexProfileManager.revealPath(targetPath);
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -249,6 +260,7 @@ export function App() {
               isTestingProvider={isTestingProvider}
               wizardStep={wizardStep}
               onChange={setForm}
+              onPickLauncherDirectory={() => void pickLauncherDirectory()}
               onTestProvider={() => void testProvider()}
             />
             <div className="wizard-actions">
@@ -289,9 +301,9 @@ export function App() {
           </div>
           {selectedProfile ? (
             <div className="profile-detail">
-              <PathRow icon={<Folder size={15} />} label="CODEX_HOME" value={selectedProfile.paths.codexHome} />
-              <PathRow icon={<Folder size={15} />} label="user-data-dir" value={selectedProfile.paths.userDataDir} />
-              <PathRow icon={<Folder size={15} />} label="Launcher" value={selectedProfile.paths.launcherPath} />
+              <PathRow icon={<Folder size={15} />} label="CODEX_HOME" onReveal={() => void revealPath(selectedProfile.paths.codexHome)} value={selectedProfile.paths.codexHome} />
+              <PathRow icon={<Folder size={15} />} label="user-data-dir" onReveal={() => void revealPath(selectedProfile.paths.userDataDir)} value={selectedProfile.paths.userDataDir} />
+              <PathRow icon={<Folder size={15} />} label="Launcher" onReveal={() => void revealPath(selectedProfile.paths.launcherPath)} value={selectedProfile.paths.launcherPath} />
               <PathRow label="Provider" value={`${selectedProfile.provider.displayName} (${selectedProfile.provider.wireApi})`} />
               <PathRow label="Base URL" value={selectedProfile.provider.baseUrl ?? "Official OpenAI"} />
               <PathRow label="Env key" value={selectedProfile.provider.envKeyName} />
@@ -325,6 +337,7 @@ function WizardBody({
   isTestingProvider,
   wizardStep,
   onChange,
+  onPickLauncherDirectory,
   onTestProvider
 }: {
   form: typeof DEFAULT_FORM;
@@ -332,6 +345,7 @@ function WizardBody({
   isTestingProvider: boolean;
   wizardStep: WizardStep;
   onChange: (nextForm: typeof DEFAULT_FORM) => void;
+  onPickLauncherDirectory: () => void;
   onTestProvider: () => void;
 }) {
   if (wizardStep === "profile") {
@@ -387,13 +401,18 @@ function WizardBody({
       <div className="form">
         <label>
           Launcher directory
-          <input
-            placeholder="Default: ~/Applications/Codex Profiles/"
-            value={form.launcherDirectory}
-            onChange={(event) => onChange({ ...form, launcherDirectory: event.target.value })}
-          />
+          <div className="input-action-row">
+            <input
+              placeholder="Default: ~/Applications/Codex Profiles/"
+              value={form.launcherDirectory}
+              onChange={(event) => onChange({ ...form, launcherDirectory: event.target.value })}
+            />
+            <button className="icon-button" onClick={onPickLauncherDirectory} title="Choose folder" type="button">
+              <FolderOpen size={15} />
+            </button>
+          </div>
         </label>
-        <p className="field-note">Leave empty to use the default launcher directory. Custom path selection UI will be added in the packaging phase.</p>
+        <p className="field-note">Leave empty to use the default launcher directory, or pick a folder for the generated launcher app.</p>
       </div>
     );
   }
@@ -436,11 +455,18 @@ function RuntimeBadge({ runtime }: { runtime?: ProfileRuntimeInfo }) {
   return <span className={`runtime-badge ${status}`}>{label}</span>;
 }
 
-function PathRow({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+function PathRow({ icon, label, onReveal, value }: { icon?: React.ReactNode; label: string; onReveal?: () => void; value: string }) {
   return (
     <div className="path-row">
       <span className="path-label">{icon}{label}</span>
-      <code>{value}</code>
+      <div className="path-value">
+        <code>{value}</code>
+        {onReveal ? (
+          <button className="icon-button" onClick={onReveal} title="Reveal in Finder" type="button">
+            <FolderOpen size={15} />
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getEnvironmentReport } from "./environment.js";
@@ -41,6 +41,17 @@ function createWindow(): void {
 
 function registerIpc(): void {
   ipcMain.handle("environment:get", () => getEnvironmentReport());
+  ipcMain.handle("dialog:pick-launcher-directory", async () => {
+    const result = await dialog.showOpenDialog({
+      title: "Choose Launcher Directory",
+      properties: ["openDirectory", "createDirectory"]
+    });
+    return result.canceled ? null : result.filePaths[0] ?? null;
+  });
+  ipcMain.handle("shell:reveal-path", async (_event, targetPath: string) => {
+    shell.showItemInFolder(targetPath);
+    return { ok: true };
+  });
   ipcMain.handle("profiles:list", () => listProfiles());
   ipcMain.handle("profiles:runtime", () => getRuntimeStatus());
   ipcMain.handle("provider:test", (_event, input: ProviderTestInput) => testProvider(input));

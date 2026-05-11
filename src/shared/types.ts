@@ -124,6 +124,8 @@ export interface LauncherResult {
 
 export interface CodexApi {
   getEnvironmentReport(): Promise<EnvironmentReport>;
+  pickLauncherDirectory(): Promise<string | null>;
+  revealPath(path: string): Promise<{ ok: true }>;
   listProfiles(): Promise<ManagedProfile[]>;
   getRuntimeStatus(): Promise<ProfileRuntimeInfo[]>;
   testProvider(input: ProviderTestInput): Promise<ProviderTestResult>;
