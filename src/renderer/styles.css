@@ -107,6 +107,20 @@ code {
   margin-bottom: 16px;
 }
 
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.sidebar-toggle input {
+  width: 14px;
+  height: 14px;
+}
+
 .profile-list {
   display: grid;
   gap: 8px;
@@ -157,6 +171,11 @@ code {
 .runtime-badge.error {
   color: #92400e;
   background: #fffbeb;
+}
+
+.runtime-badge.deleted {
+  color: #b91c1c;
+  background: #fee2e2;
 }
 
 .content {

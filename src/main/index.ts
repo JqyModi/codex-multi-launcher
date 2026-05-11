@@ -10,6 +10,7 @@ import {
   listConfigBackups,
   listProfiles,
   openProfile,
+  restoreProfile,
   restoreConfigBackup,
   updateProfile
 } from "./profile-service.js";
@@ -55,7 +56,7 @@ function registerIpc(): void {
     shell.showItemInFolder(targetPath);
     return { ok: true };
   });
-  ipcMain.handle("profiles:list", () => listProfiles());
+  ipcMain.handle("profiles:list", (_event, includeDeleted?: boolean) => listProfiles(includeDeleted));
   ipcMain.handle("profiles:backups", (_event, profileId: string) => listConfigBackups(profileId));
   ipcMain.handle("profiles:restore-backup", (_event, input: RestoreConfigBackupInput) => restoreConfigBackup(input));
   ipcMain.handle("profiles:runtime", () => getRuntimeStatus());
@@ -63,6 +64,7 @@ function registerIpc(): void {
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));
   ipcMain.handle("profiles:update", (_event, input: UpdateProfileInput) => updateProfile(input));
   ipcMain.handle("profiles:delete", (_event, profileId: string) => deleteProfile(profileId));
+  ipcMain.handle("profiles:restore", (_event, profileId: string) => restoreProfile(profileId));
   ipcMain.handle("profiles:generate-launcher", (_event, profileId: string) => generateProfileLauncher(profileId));
   ipcMain.handle("profiles:open", (_event, profileId: string) => openProfile(profileId));
 }

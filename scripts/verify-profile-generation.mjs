@@ -21,7 +21,7 @@ await fs.writeFile(
   { mode: 0o600 }
 );
 
-const { createProfile, listConfigBackups, listProfiles, restoreConfigBackup, updateProfile } = await import("../dist-electron/main/profile-service.js");
+const { createProfile, deleteProfile, listConfigBackups, listProfiles, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const { getApiKey } = await import("../dist-electron/main/secrets.js");
 
@@ -136,6 +136,16 @@ const restoreBackups = await listConfigBackups(result.profile.id);
 assert(restoredConfigRaw.includes('base_url = "https://proxy.example.com/v1"'), "restored config should contain original base URL");
 assert(!restoredConfigRaw.includes('base_url = "https://updated.example.com/v1"'), "restored config should remove updated base URL");
 assert(restoreBackups.some((backup) => backup.reason === "before restoring config backup"), "restore should create a pre-restore backup");
+
+await deleteProfile(result.profile.id);
+assert((await listProfiles()).length === 0, "soft-deleted profile should be hidden by default");
+const allProfilesAfterDelete = await listProfiles(true);
+assert(allProfilesAfterDelete.length === 1, "includeDeleted should return soft-deleted profile");
+assert(allProfilesAfterDelete[0].status === "deleted", "soft-deleted profile should be marked deleted");
+await restoreProfile(result.profile.id);
+const restoredProfiles = await listProfiles();
+assert(restoredProfiles.length === 1, "restored profile should be visible by default");
+assert(restoredProfiles[0].status === "active", "restored profile should be active");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 

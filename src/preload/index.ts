@@ -5,7 +5,7 @@ const api: CodexApi = {
   getEnvironmentReport: () => ipcRenderer.invoke("environment:get"),
   pickLauncherDirectory: () => ipcRenderer.invoke("dialog:pick-launcher-directory"),
   revealPath: (path: string) => ipcRenderer.invoke("shell:reveal-path", path),
-  listProfiles: () => ipcRenderer.invoke("profiles:list"),
+  listProfiles: (includeDeleted?: boolean) => ipcRenderer.invoke("profiles:list", includeDeleted),
   listConfigBackups: (profileId: string) => ipcRenderer.invoke("profiles:backups", profileId),
   restoreConfigBackup: (input) => ipcRenderer.invoke("profiles:restore-backup", input),
   getRuntimeStatus: () => ipcRenderer.invoke("profiles:runtime"),
@@ -13,6 +13,7 @@ const api: CodexApi = {
   createProfile: (input: CreateProfileInput) => ipcRenderer.invoke("profiles:create", input),
   updateProfile: (input) => ipcRenderer.invoke("profiles:update", input),
   deleteProfile: (profileId: string) => ipcRenderer.invoke("profiles:delete", profileId),
+  restoreProfile: (profileId: string) => ipcRenderer.invoke("profiles:restore", profileId),
   generateLauncher: (profileId: string) => ipcRenderer.invoke("profiles:generate-launcher", profileId),
   openProfile: (profileId: string) => ipcRenderer.invoke("profiles:open", profileId)
 };

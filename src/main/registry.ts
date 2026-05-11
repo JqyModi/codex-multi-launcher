@@ -18,9 +18,9 @@ export async function saveRegistry(registry: ProfileRegistry): Promise<void> {
   await writeJsonFile(appPaths.profilesFile, registry);
 }
 
-export async function listProfiles(): Promise<ManagedProfile[]> {
+export async function listProfiles(includeDeleted = false): Promise<ManagedProfile[]> {
   const registry = await loadRegistry();
-  return registry.profiles.filter((profile) => profile.status !== "deleted");
+  return includeDeleted ? registry.profiles : registry.profiles.filter((profile) => profile.status !== "deleted");
 }
 
 export async function findProfile(profileId: string): Promise<ManagedProfile | null> {
@@ -97,6 +97,18 @@ export async function softDeleteProfile(profileId: string): Promise<void> {
   }
 
   profile.status = "deleted";
+  profile.timestamps.updatedAt = new Date().toISOString();
+  await saveRegistry(registry);
+}
+
+export async function restoreProfileRecord(profileId: string): Promise<void> {
+  const registry = await loadRegistry();
+  const profile = registry.profiles.find((item) => item.id === profileId);
+  if (!profile) {
+    throw new Error(`Profile not found: ${profileId}`);
+  }
+
+  profile.status = "active";
   profile.timestamps.updatedAt = new Date().toISOString();
   await saveRegistry(registry);
 }

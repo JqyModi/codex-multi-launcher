@@ -162,7 +162,7 @@ export interface CodexApi {
   getEnvironmentReport(): Promise<EnvironmentReport>;
   pickLauncherDirectory(): Promise<string | null>;
   revealPath(path: string): Promise<{ ok: true }>;
-  listProfiles(): Promise<ManagedProfile[]>;
+  listProfiles(includeDeleted?: boolean): Promise<ManagedProfile[]>;
   listConfigBackups(profileId: string): Promise<ConfigBackupInfo[]>;
   getRuntimeStatus(): Promise<ProfileRuntimeInfo[]>;
   testProvider(input: ProviderTestInput): Promise<ProviderTestResult>;
@@ -170,6 +170,7 @@ export interface CodexApi {
   updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult>;
   restoreConfigBackup(input: RestoreConfigBackupInput): Promise<RestoreConfigBackupResult>;
   deleteProfile(profileId: string): Promise<{ ok: true }>;
+  restoreProfile(profileId: string): Promise<{ ok: true }>;
   generateLauncher(profileId: string): Promise<LauncherResult>;
   openProfile(profileId: string): Promise<{ pid: number | null }>;
 }

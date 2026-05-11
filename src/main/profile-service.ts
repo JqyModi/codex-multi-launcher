@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { codexExecutablePath } from "./paths.js";
 import { listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexConfig } from "./codex-config.js";
-import { createProfileRecord, findProfile, listProfiles, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
+import { createProfileRecord, findProfile, listProfiles, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
 import { getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
@@ -70,6 +70,11 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
 
 export async function deleteProfile(profileId: string): Promise<{ ok: true }> {
   await softDeleteProfile(profileId);
+  return { ok: true };
+}
+
+export async function restoreProfile(profileId: string): Promise<{ ok: true }> {
+  await restoreProfileRecord(profileId);
   return { ok: true };
 }
 

@@ -46,6 +46,7 @@ export function App() {
   const [environment, setEnvironment] = useState<EnvironmentReport | null>(null);
   const [profiles, setProfiles] = useState<ManagedProfile[]>([]);
   const [runtimeStatuses, setRuntimeStatuses] = useState<ProfileRuntimeInfo[]>([]);
+  const [showDeletedProfiles, setShowDeletedProfiles] = useState(false);
   const [configBackups, setConfigBackups] = useState<ConfigBackupInfo[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [wizardStep, setWizardStep] = useState<WizardStep>("profile");
@@ -74,7 +75,7 @@ export function App() {
   async function refresh() {
     const [environmentReport, profileList] = await Promise.all([
       window.codexProfileManager.getEnvironmentReport(),
-      window.codexProfileManager.listProfiles()
+      window.codexProfileManager.listProfiles(showDeletedProfiles)
     ]);
     const runtime = await window.codexProfileManager.getRuntimeStatus();
     setEnvironment(environmentReport);
@@ -85,7 +86,7 @@ export function App() {
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [showDeletedProfiles]);
 
   useEffect(() => {
     if (!selectedProfile) return;
@@ -184,6 +185,13 @@ export function App() {
     await refresh();
   }
 
+  async function restoreSelectedProfile() {
+    if (!selectedProfile) return;
+    await window.codexProfileManager.restoreProfile(selectedProfile.id);
+    setMessage(`Restored ${selectedProfile.name}.`);
+    await refresh();
+  }
+
   async function saveSelectedProfile() {
     if (!selectedProfile) return;
     setIsUpdatingProfile(true);
@@ -249,6 +257,10 @@ export function App() {
           <Plus size={16} />
           Create Profile
         </button>
+        <label className="sidebar-toggle">
+          <input checked={showDeletedProfiles} onChange={(event) => setShowDeletedProfiles(event.target.checked)} type="checkbox" />
+          Show removed
+        </label>
 
         <div className="profile-list">
           {profiles.length === 0 ? (
@@ -263,6 +275,7 @@ export function App() {
               >
                 <span className="profile-name">{profile.name}</span>
                 <span className="profile-meta">{profile.provider.displayName} / {profile.provider.model}</span>
+                {profile.status === "deleted" ? <span className="runtime-badge deleted">Removed</span> : null}
                 <RuntimeBadge runtime={runtimeStatuses.find((item) => item.profileId === profile.id)} />
               </button>
             ))
@@ -346,7 +359,17 @@ export function App() {
         <section className="panel detail-panel">
           <div className="panel-heading">
             <h3>Selected Profile</h3>
-            {selectedProfile ? (
+            {selectedProfile?.status === "deleted" ? (
+              <div className="detail-actions">
+                <button className="button secondary" onClick={() => void revealPath(selectedProfile.paths.codexHome)} type="button">
+                  <FolderOpen size={15} />
+                  Reveal Files
+                </button>
+                <button className="button primary" onClick={() => void restoreSelectedProfile()} type="button">
+                  Restore
+                </button>
+              </div>
+            ) : selectedProfile ? (
               <div className="detail-actions">
                 <button className="button danger" onClick={() => void deleteSelectedProfile()} type="button">
                   <Trash2 size={15} />
