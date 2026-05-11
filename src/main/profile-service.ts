@@ -1,16 +1,20 @@
 import { spawn } from "node:child_process";
 import { codexExecutablePath } from "./paths.js";
-import { writeCodexConfig } from "./codex-config.js";
+import { listConfigBackups as listProfileConfigBackups, writeCodexConfig } from "./codex-config.js";
 import { createProfileRecord, findProfile, listProfiles, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
 import { getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
-import type { CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileRuntimeInfo, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
+import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileRuntimeInfo, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
 export { listProfiles };
 
 export async function getRuntimeStatus(): Promise<ProfileRuntimeInfo[]> {
   return inspectRuntimeStatus(await listProfiles());
+}
+
+export async function listConfigBackups(profileId: string): Promise<ConfigBackupInfo[]> {
+  return listProfileConfigBackups(await mustFindProfile(profileId));
 }
 
 export async function createProfile(input: CreateProfileInput): Promise<CreateProfileResult> {

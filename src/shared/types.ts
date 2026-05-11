@@ -76,6 +76,13 @@ export interface ProfileRuntimeInfo {
   detail: string;
 }
 
+export interface ConfigBackupInfo {
+  profileId: string;
+  backupPath: string;
+  createdAt: string;
+  reason: string;
+}
+
 export interface ProfileRegistry {
   schemaVersion: 1;
   profiles: ManagedProfile[];
@@ -145,6 +152,7 @@ export interface CodexApi {
   pickLauncherDirectory(): Promise<string | null>;
   revealPath(path: string): Promise<{ ok: true }>;
   listProfiles(): Promise<ManagedProfile[]>;
+  listConfigBackups(profileId: string): Promise<ConfigBackupInfo[]>;
   getRuntimeStatus(): Promise<ProfileRuntimeInfo[]>;
   testProvider(input: ProviderTestInput): Promise<ProviderTestResult>;
   createProfile(input: CreateProfileInput): Promise<CreateProfileResult>;

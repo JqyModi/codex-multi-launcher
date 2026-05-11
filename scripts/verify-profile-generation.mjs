@@ -21,7 +21,7 @@ await fs.writeFile(
   { mode: 0o600 }
 );
 
-const { createProfile, listProfiles, updateProfile } = await import("../dist-electron/main/profile-service.js");
+const { createProfile, listConfigBackups, listProfiles, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const { getApiKey } = await import("../dist-electron/main/secrets.js");
 
@@ -109,6 +109,7 @@ const [updatedConfigRaw, updatedLauncherRaw, updatedSecretsRaw] = await Promise.
   fs.readFile(appPaths.secretsFile, "utf8")
 ]);
 const updatedStoredKey = await getApiKey(result.profile.id, result.profile.provider.id);
+const backups = await listConfigBackups(result.profile.id);
 
 assert(updatedConfigRaw.includes('name = "Updated Proxy"'), "updated config should contain new provider name");
 assert(updatedConfigRaw.includes('base_url = "https://updated.example.com/v1"'), "updated config should contain new base URL");
@@ -121,6 +122,9 @@ assert(updatedStoredKey === updatedKey, "updated API key should be retrievable f
 assert(!updatedConfigRaw.includes(updatedKey), "updated config must not contain plaintext API key");
 assert(!updatedLauncherRaw.includes(updatedKey), "updated launcher must not contain plaintext API key");
 assert(!updatedSecretsRaw.includes(updatedKey), "updated encrypted secrets must not contain plaintext API key");
+assert(backups.length >= 1, "profile update should create at least one config backup");
+assert(backups[0].reason === "before profile manager config write", "backup should record config write reason");
+assert(await fileExists(backups[0].backupPath), "backup config file should exist");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 
@@ -129,5 +133,14 @@ console.log("Profile generation verification passed.");
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
+  }
+}
+
+async function fileExists(targetPath) {
+  try {
+    await fs.access(targetPath);
+    return true;
+  } catch {
+    return false;
   }
 }

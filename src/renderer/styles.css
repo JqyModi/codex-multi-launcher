@@ -315,6 +315,43 @@ code {
   padding-top: 12px;
 }
 
+.backup-list {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 12px;
+}
+
+.backup-list h4 {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.backup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.backup-row strong {
+  display: block;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.backup-row p {
+  margin: 0;
+  color: #667085;
+  font-size: 12px;
+  line-height: 17px;
+}
+
 .edit-box h4 {
   margin: 0;
   font-size: 13px;

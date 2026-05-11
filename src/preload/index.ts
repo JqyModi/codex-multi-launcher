@@ -6,6 +6,7 @@ const api: CodexApi = {
   pickLauncherDirectory: () => ipcRenderer.invoke("dialog:pick-launcher-directory"),
   revealPath: (path: string) => ipcRenderer.invoke("shell:reveal-path", path),
   listProfiles: () => ipcRenderer.invoke("profiles:list"),
+  listConfigBackups: (profileId: string) => ipcRenderer.invoke("profiles:backups", profileId),
   getRuntimeStatus: () => ipcRenderer.invoke("profiles:runtime"),
   testProvider: (input) => ipcRenderer.invoke("provider:test", input),
   createProfile: (input: CreateProfileInput) => ipcRenderer.invoke("profiles:create", input),

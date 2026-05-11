@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { ensureDir, pathExists } from "./fs-utils.js";
 import { getDefaultCodexHome } from "./paths.js";
-import type { ManagedProfile } from "../shared/types.js";
+import type { ConfigBackupInfo, ManagedProfile } from "../shared/types.js";
 
 function tomlString(value: string): string {
   return JSON.stringify(value);
@@ -67,6 +67,40 @@ export async function backupCodexConfig(profile: ManagedProfile, reason: string)
     { mode: 0o600 }
   );
   return backupPath;
+}
+
+export async function listConfigBackups(profile: ManagedProfile): Promise<ConfigBackupInfo[]> {
+  const backupRoot = path.join(profile.paths.codexHome, "profile-manager-backups");
+  if (!(await pathExists(backupRoot))) {
+    return [];
+  }
+
+  const entries = await fs.readdir(backupRoot, { withFileTypes: true });
+  const backups = await Promise.all(entries
+    .filter((entry) => entry.isDirectory())
+    .map(async (entry) => {
+      const backupDir = path.join(backupRoot, entry.name);
+      const manifestPath = path.join(backupDir, "manifest.json");
+      const backupPath = path.join(backupDir, "config.toml");
+      try {
+        const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as { createdAt?: string; reason?: string };
+        return {
+          profileId: profile.id,
+          backupPath,
+          createdAt: manifest.createdAt ?? entry.name,
+          reason: manifest.reason ?? "config backup"
+        };
+      } catch {
+        return {
+          profileId: profile.id,
+          backupPath,
+          createdAt: entry.name,
+          reason: "config backup"
+        };
+      }
+    }));
+
+  return backups.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function writeCodexConfig(profile: ManagedProfile, options: { inheritDefaultConfig?: boolean; preserveExistingConfig?: boolean } = {}): Promise<string> {

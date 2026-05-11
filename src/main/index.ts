@@ -7,6 +7,7 @@ import {
   deleteProfile,
   generateProfileLauncher,
   getRuntimeStatus,
+  listConfigBackups,
   listProfiles,
   openProfile,
   updateProfile
@@ -54,6 +55,7 @@ function registerIpc(): void {
     return { ok: true };
   });
   ipcMain.handle("profiles:list", () => listProfiles());
+  ipcMain.handle("profiles:backups", (_event, profileId: string) => listConfigBackups(profileId));
   ipcMain.handle("profiles:runtime", () => getRuntimeStatus());
   ipcMain.handle("provider:test", (_event, input: ProviderTestInput) => testProvider(input));
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));

@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   CreateProfileInput,
   EnvironmentReport,
+  ConfigBackupInfo,
   ManagedProfile,
   ProfileRuntimeInfo,
   ProviderTestResult
@@ -45,6 +46,7 @@ export function App() {
   const [environment, setEnvironment] = useState<EnvironmentReport | null>(null);
   const [profiles, setProfiles] = useState<ManagedProfile[]>([]);
   const [runtimeStatuses, setRuntimeStatuses] = useState<ProfileRuntimeInfo[]>([]);
+  const [configBackups, setConfigBackups] = useState<ConfigBackupInfo[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [wizardStep, setWizardStep] = useState<WizardStep>("profile");
   const [form, setForm] = useState(DEFAULT_FORM);
@@ -93,6 +95,7 @@ export function App() {
       model: selectedProfile.provider.model,
       apiKey: ""
     });
+    void window.codexProfileManager.listConfigBackups(selectedProfile.id).then(setConfigBackups);
   }, [selectedProfile]);
 
   function nextStep() {
@@ -354,6 +357,24 @@ export function App() {
               <PathRow label="Env key" value={selectedProfile.provider.envKeyName} />
               <PathRow label="Last launched" value={selectedProfile.launch.lastLaunchedAt ? new Date(selectedProfile.launch.lastLaunchedAt).toLocaleString() : "Never"} />
               <PathRow label="Runtime" value={runtimeStatuses.find((item) => item.profileId === selectedProfile.id)?.detail ?? "Not checked"} />
+              <div className="backup-list">
+                <h4>Recent Config Backups</h4>
+                {configBackups.length === 0 ? (
+                  <p className="empty-text">No snapshots yet. A snapshot is created before config changes.</p>
+                ) : (
+                  configBackups.slice(0, 3).map((backup) => (
+                    <div className="backup-row" key={backup.backupPath}>
+                      <div>
+                        <strong>{new Date(backup.createdAt).toLocaleString()}</strong>
+                        <p>{backup.reason}</p>
+                      </div>
+                      <button className="icon-button" onClick={() => void revealPath(backup.backupPath)} title="Reveal backup" type="button">
+                        <FolderOpen size={15} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
               <div className="edit-box">
                 <h4>Edit Provider</h4>
                 <label>
