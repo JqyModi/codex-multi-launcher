@@ -100,3 +100,17 @@ export async function softDeleteProfile(profileId: string): Promise<void> {
   profile.timestamps.updatedAt = new Date().toISOString();
   await saveRegistry(registry);
 }
+
+export async function updateProfileLaunchMetadata(profileId: string, pid: number | null): Promise<void> {
+  const registry = await loadRegistry();
+  const profile = registry.profiles.find((item) => item.id === profileId);
+  if (!profile) {
+    throw new Error(`Profile not found: ${profileId}`);
+  }
+
+  profile.launch.lastLaunchedAt = new Date().toISOString();
+  profile.launch.lastKnownPid = pid;
+  profile.launch.lastKnownUserDataDir = profile.paths.userDataDir;
+  profile.timestamps.updatedAt = new Date().toISOString();
+  await saveRegistry(registry);
+}

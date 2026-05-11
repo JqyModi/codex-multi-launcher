@@ -309,6 +309,7 @@ export function App() {
               <PathRow label="Provider" value={`${selectedProfile.provider.displayName} (${selectedProfile.provider.wireApi})`} />
               <PathRow label="Base URL" value={selectedProfile.provider.baseUrl ?? "Official OpenAI"} />
               <PathRow label="Env key" value={selectedProfile.provider.envKeyName} />
+              <PathRow label="Last launched" value={selectedProfile.launch.lastLaunchedAt ? new Date(selectedProfile.launch.lastLaunchedAt).toLocaleString() : "Never"} />
               <PathRow label="Runtime" value={runtimeStatuses.find((item) => item.profileId === selectedProfile.id)?.detail ?? "Not checked"} />
             </div>
           ) : (

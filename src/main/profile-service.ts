@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { codexExecutablePath } from "./paths.js";
 import { writeCodexConfig } from "./codex-config.js";
-import { createProfileRecord, findProfile, listProfiles, softDeleteProfile } from "./registry.js";
+import { createProfileRecord, findProfile, listProfiles, softDeleteProfile, updateProfileLaunchMetadata } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
 import { getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
@@ -56,6 +56,7 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
   });
 
   child.unref();
+  await updateProfileLaunchMetadata(profile.id, child.pid ?? null);
   return { pid: child.pid ?? null };
 }
 
