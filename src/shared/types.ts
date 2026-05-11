@@ -83,6 +83,26 @@ export interface ConfigBackupInfo {
   reason: string;
 }
 
+export interface DiagnosticsReport {
+  generatedAt: string;
+  environment: EnvironmentReport;
+  profiles: Array<{
+    id: string;
+    name: string;
+    status: ProfileStatus;
+    provider: {
+      type: ProviderType;
+      displayName: string;
+      baseUrl?: string;
+      model: string;
+      envKeyName: string;
+    };
+    paths: ProfilePaths;
+    runtime?: ProfileRuntimeInfo;
+    backupCount: number;
+  }>;
+}
+
 export interface ProfileRegistry {
   schemaVersion: 1;
   profiles: ManagedProfile[];
@@ -160,6 +180,7 @@ export interface LauncherResult {
 
 export interface CodexApi {
   getEnvironmentReport(): Promise<EnvironmentReport>;
+  getDiagnosticsReport(): Promise<DiagnosticsReport>;
   pickLauncherDirectory(): Promise<string | null>;
   revealPath(path: string): Promise<{ ok: true }>;
   listProfiles(includeDeleted?: boolean): Promise<ManagedProfile[]>;

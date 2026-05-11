@@ -3,6 +3,7 @@ import type { CodexApi, CreateProfileInput } from "../shared/types.js";
 
 const api: CodexApi = {
   getEnvironmentReport: () => ipcRenderer.invoke("environment:get"),
+  getDiagnosticsReport: () => ipcRenderer.invoke("diagnostics:get"),
   pickLauncherDirectory: () => ipcRenderer.invoke("dialog:pick-launcher-directory"),
   revealPath: (path: string) => ipcRenderer.invoke("shell:reveal-path", path),
   listProfiles: (includeDeleted?: boolean) => ipcRenderer.invoke("profiles:list", includeDeleted),

@@ -24,6 +24,7 @@ await fs.writeFile(
 const { createProfile, deleteProfile, listConfigBackups, listProfiles, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const { getApiKey } = await import("../dist-electron/main/secrets.js");
+const { getDiagnosticsReport } = await import("../dist-electron/main/diagnostics.js");
 
 const fakeKey = "sk-test-verify-profile-generation";
 const result = await createProfile({
@@ -146,6 +147,13 @@ await restoreProfile(result.profile.id);
 const restoredProfiles = await listProfiles();
 assert(restoredProfiles.length === 1, "restored profile should be visible by default");
 assert(restoredProfiles[0].status === "active", "restored profile should be active");
+
+const diagnostics = await getDiagnosticsReport();
+const diagnosticsRaw = JSON.stringify(diagnostics);
+assert(diagnostics.profiles.length === 1, "diagnostics should include managed profile");
+assert(diagnostics.profiles[0].backupCount >= 1, "diagnostics should include backup count");
+assert(!diagnosticsRaw.includes(fakeKey), "diagnostics must not contain original plaintext API key");
+assert(!diagnosticsRaw.includes(updatedKey), "diagnostics must not contain updated plaintext API key");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 

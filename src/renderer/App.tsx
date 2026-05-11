@@ -228,6 +228,12 @@ export function App() {
     await window.codexProfileManager.revealPath(targetPath);
   }
 
+  async function copyDiagnosticsReport() {
+    const report = await window.codexProfileManager.getDiagnosticsReport();
+    await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+    setMessage("Diagnostics report copied. API keys are not included.");
+  }
+
   async function restoreBackup(backup: ConfigBackupInfo) {
     const confirmed = window.confirm(`Restore this config backup from ${new Date(backup.createdAt).toLocaleString()}? Current config.toml will be backed up first.`);
     if (!confirmed) return;
@@ -292,6 +298,9 @@ export function App() {
           <button className="button secondary" onClick={() => void refresh()} type="button">
             <RefreshCcw size={15} />
             Refresh
+          </button>
+          <button className="button secondary" onClick={() => void copyDiagnosticsReport()} type="button">
+            Copy Diagnostics
           </button>
         </header>
 

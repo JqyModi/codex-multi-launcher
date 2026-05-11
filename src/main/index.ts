@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getEnvironmentReport } from "./environment.js";
+import { getDiagnosticsReport } from "./diagnostics.js";
 import {
   createProfile,
   deleteProfile,
@@ -45,6 +46,7 @@ function createWindow(): void {
 
 function registerIpc(): void {
   ipcMain.handle("environment:get", () => getEnvironmentReport());
+  ipcMain.handle("diagnostics:get", () => getDiagnosticsReport());
   ipcMain.handle("dialog:pick-launcher-directory", async () => {
     const result = await dialog.showOpenDialog({
       title: "Choose Launcher Directory",
