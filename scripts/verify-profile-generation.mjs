@@ -28,13 +28,22 @@ assert(profiles.length === 1, "expected one profile in registry");
 assert(result.profile.id === "e2e-sandbox", "expected stable slug profile id");
 
 const configPath = path.join(result.profile.paths.codexHome, "config.toml");
+const launcherContents = path.join(result.profile.paths.launcherPath, "Contents");
+const launcherInfoPlist = path.join(launcherContents, "Info.plist");
+const launcherMacosDir = path.join(launcherContents, "MacOS");
+const launcherResourcesDir = path.join(launcherContents, "Resources");
 const launcherScript = path.join(result.profile.paths.launcherPath, "Contents", "MacOS", "launcher");
 
-const [registryRaw, secretsRaw, configRaw, launcherRaw] = await Promise.all([
+const [registryRaw, secretsRaw, configRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat] = await Promise.all([
   fs.readFile(appPaths.profilesFile, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8"),
   fs.readFile(configPath, "utf8"),
-  fs.readFile(launcherScript, "utf8")
+  fs.readFile(launcherInfoPlist, "utf8"),
+  fs.readFile(launcherScript, "utf8"),
+  fs.stat(launcherScript),
+  fs.stat(launcherContents),
+  fs.stat(launcherMacosDir),
+  fs.stat(launcherResourcesDir)
 ]);
 
 assert(registryRaw.includes("E2E Sandbox"), "registry should contain profile name");
@@ -46,6 +55,19 @@ assert(!launcherRaw.includes(fakeKey), "launcher must not contain plaintext API 
 assert(!secretsRaw.includes(fakeKey), "encrypted secrets file must not contain plaintext API key");
 assert(launcherRaw.includes("CODEX_HOME="), "launcher should set CODEX_HOME");
 assert(launcherRaw.includes("--user-data-dir="), "launcher should pass user-data-dir");
+assert(launcherContentsStat.isDirectory(), "launcher bundle should contain Contents directory");
+assert(launcherMacosStat.isDirectory(), "launcher bundle should contain Contents/MacOS directory");
+assert(launcherResourcesStat.isDirectory(), "launcher bundle should contain Contents/Resources directory");
+assert((launcherStat.mode & 0o111) !== 0, "launcher script should be executable");
+assert(launcherPlistRaw.includes("<key>CFBundleDisplayName</key>"), "Info.plist should define display name");
+assert(launcherPlistRaw.includes("<string>E2E Sandbox</string>"), "Info.plist should contain profile name");
+assert(launcherPlistRaw.includes("<key>CFBundleExecutable</key>"), "Info.plist should define executable");
+assert(launcherPlistRaw.includes("<string>launcher</string>"), "Info.plist should use launcher executable");
+assert(launcherPlistRaw.includes("local.codexprofilemanager.e2e-sandbox"), "Info.plist should use profile bundle id");
+assert(launcherRaw.startsWith("#!/bin/zsh"), "launcher should be a zsh script");
+assert(launcherRaw.includes("set -euo pipefail"), "launcher should use strict shell mode");
+assert(launcherRaw.includes(appPaths.masterKeyFile), "launcher should reference encrypted secret master key");
+assert(launcherRaw.includes(appPaths.secretsFile), "launcher should reference encrypted secrets file");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 
