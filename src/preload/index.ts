@@ -11,6 +11,7 @@ const api: CodexApi = {
   restoreConfigBackup: (input) => ipcRenderer.invoke("profiles:restore-backup", input),
   getRuntimeStatus: () => ipcRenderer.invoke("profiles:runtime"),
   testProvider: (input) => ipcRenderer.invoke("provider:test", input),
+  testProfileProvider: (input) => ipcRenderer.invoke("profiles:test-provider", input),
   createProfile: (input: CreateProfileInput) => ipcRenderer.invoke("profiles:create", input),
   updateProfile: (input) => ipcRenderer.invoke("profiles:update", input),
   deleteProfile: (profileId: string) => ipcRenderer.invoke("profiles:delete", profileId),

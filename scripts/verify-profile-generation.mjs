@@ -143,6 +143,26 @@ assert(backups.length >= 1, "profile update should create at least one config ba
 assert(backups[0].reason === "before profile manager config write", "backup should record config write reason");
 assert(await fileExists(backups[0].backupPath), "backup config file should exist");
 
+await updateProfile({
+  profileId: result.profile.id,
+  provider: {
+    displayName: "Updated Proxy",
+    baseUrl: "https://updated.example.com/v1",
+    model: "gpt-5.5",
+    reasoningEffort: "xhigh"
+  }
+});
+
+const [modelOnlyConfigRaw, modelOnlyAuthRaw] = await Promise.all([
+  fs.readFile(configPath, "utf8"),
+  fs.readFile(authPath, "utf8")
+]);
+
+assert(modelOnlyConfigRaw.includes('model = "gpt-5.5"'), "model-only update should write changed model to config");
+assert(modelOnlyConfigRaw.includes('model_reasoning_effort = "xhigh"'), "model-only update should write changed reasoning effort to config");
+assert(!modelOnlyConfigRaw.includes('model = "gpt-5.4"'), "model-only update should remove previous managed model");
+assert(JSON.parse(modelOnlyAuthRaw).OPENAI_API_KEY === updatedKey, "model-only update should keep existing auth API key");
+
 await restoreConfigBackup({
   profileId: result.profile.id,
   backupPath: backups[0].backupPath

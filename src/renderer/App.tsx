@@ -173,25 +173,15 @@ export function App() {
 
   async function testEditProvider() {
     if (!selectedProfile) return;
-    if (!editForm.apiKey) {
-      setEditProviderTest({
-        status: "unknown_error",
-        ok: false,
-        summary: "API key required for test",
-        details: "Enter a new API key to test edited provider settings. Leave it empty only when saving without changing the key.",
-        testedModelsEndpoint: false,
-        testedResponsesEndpoint: false
-      });
-      return;
-    }
 
     setIsTestingEditProvider(true);
     setEditProviderTest(null);
 
     try {
-      const result = await window.codexProfileManager.testProvider({
+      const result = await window.codexProfileManager.testProfileProvider({
+        profileId: selectedProfile.id,
         baseUrl: editForm.baseUrl,
-        apiKey: editForm.apiKey,
+        apiKey: editForm.apiKey || undefined,
         model: editForm.model
       });
       setEditProviderTest(result);
