@@ -54,7 +54,9 @@ export function App() {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isTestingProvider, setIsTestingProvider] = useState(false);
+  const [isTestingEditProvider, setIsTestingEditProvider] = useState(false);
   const [providerTest, setProviderTest] = useState<ProviderTestResult | null>(null);
+  const [editProviderTest, setEditProviderTest] = useState<ProviderTestResult | null>(null);
   const [editForm, setEditForm] = useState({
     providerName: "",
     baseUrl: "",
@@ -96,6 +98,7 @@ export function App() {
       model: selectedProfile.provider.model,
       apiKey: ""
     });
+    setEditProviderTest(null);
     void window.codexProfileManager.listConfigBackups(selectedProfile.id).then(setConfigBackups);
   }, [selectedProfile]);
 
@@ -164,6 +167,44 @@ export function App() {
       });
     } finally {
       setIsTestingProvider(false);
+    }
+  }
+
+  async function testEditProvider() {
+    if (!selectedProfile) return;
+    if (!editForm.apiKey) {
+      setEditProviderTest({
+        status: "unknown_error",
+        ok: false,
+        summary: "API key required for test",
+        details: "Enter a new API key to test edited provider settings. Leave it empty only when saving without changing the key.",
+        testedModelsEndpoint: false,
+        testedResponsesEndpoint: false
+      });
+      return;
+    }
+
+    setIsTestingEditProvider(true);
+    setEditProviderTest(null);
+
+    try {
+      const result = await window.codexProfileManager.testProvider({
+        baseUrl: editForm.baseUrl,
+        apiKey: editForm.apiKey,
+        model: editForm.model
+      });
+      setEditProviderTest(result);
+    } catch (error) {
+      setEditProviderTest({
+        status: "unknown_error",
+        ok: false,
+        summary: "Provider test failed",
+        details: error instanceof Error ? error.message : "Unknown provider test error.",
+        testedModelsEndpoint: false,
+        testedResponsesEndpoint: false
+      });
+    } finally {
+      setIsTestingEditProvider(false);
     }
   }
 
@@ -440,9 +481,16 @@ export function App() {
                   New API key
                   <input placeholder="Leave empty to keep current key" type="password" value={editForm.apiKey} onChange={(event) => setEditForm({ ...editForm, apiKey: event.target.value })} />
                 </label>
-                <button className="button secondary" disabled={isUpdatingProfile || !editForm.providerName || !editForm.baseUrl || !editForm.model} onClick={() => void saveSelectedProfile()} type="button">
-                  {isUpdatingProfile ? "Saving..." : "Save Provider"}
-                </button>
+                <div className="button-row">
+                  <button className="button secondary" disabled={isTestingEditProvider || !editForm.baseUrl || !editForm.model} onClick={() => void testEditProvider()} type="button">
+                    <TestTube2 size={15} />
+                    {isTestingEditProvider ? "Testing..." : "Test"}
+                  </button>
+                  <button className="button secondary" disabled={isUpdatingProfile || !editForm.providerName || !editForm.baseUrl || !editForm.model} onClick={() => void saveSelectedProfile()} type="button">
+                    {isUpdatingProfile ? "Saving..." : "Save Provider"}
+                  </button>
+                </div>
+                <ProviderTestBox providerTest={editProviderTest} />
               </div>
             </div>
           ) : (
