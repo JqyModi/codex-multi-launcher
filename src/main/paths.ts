@@ -6,7 +6,7 @@ export const APP_NAME = "Codex Profile Manager";
 export const DEFAULT_CODEX_APP_PATH = "/Applications/Codex.app";
 
 export function getAppPaths(): AppPaths {
-  const home = os.homedir();
+  const home = process.env.CODEX_PROFILE_MANAGER_HOME_OVERRIDE || os.homedir();
   const appDataDir = path.join(home, "Library", "Application Support", APP_NAME);
 
   return {
