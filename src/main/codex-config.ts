@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ensureDir, pathExists } from "./fs-utils.js";
+import { getDefaultCodexHome } from "./paths.js";
 import type { ManagedProfile } from "../shared/types.js";
 
 function tomlString(value: string): string {
@@ -29,6 +30,17 @@ function renderConfig(profile: ManagedProfile): string {
   return `${lines.join("\n")}`;
 }
 
+function renderManagedConfig(profile: ManagedProfile): string {
+  return [
+    "",
+    "# --- Codex Profile Manager managed settings ---",
+    "# These settings are appended so this profile can override inherited defaults.",
+    renderConfig(profile).trimEnd(),
+    "# --- End Codex Profile Manager managed settings ---",
+    ""
+  ].join("\n");
+}
+
 export async function backupCodexConfig(profile: ManagedProfile, reason: string): Promise<string | null> {
   const configPath = path.join(profile.paths.codexHome, "config.toml");
   if (!(await pathExists(configPath))) {
@@ -48,10 +60,18 @@ export async function backupCodexConfig(profile: ManagedProfile, reason: string)
   return backupPath;
 }
 
-export async function writeCodexConfig(profile: ManagedProfile): Promise<string> {
+export async function writeCodexConfig(profile: ManagedProfile, options: { inheritDefaultConfig?: boolean } = {}): Promise<string> {
   await ensureDir(profile.paths.codexHome);
   await backupCodexConfig(profile, "before profile manager config write");
   const configPath = path.join(profile.paths.codexHome, "config.toml");
+  const defaultConfigPath = path.join(getDefaultCodexHome(), "config.toml");
+
+  if (options.inheritDefaultConfig && await pathExists(defaultConfigPath)) {
+    const inheritedConfig = await fs.readFile(defaultConfigPath, "utf8");
+    await fs.writeFile(configPath, `${inheritedConfig.trimEnd()}${renderManagedConfig(profile)}`, { mode: 0o600 });
+    return configPath;
+  }
+
   await fs.writeFile(configPath, renderConfig(profile), { mode: 0o600 });
   return configPath;
 }

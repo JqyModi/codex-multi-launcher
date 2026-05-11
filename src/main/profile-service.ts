@@ -22,7 +22,7 @@ export async function createProfile(input: CreateProfileInput): Promise<CreatePr
     secretType: "api_key",
     value: input.provider.apiKey
   });
-  const configPath = await writeCodexConfig(profile);
+  const configPath = await writeCodexConfig(profile, { inheritDefaultConfig: input.inheritDefaultConfig });
   const launcher = await generateLauncher(profile);
 
   return {

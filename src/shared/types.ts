@@ -84,6 +84,7 @@ export interface ProfileRegistry {
 export interface CreateProfileInput {
   name: string;
   codexAppPath?: string;
+  inheritDefaultConfig?: boolean;
   launcherDirectory?: string;
   provider: {
     type: ProviderType;

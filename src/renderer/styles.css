@@ -308,6 +308,17 @@ code {
   font-weight: 600;
 }
 
+.form .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-label input {
+  width: 14px;
+  height: 14px;
+}
+
 .field-note {
   margin: 0;
   color: #667085;

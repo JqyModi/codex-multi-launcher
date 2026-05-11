@@ -4,6 +4,22 @@ import path from "node:path";
 
 const testRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-manager-"));
 process.env.CODEX_PROFILE_MANAGER_HOME_OVERRIDE = testRoot;
+await fs.mkdir(path.join(testRoot, ".codex"), { recursive: true });
+await fs.writeFile(
+  path.join(testRoot, ".codex", "config.toml"),
+  [
+    'model = "gpt-5.5"',
+    "",
+    "[mcp_servers.example]",
+    'command = "node"',
+    'args = ["server.js"]',
+    "",
+    "[features]",
+    "multi_agent = true",
+    ""
+  ].join("\n"),
+  { mode: 0o600 }
+);
 
 const { createProfile, listProfiles } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
@@ -11,6 +27,7 @@ const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const fakeKey = "sk-test-verify-profile-generation";
 const result = await createProfile({
   name: "E2E Sandbox",
+  inheritDefaultConfig: true,
   provider: {
     type: "third_party_responses",
     displayName: "E2E Proxy",
@@ -50,6 +67,10 @@ assert(registryRaw.includes("E2E Sandbox"), "registry should contain profile nam
 assert(configRaw.includes('model_provider = "proxy"'), "config should select proxy provider");
 assert(configRaw.includes('wire_api = "responses"'), "config should use responses API");
 assert(configRaw.includes("CODEX_PROFILE_E2E_SANDBOX_API_KEY"), "config should reference generated env key");
+assert(configRaw.includes("[mcp_servers.example]"), "config should inherit default MCP server settings");
+assert(configRaw.includes("[features]"), "config should inherit default feature settings");
+assert(configRaw.includes("Codex Profile Manager managed settings"), "config should mark appended managed settings");
+assert(configRaw.lastIndexOf('model = "gpt-5.2"') > configRaw.indexOf('model = "gpt-5.5"'), "profile model override should be appended after inherited default");
 assert(!configRaw.includes(fakeKey), "config must not contain plaintext API key");
 assert(!launcherRaw.includes(fakeKey), "launcher must not contain plaintext API key");
 assert(!secretsRaw.includes(fakeKey), "encrypted secrets file must not contain plaintext API key");

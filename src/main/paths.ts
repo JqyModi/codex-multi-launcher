@@ -20,6 +20,11 @@ export function getAppPaths(): AppPaths {
   };
 }
 
+export function getDefaultCodexHome(): string {
+  const home = process.env.CODEX_PROFILE_MANAGER_HOME_OVERRIDE || os.homedir();
+  return path.join(home, ".codex");
+}
+
 export function codexExecutablePath(codexAppPath: string): string {
   return path.join(codexAppPath, "Contents", "MacOS", "Codex");
 }

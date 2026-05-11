@@ -37,6 +37,7 @@ const DEFAULT_FORM = {
   baseUrl: "https://example.com/v1",
   model: "gpt-5.2",
   apiKey: "",
+  inheritDefaultConfig: true,
   launcherDirectory: ""
 };
 
@@ -94,6 +95,7 @@ export function App() {
     try {
       const input: CreateProfileInput = {
         name: form.name,
+        inheritDefaultConfig: form.inheritDefaultConfig,
         launcherDirectory: form.launcherDirectory || undefined,
         provider: {
           type: "third_party_responses",
@@ -355,7 +357,12 @@ function WizardBody({
           Profile name
           <input value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} />
         </label>
+        <label className="checkbox-label">
+          <input checked={form.inheritDefaultConfig} onChange={(event) => onChange({ ...form, inheritDefaultConfig: event.target.checked })} type="checkbox" />
+          Inherit my default Codex config
+        </label>
         <p className="field-note">This name is used for the dashboard row and generated launcher app.</p>
+        <p className="field-note">Inherited config keeps existing plugins, MCP servers, trusted projects, and feature flags when available.</p>
       </div>
     );
   }
@@ -424,6 +431,7 @@ function WizardBody({
       <PathRow label="Base URL" value={form.baseUrl || "Missing"} />
       <PathRow label="Model" value={form.model || "Missing"} />
       <PathRow label="Launcher directory" value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
+      <PathRow label="Inherit config" value={form.inheritDefaultConfig ? "Yes" : "No"} />
       <PathRow label="Provider test" value={providerTest ? providerTest.summary : "Not tested"} />
     </div>
   );
