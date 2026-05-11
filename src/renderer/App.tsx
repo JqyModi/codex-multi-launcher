@@ -34,6 +34,7 @@ const WIZARD_STEPS: Array<{ id: WizardStep; label: string }> = [
 
 const DEFAULT_FORM = {
   name: "Codex Sandbox",
+  providerType: "third_party_responses" as "official_openai" | "third_party_responses",
   providerName: "Proxy",
   baseUrl: "https://example.com/v1",
   model: "gpt-5.2",
@@ -122,9 +123,9 @@ export function App() {
         inheritDefaultConfig: form.inheritDefaultConfig,
         launcherDirectory: form.launcherDirectory || undefined,
         provider: {
-          type: "third_party_responses",
+          type: form.providerType,
           displayName: form.providerName,
-          baseUrl: form.baseUrl,
+          baseUrl: form.providerType === "third_party_responses" ? form.baseUrl : undefined,
           model: form.model,
           apiKey: form.apiKey,
           reasoningEffort: "medium"
@@ -151,7 +152,7 @@ export function App() {
 
     try {
       const result = await window.codexProfileManager.testProvider({
-        baseUrl: form.baseUrl,
+        baseUrl: form.providerType === "third_party_responses" ? form.baseUrl : "https://api.openai.com/v1",
         apiKey: form.apiKey,
         model: form.model
       });
@@ -553,13 +554,22 @@ function WizardBody({
     return (
       <div className="form">
         <label>
+          Provider type
+          <select value={form.providerType} onChange={(event) => onChange({ ...form, providerType: event.target.value as typeof form.providerType })}>
+            <option value="third_party_responses">Third-party Responses-compatible</option>
+            <option value="official_openai">Official OpenAI API key</option>
+          </select>
+        </label>
+        <label>
           Provider name
           <input value={form.providerName} onChange={(event) => onChange({ ...form, providerName: event.target.value })} />
         </label>
-        <label>
-          Base URL
-          <input value={form.baseUrl} onChange={(event) => onChange({ ...form, baseUrl: event.target.value })} />
-        </label>
+        {form.providerType === "third_party_responses" ? (
+          <label>
+            Base URL
+            <input value={form.baseUrl} onChange={(event) => onChange({ ...form, baseUrl: event.target.value })} />
+          </label>
+        ) : null}
         <label>
           Model
           <input value={form.model} onChange={(event) => onChange({ ...form, model: event.target.value })} />
@@ -576,7 +586,7 @@ function WizardBody({
     return (
       <div className="form">
         <p className="field-note">Test the provider before generation. You can continue even if the test fails, but the launcher may not work until the provider supports Responses API.</p>
-        <button className="button secondary full-width" disabled={isTestingProvider || !form.baseUrl || !form.apiKey || !form.model} onClick={onTestProvider} type="button">
+        <button className="button secondary full-width" disabled={isTestingProvider || (form.providerType === "third_party_responses" && !form.baseUrl) || !form.apiKey || !form.model} onClick={onTestProvider} type="button">
           <TestTube2 size={16} />
           {isTestingProvider ? "Testing..." : "Test Provider"}
         </button>
@@ -610,7 +620,8 @@ function WizardBody({
     <div className="review-box">
       <PathRow label="Profile" value={form.name || "Missing"} />
       <PathRow label="Provider" value={form.providerName || "Missing"} />
-      <PathRow label="Base URL" value={form.baseUrl || "Missing"} />
+      <PathRow label="Provider type" value={form.providerType === "official_openai" ? "Official OpenAI" : "Third-party Responses"} />
+      <PathRow label="Base URL" value={form.providerType === "third_party_responses" ? form.baseUrl || "Missing" : "https://api.openai.com/v1"} />
       <PathRow label="Model" value={form.model || "Missing"} />
       <PathRow label="Launcher directory" value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
       <PathRow label="Inherit config" value={form.inheritDefaultConfig ? "Yes" : "No"} />
@@ -663,6 +674,11 @@ function PathRow({ icon, label, onReveal, value }: { icon?: React.ReactNode; lab
 
 function isCurrentStepValid(step: WizardStep, form: typeof DEFAULT_FORM): boolean {
   if (step === "profile") return Boolean(form.name.trim());
-  if (step === "provider") return Boolean(form.providerName.trim() && form.baseUrl.trim() && form.model.trim() && form.apiKey.trim());
+  if (step === "provider") return Boolean(
+    form.providerName.trim()
+    && (form.providerType === "official_openai" || form.baseUrl.trim())
+    && form.model.trim()
+    && form.apiKey.trim()
+  );
   return true;
 }

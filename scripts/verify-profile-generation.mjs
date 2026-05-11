@@ -160,6 +160,35 @@ assert(diagnostics.profiles[0].backupCount >= 1, "diagnostics should include bac
 assert(!diagnosticsRaw.includes(fakeKey), "diagnostics must not contain original plaintext API key");
 assert(!diagnosticsRaw.includes(updatedKey), "diagnostics must not contain updated plaintext API key");
 
+const officialKey = "sk-test-official-openai";
+const officialResult = await createProfile({
+  name: "Official OpenAI",
+  inheritDefaultConfig: false,
+  provider: {
+    type: "official_openai",
+    displayName: "OpenAI",
+    model: "gpt-5.2",
+    apiKey: officialKey,
+    reasoningEffort: "medium"
+  }
+});
+const officialConfigPath = path.join(officialResult.profile.paths.codexHome, "config.toml");
+const officialLauncherScript = path.join(officialResult.profile.paths.launcherPath, "Contents", "MacOS", "launcher");
+const [officialConfigRaw, officialLauncherRaw] = await Promise.all([
+  fs.readFile(officialConfigPath, "utf8"),
+  fs.readFile(officialLauncherScript, "utf8")
+]);
+const officialStoredKey = await getApiKey(officialResult.profile.id, officialResult.profile.provider.id);
+
+assert(officialResult.profile.provider.envKeyName === "OPENAI_API_KEY", "official profile should use OPENAI_API_KEY");
+assert(officialConfigRaw.includes('model = "gpt-5.2"'), "official config should contain model");
+assert(!officialConfigRaw.includes("model_provider"), "official config should not select custom provider");
+assert(!officialConfigRaw.includes("[model_providers."), "official config should not write custom provider block");
+assert(officialLauncherRaw.includes("export OPENAI_API_KEY="), "official launcher should export OPENAI_API_KEY");
+assert(officialStoredKey === officialKey, "official API key should be retrievable from encrypted storage");
+assert(!officialConfigRaw.includes(officialKey), "official config must not contain plaintext API key");
+assert(!officialLauncherRaw.includes(officialKey), "official launcher must not contain plaintext API key");
+
 await fs.rm(testRoot, { force: true, recursive: true });
 
 console.log("Profile generation verification passed.");
