@@ -1,7 +1,7 @@
 import path from "node:path";
 import { ensureDir, readJsonFile, writeJsonFile } from "./fs-utils.js";
 import { DEFAULT_CODEX_APP_PATH, getAppPaths, slugifyProfileName } from "./paths.js";
-import type { CreateProfileInput, ManagedProfile, ProfileRegistry } from "../shared/types.js";
+import type { CreateProfileInput, ManagedProfile, ProfileRegistry, UpdateProfileInput } from "../shared/types.js";
 
 const EMPTY_REGISTRY: ProfileRegistry = {
   schemaVersion: 1,
@@ -99,6 +99,22 @@ export async function softDeleteProfile(profileId: string): Promise<void> {
   profile.status = "deleted";
   profile.timestamps.updatedAt = new Date().toISOString();
   await saveRegistry(registry);
+}
+
+export async function updateProfileRecord(input: UpdateProfileInput): Promise<ManagedProfile> {
+  const registry = await loadRegistry();
+  const profile = registry.profiles.find((item) => item.id === input.profileId);
+  if (!profile) {
+    throw new Error(`Profile not found: ${input.profileId}`);
+  }
+
+  profile.provider.displayName = input.provider.displayName;
+  profile.provider.baseUrl = input.provider.baseUrl;
+  profile.provider.model = input.provider.model;
+  profile.provider.reasoningEffort = input.provider.reasoningEffort ?? profile.provider.reasoningEffort;
+  profile.timestamps.updatedAt = new Date().toISOString();
+  await saveRegistry(registry);
+  return profile;
 }
 
 export async function updateProfileLaunchMetadata(profileId: string, pid: number | null): Promise<void> {

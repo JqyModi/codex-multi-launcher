@@ -21,8 +21,9 @@ await fs.writeFile(
   { mode: 0o600 }
 );
 
-const { createProfile, listProfiles } = await import("../dist-electron/main/profile-service.js");
+const { createProfile, listProfiles, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
+const { getApiKey } = await import("../dist-electron/main/secrets.js");
 
 const fakeKey = "sk-test-verify-profile-generation";
 const result = await createProfile({
@@ -89,6 +90,37 @@ assert(launcherRaw.startsWith("#!/bin/zsh"), "launcher should be a zsh script");
 assert(launcherRaw.includes("set -euo pipefail"), "launcher should use strict shell mode");
 assert(launcherRaw.includes(appPaths.masterKeyFile), "launcher should reference encrypted secret master key");
 assert(launcherRaw.includes(appPaths.secretsFile), "launcher should reference encrypted secrets file");
+
+const updatedKey = "sk-test-verify-profile-update";
+await updateProfile({
+  profileId: result.profile.id,
+  provider: {
+    displayName: "Updated Proxy",
+    baseUrl: "https://updated.example.com/v1",
+    model: "gpt-5.4",
+    apiKey: updatedKey,
+    reasoningEffort: "high"
+  }
+});
+
+const [updatedConfigRaw, updatedLauncherRaw, updatedSecretsRaw] = await Promise.all([
+  fs.readFile(configPath, "utf8"),
+  fs.readFile(launcherScript, "utf8"),
+  fs.readFile(appPaths.secretsFile, "utf8")
+]);
+const updatedStoredKey = await getApiKey(result.profile.id, result.profile.provider.id);
+
+assert(updatedConfigRaw.includes('name = "Updated Proxy"'), "updated config should contain new provider name");
+assert(updatedConfigRaw.includes('base_url = "https://updated.example.com/v1"'), "updated config should contain new base URL");
+assert(updatedConfigRaw.includes('model = "gpt-5.4"'), "updated config should contain new model");
+assert(updatedConfigRaw.includes('model_reasoning_effort = "high"'), "updated config should contain new reasoning effort");
+assert(!updatedConfigRaw.includes('base_url = "https://proxy.example.com/v1"'), "updated config should remove old managed base URL");
+assert(updatedConfigRaw.match(/# --- Codex Profile Manager managed settings ---/g)?.length === 1, "managed config block should not be duplicated");
+assert(updatedConfigRaw.includes("[mcp_servers.example]"), "update should preserve inherited MCP server settings");
+assert(updatedStoredKey === updatedKey, "updated API key should be retrievable from encrypted storage");
+assert(!updatedConfigRaw.includes(updatedKey), "updated config must not contain plaintext API key");
+assert(!updatedLauncherRaw.includes(updatedKey), "updated launcher must not contain plaintext API key");
+assert(!updatedSecretsRaw.includes(updatedKey), "updated encrypted secrets must not contain plaintext API key");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 

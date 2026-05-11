@@ -8,10 +8,11 @@ import {
   generateProfileLauncher,
   getRuntimeStatus,
   listProfiles,
-  openProfile
+  openProfile,
+  updateProfile
 } from "./profile-service.js";
 import { testProvider } from "./provider-test.js";
-import type { CreateProfileInput, ProviderTestInput } from "../shared/types.js";
+import type { CreateProfileInput, ProviderTestInput, UpdateProfileInput } from "../shared/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,7 @@ function registerIpc(): void {
   ipcMain.handle("profiles:runtime", () => getRuntimeStatus());
   ipcMain.handle("provider:test", (_event, input: ProviderTestInput) => testProvider(input));
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));
+  ipcMain.handle("profiles:update", (_event, input: UpdateProfileInput) => updateProfile(input));
   ipcMain.handle("profiles:delete", (_event, profileId: string) => deleteProfile(profileId));
   ipcMain.handle("profiles:generate-launcher", (_event, profileId: string) => generateProfileLauncher(profileId));
   ipcMain.handle("profiles:open", (_event, profileId: string) => openProfile(profileId));

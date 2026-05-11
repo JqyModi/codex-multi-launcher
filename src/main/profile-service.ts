@@ -1,11 +1,11 @@
 import { spawn } from "node:child_process";
 import { codexExecutablePath } from "./paths.js";
 import { writeCodexConfig } from "./codex-config.js";
-import { createProfileRecord, findProfile, listProfiles, softDeleteProfile, updateProfileLaunchMetadata } from "./registry.js";
+import { createProfileRecord, findProfile, listProfiles, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
 import { getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
-import type { CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileRuntimeInfo } from "../shared/types.js";
+import type { CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileRuntimeInfo, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
 export { listProfiles };
 
@@ -35,6 +35,29 @@ export async function createProfile(input: CreateProfileInput): Promise<CreatePr
 export async function generateProfileLauncher(profileId: string): Promise<LauncherResult> {
   const profile = await mustFindProfile(profileId);
   return generateLauncher(profile);
+}
+
+export async function updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult> {
+  const profile = await updateProfileRecord(input);
+
+  if (input.provider.apiKey) {
+    await upsertApiKey({
+      profileId: profile.id,
+      providerId: profile.provider.id,
+      envKeyName: profile.provider.envKeyName,
+      secretType: "api_key",
+      value: input.provider.apiKey
+    });
+  }
+
+  const configPath = await writeCodexConfig(profile, { preserveExistingConfig: true });
+  const launcher = await generateLauncher(profile);
+
+  return {
+    profile,
+    configPath,
+    launcherPath: launcher.launcherPath
+  };
 }
 
 export async function deleteProfile(profileId: string): Promise<{ ok: true }> {

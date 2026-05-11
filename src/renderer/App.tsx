@@ -49,8 +49,15 @@ export function App() {
   const [wizardStep, setWizardStep] = useState<WizardStep>("profile");
   const [form, setForm] = useState(DEFAULT_FORM);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isTestingProvider, setIsTestingProvider] = useState(false);
   const [providerTest, setProviderTest] = useState<ProviderTestResult | null>(null);
+  const [editForm, setEditForm] = useState({
+    providerName: "",
+    baseUrl: "",
+    model: "",
+    apiKey: ""
+  });
   const [message, setMessage] = useState<string | null>(null);
 
   const selectedProfile = useMemo(
@@ -77,6 +84,16 @@ export function App() {
   useEffect(() => {
     void refresh();
   }, []);
+
+  useEffect(() => {
+    if (!selectedProfile) return;
+    setEditForm({
+      providerName: selectedProfile.provider.displayName,
+      baseUrl: selectedProfile.provider.baseUrl ?? "",
+      model: selectedProfile.provider.model,
+      apiKey: ""
+    });
+  }, [selectedProfile]);
 
   function nextStep() {
     if (!canGoNext) return;
@@ -162,6 +179,32 @@ export function App() {
     setSelectedProfileId(null);
     setMessage(`Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`);
     await refresh();
+  }
+
+  async function saveSelectedProfile() {
+    if (!selectedProfile) return;
+    setIsUpdatingProfile(true);
+    setMessage(null);
+
+    try {
+      const result = await window.codexProfileManager.updateProfile({
+        profileId: selectedProfile.id,
+        provider: {
+          displayName: editForm.providerName,
+          baseUrl: editForm.baseUrl,
+          model: editForm.model,
+          apiKey: editForm.apiKey || undefined
+        }
+      });
+      await refresh();
+      setSelectedProfileId(result.profile.id);
+      setEditForm((current) => ({ ...current, apiKey: "" }));
+      setMessage(`Updated ${result.profile.name}. Config and launcher were regenerated.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to update profile.");
+    } finally {
+      setIsUpdatingProfile(false);
+    }
   }
 
   async function pickLauncherDirectory() {
@@ -311,6 +354,28 @@ export function App() {
               <PathRow label="Env key" value={selectedProfile.provider.envKeyName} />
               <PathRow label="Last launched" value={selectedProfile.launch.lastLaunchedAt ? new Date(selectedProfile.launch.lastLaunchedAt).toLocaleString() : "Never"} />
               <PathRow label="Runtime" value={runtimeStatuses.find((item) => item.profileId === selectedProfile.id)?.detail ?? "Not checked"} />
+              <div className="edit-box">
+                <h4>Edit Provider</h4>
+                <label>
+                  Provider name
+                  <input value={editForm.providerName} onChange={(event) => setEditForm({ ...editForm, providerName: event.target.value })} />
+                </label>
+                <label>
+                  Base URL
+                  <input value={editForm.baseUrl} onChange={(event) => setEditForm({ ...editForm, baseUrl: event.target.value })} />
+                </label>
+                <label>
+                  Model
+                  <input value={editForm.model} onChange={(event) => setEditForm({ ...editForm, model: event.target.value })} />
+                </label>
+                <label>
+                  New API key
+                  <input placeholder="Leave empty to keep current key" type="password" value={editForm.apiKey} onChange={(event) => setEditForm({ ...editForm, apiKey: event.target.value })} />
+                </label>
+                <button className="button secondary" disabled={isUpdatingProfile || !editForm.providerName || !editForm.baseUrl || !editForm.model} onClick={() => void saveSelectedProfile()} type="button">
+                  {isUpdatingProfile ? "Saving..." : "Save Provider"}
+                </button>
+              </div>
             </div>
           ) : (
             <p className="empty-text">Create a profile to see generated paths.</p>

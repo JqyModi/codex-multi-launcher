@@ -41,6 +41,15 @@ function renderManagedConfig(profile: ManagedProfile): string {
   ].join("\n");
 }
 
+function stripManagedConfig(config: string): string {
+  return config
+    .replace(
+      /\n?# --- Codex Profile Manager managed settings ---[\s\S]*?# --- End Codex Profile Manager managed settings ---\n?/g,
+      "\n"
+    )
+    .trimEnd();
+}
+
 export async function backupCodexConfig(profile: ManagedProfile, reason: string): Promise<string | null> {
   const configPath = path.join(profile.paths.codexHome, "config.toml");
   if (!(await pathExists(configPath))) {
@@ -60,15 +69,21 @@ export async function backupCodexConfig(profile: ManagedProfile, reason: string)
   return backupPath;
 }
 
-export async function writeCodexConfig(profile: ManagedProfile, options: { inheritDefaultConfig?: boolean } = {}): Promise<string> {
+export async function writeCodexConfig(profile: ManagedProfile, options: { inheritDefaultConfig?: boolean; preserveExistingConfig?: boolean } = {}): Promise<string> {
   await ensureDir(profile.paths.codexHome);
   await backupCodexConfig(profile, "before profile manager config write");
   const configPath = path.join(profile.paths.codexHome, "config.toml");
   const defaultConfigPath = path.join(getDefaultCodexHome(), "config.toml");
 
+  if (options.preserveExistingConfig && await pathExists(configPath)) {
+    const existingConfig = await fs.readFile(configPath, "utf8");
+    await fs.writeFile(configPath, `${stripManagedConfig(existingConfig)}${renderManagedConfig(profile)}`, { mode: 0o600 });
+    return configPath;
+  }
+
   if (options.inheritDefaultConfig && await pathExists(defaultConfigPath)) {
     const inheritedConfig = await fs.readFile(defaultConfigPath, "utf8");
-    await fs.writeFile(configPath, `${inheritedConfig.trimEnd()}${renderManagedConfig(profile)}`, { mode: 0o600 });
+    await fs.writeFile(configPath, `${stripManagedConfig(inheritedConfig)}${renderManagedConfig(profile)}`, { mode: 0o600 });
     return configPath;
   }
 

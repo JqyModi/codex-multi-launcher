@@ -102,6 +102,23 @@ export interface CreateProfileResult {
   launcherPath: string;
 }
 
+export interface UpdateProfileInput {
+  profileId: string;
+  provider: {
+    displayName: string;
+    baseUrl?: string;
+    model: string;
+    apiKey?: string;
+    reasoningEffort?: ProviderConfig["reasoningEffort"];
+  };
+}
+
+export interface UpdateProfileResult {
+  profile: ManagedProfile;
+  configPath: string;
+  launcherPath: string;
+}
+
 export interface ProviderTestInput {
   baseUrl: string;
   apiKey: string;
@@ -131,6 +148,7 @@ export interface CodexApi {
   getRuntimeStatus(): Promise<ProfileRuntimeInfo[]>;
   testProvider(input: ProviderTestInput): Promise<ProviderTestResult>;
   createProfile(input: CreateProfileInput): Promise<CreateProfileResult>;
+  updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult>;
   deleteProfile(profileId: string): Promise<{ ok: true }>;
   generateLauncher(profileId: string): Promise<LauncherResult>;
   openProfile(profileId: string): Promise<{ pid: number | null }>;
