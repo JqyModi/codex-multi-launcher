@@ -126,6 +126,17 @@ export interface UpdateProfileResult {
   launcherPath: string;
 }
 
+export interface RestoreConfigBackupInput {
+  profileId: string;
+  backupPath: string;
+}
+
+export interface RestoreConfigBackupResult {
+  profileId: string;
+  configPath: string;
+  restoredFrom: string;
+}
+
 export interface ProviderTestInput {
   baseUrl: string;
   apiKey: string;
@@ -157,6 +168,7 @@ export interface CodexApi {
   testProvider(input: ProviderTestInput): Promise<ProviderTestResult>;
   createProfile(input: CreateProfileInput): Promise<CreateProfileResult>;
   updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult>;
+  restoreConfigBackup(input: RestoreConfigBackupInput): Promise<RestoreConfigBackupResult>;
   deleteProfile(profileId: string): Promise<{ ok: true }>;
   generateLauncher(profileId: string): Promise<LauncherResult>;
   openProfile(profileId: string): Promise<{ pid: number | null }>;

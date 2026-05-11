@@ -94,6 +94,12 @@ code {
   color: #172033;
 }
 
+.button.compact {
+  height: 30px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
 .sidebar-action {
   justify-content: center;
   width: 100%;

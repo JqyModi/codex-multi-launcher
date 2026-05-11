@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { ensureDir, pathExists } from "./fs-utils.js";
 import { getDefaultCodexHome } from "./paths.js";
-import type { ConfigBackupInfo, ManagedProfile } from "../shared/types.js";
+import type { ConfigBackupInfo, ManagedProfile, RestoreConfigBackupResult } from "../shared/types.js";
 
 function tomlString(value: string): string {
   return JSON.stringify(value);
@@ -123,4 +123,28 @@ export async function writeCodexConfig(profile: ManagedProfile, options: { inher
 
   await fs.writeFile(configPath, renderConfig(profile), { mode: 0o600 });
   return configPath;
+}
+
+export async function restoreConfigBackup(profile: ManagedProfile, backupPath: string): Promise<RestoreConfigBackupResult> {
+  const backupRoot = path.resolve(profile.paths.codexHome, "profile-manager-backups");
+  const resolvedBackupPath = path.resolve(backupPath);
+  if (!resolvedBackupPath.startsWith(`${backupRoot}${path.sep}`)) {
+    throw new Error("Backup path is outside this profile's backup directory.");
+  }
+  if (path.basename(resolvedBackupPath) !== "config.toml") {
+    throw new Error("Backup path must point to a config.toml backup.");
+  }
+  if (!(await pathExists(resolvedBackupPath))) {
+    throw new Error("Backup config file does not exist.");
+  }
+
+  const configPath = path.join(profile.paths.codexHome, "config.toml");
+  await backupCodexConfig(profile, "before restoring config backup");
+  await fs.copyFile(resolvedBackupPath, configPath);
+
+  return {
+    profileId: profile.id,
+    configPath,
+    restoredFrom: resolvedBackupPath
+  };
 }

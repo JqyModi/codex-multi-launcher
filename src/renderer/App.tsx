@@ -220,6 +220,18 @@ export function App() {
     await window.codexProfileManager.revealPath(targetPath);
   }
 
+  async function restoreBackup(backup: ConfigBackupInfo) {
+    const confirmed = window.confirm(`Restore this config backup from ${new Date(backup.createdAt).toLocaleString()}? Current config.toml will be backed up first.`);
+    if (!confirmed) return;
+
+    await window.codexProfileManager.restoreConfigBackup({
+      profileId: backup.profileId,
+      backupPath: backup.backupPath
+    });
+    setMessage("Config backup restored. Restart this Codex profile for the restored config to take effect.");
+    setConfigBackups(await window.codexProfileManager.listConfigBackups(backup.profileId));
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -370,6 +382,9 @@ export function App() {
                       </div>
                       <button className="icon-button" onClick={() => void revealPath(backup.backupPath)} title="Reveal backup" type="button">
                         <FolderOpen size={15} />
+                      </button>
+                      <button className="button secondary compact" onClick={() => void restoreBackup(backup)} type="button">
+                        Restore
                       </button>
                     </div>
                   ))

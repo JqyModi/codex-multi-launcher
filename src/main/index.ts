@@ -10,10 +10,11 @@ import {
   listConfigBackups,
   listProfiles,
   openProfile,
+  restoreConfigBackup,
   updateProfile
 } from "./profile-service.js";
 import { testProvider } from "./provider-test.js";
-import type { CreateProfileInput, ProviderTestInput, UpdateProfileInput } from "../shared/types.js";
+import type { CreateProfileInput, ProviderTestInput, RestoreConfigBackupInput, UpdateProfileInput } from "../shared/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,7 @@ function registerIpc(): void {
   });
   ipcMain.handle("profiles:list", () => listProfiles());
   ipcMain.handle("profiles:backups", (_event, profileId: string) => listConfigBackups(profileId));
+  ipcMain.handle("profiles:restore-backup", (_event, input: RestoreConfigBackupInput) => restoreConfigBackup(input));
   ipcMain.handle("profiles:runtime", () => getRuntimeStatus());
   ipcMain.handle("provider:test", (_event, input: ProviderTestInput) => testProvider(input));
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));

@@ -21,7 +21,7 @@ await fs.writeFile(
   { mode: 0o600 }
 );
 
-const { createProfile, listConfigBackups, listProfiles, updateProfile } = await import("../dist-electron/main/profile-service.js");
+const { createProfile, listConfigBackups, listProfiles, restoreConfigBackup, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const { getApiKey } = await import("../dist-electron/main/secrets.js");
 
@@ -125,6 +125,17 @@ assert(!updatedSecretsRaw.includes(updatedKey), "updated encrypted secrets must 
 assert(backups.length >= 1, "profile update should create at least one config backup");
 assert(backups[0].reason === "before profile manager config write", "backup should record config write reason");
 assert(await fileExists(backups[0].backupPath), "backup config file should exist");
+
+await restoreConfigBackup({
+  profileId: result.profile.id,
+  backupPath: backups[0].backupPath
+});
+const restoredConfigRaw = await fs.readFile(configPath, "utf8");
+const restoreBackups = await listConfigBackups(result.profile.id);
+
+assert(restoredConfigRaw.includes('base_url = "https://proxy.example.com/v1"'), "restored config should contain original base URL");
+assert(!restoredConfigRaw.includes('base_url = "https://updated.example.com/v1"'), "restored config should remove updated base URL");
+assert(restoreBackups.some((backup) => backup.reason === "before restoring config backup"), "restore should create a pre-restore backup");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 
