@@ -2,15 +2,19 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Folder,
   FolderOpen,
+  Info,
   Play,
   Plus,
   RefreshCcw,
   Rocket,
+  ShieldCheck,
   TestTube2,
   Trash2,
-  TriangleAlert
+  TriangleAlert,
+  X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type {
@@ -56,6 +60,10 @@ export function App() {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isTestingProvider, setIsTestingProvider] = useState(false);
   const [isTestingEditProvider, setIsTestingEditProvider] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCopyingDiagnostics, setIsCopyingDiagnostics] = useState(false);
+  const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
+  const [isEnvironmentOpen, setIsEnvironmentOpen] = useState(false);
   const [providerTest, setProviderTest] = useState<ProviderTestResult | null>(null);
   const [editProviderTest, setEditProviderTest] = useState<ProviderTestResult | null>(null);
   const [editForm, setEditForm] = useState({
@@ -74,17 +82,23 @@ export function App() {
   const currentStepIndex = WIZARD_STEPS.findIndex((step) => step.id === wizardStep);
   const canGoBack = currentStepIndex > 0;
   const canGoNext = currentStepIndex < WIZARD_STEPS.length - 1 && isCurrentStepValid(wizardStep, form);
+  const environmentSummary = useMemo(() => summarizeEnvironment(environment), [environment]);
 
   async function refresh() {
-    const [environmentReport, profileList] = await Promise.all([
-      window.codexProfileManager.getEnvironmentReport(),
-      window.codexProfileManager.listProfiles(showDeletedProfiles)
-    ]);
-    const runtime = await window.codexProfileManager.getRuntimeStatus();
-    setEnvironment(environmentReport);
-    setProfiles(profileList);
-    setRuntimeStatuses(runtime);
-    setSelectedProfileId((current) => current ?? profileList[0]?.id ?? null);
+    setIsRefreshing(true);
+    try {
+      const [environmentReport, profileList] = await Promise.all([
+        window.codexProfileManager.getEnvironmentReport(),
+        window.codexProfileManager.listProfiles(showDeletedProfiles)
+      ]);
+      const runtime = await window.codexProfileManager.getRuntimeStatus();
+      setEnvironment(environmentReport);
+      setProfiles(profileList);
+      setRuntimeStatuses(runtime);
+      setSelectedProfileId((current) => current ?? profileList[0]?.id ?? null);
+    } finally {
+      setIsRefreshing(false);
+    }
   }
 
   useEffect(() => {
@@ -138,6 +152,7 @@ export function App() {
       setForm({ ...DEFAULT_FORM, name: `${form.name} 2` });
       setProviderTest(null);
       setWizardStep("profile");
+      setIsCreateProfileOpen(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to create profile.");
     } finally {
@@ -261,9 +276,14 @@ export function App() {
   }
 
   async function copyDiagnosticsReport() {
-    const report = await window.codexProfileManager.getDiagnosticsReport();
-    await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-    setMessage("Diagnostics report copied. API keys are not included.");
+    setIsCopyingDiagnostics(true);
+    try {
+      const report = await window.codexProfileManager.getDiagnosticsReport();
+      await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+      setMessage("Diagnostics report copied. API keys are not included.");
+    } finally {
+      setIsCopyingDiagnostics(false);
+    }
   }
 
   async function restoreBackup(backup: ConfigBackupInfo) {
@@ -291,7 +311,7 @@ export function App() {
           </div>
         </div>
 
-        <button className="sidebar-action" onClick={() => setWizardStep("profile")} type="button">
+        <button className="sidebar-action" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
           <Plus size={16} />
           Create Profile
         </button>
@@ -327,75 +347,36 @@ export function App() {
             <h2>Profile Manager</h2>
             <p>Create isolated Codex desktop windows with separate provider configuration.</p>
           </div>
-          <button className="button secondary" onClick={() => void refresh()} type="button">
-            <RefreshCcw size={15} />
-            Refresh
+          <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
+            {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
+            {environmentSummary.label}
           </button>
-          <button className="button secondary" onClick={() => void copyDiagnosticsReport()} type="button">
-            Copy Diagnostics
+          <button className="button secondary" disabled={isRefreshing} onClick={() => void refresh()} type="button">
+            <RefreshCcw size={15} />
+            {isRefreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <button className="button secondary" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
+            <Copy size={15} />
+            {isCopyingDiagnostics ? "Copied" : "Copy Diagnostics"}
           </button>
         </header>
 
         {message ? <div className="notice">{message}</div> : null}
 
-        <div className="grid">
-          <section className="panel">
-            <div className="panel-heading">
-              <h3>Environment</h3>
-              <span className="badge neutral">macOS MVP</span>
-            </div>
-            <div className="checks">
-              {environment?.checks.map((check) => (
-                <div className="check-row" key={check.id}>
-                  {check.status === "pass" ? (
-                    <CheckCircle2 className="ok" size={17} />
-                  ) : (
-                    <TriangleAlert className={check.status === "warn" ? "warn" : "danger"} size={17} />
-                  )}
-                  <div>
-                    <strong>{check.label}</strong>
-                    <p>{check.detail}</p>
-                    {check.path ? <code>{check.path}</code> : null}
-                  </div>
-                </div>
-              )) ?? <p className="empty-text">Loading checks...</p>}
-            </div>
-          </section>
-
-          <section className="panel wizard-panel">
-            <div className="panel-heading">
-              <h3>Create Profile</h3>
-              <span className="badge success">API key encrypted locally</span>
-            </div>
-            <WizardNav current={wizardStep} />
-            <WizardBody
-              form={form}
-              providerTest={providerTest}
-              isTestingProvider={isTestingProvider}
-              wizardStep={wizardStep}
-              onChange={setForm}
-              onPickLauncherDirectory={() => void pickLauncherDirectory()}
-              onTestProvider={() => void testProvider()}
-            />
-            <div className="wizard-actions">
-              <button className="button secondary" disabled={!canGoBack} onClick={previousStep} type="button">
-                <ChevronLeft size={15} />
-                Back
-              </button>
-              {wizardStep === "generate" ? (
-                <button className="button primary" disabled={isCreating || !isCurrentStepValid(wizardStep, form)} onClick={() => void createProfile()} type="button">
-                  <Plus size={16} />
-                  {isCreating ? "Generating..." : "Generate"}
-                </button>
-              ) : (
-                <button className="button primary" disabled={!canGoNext} onClick={nextStep} type="button">
-                  Next
-                  <ChevronRight size={15} />
-                </button>
-              )}
-            </div>
-          </section>
-        </div>
+        <section className="status-strip">
+          <div>
+            <span className="status-kicker">Profiles</span>
+            <strong>{profiles.filter((profile) => profile.status !== "deleted").length}</strong>
+          </div>
+          <div>
+            <span className="status-kicker">Running</span>
+            <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
+          </div>
+          <div>
+            <span className="status-kicker">Environment</span>
+            <strong>{environmentSummary.shortLabel}</strong>
+          </div>
+        </section>
 
         <section className="panel detail-panel">
           <div className="panel-heading">
@@ -485,11 +466,95 @@ export function App() {
               </div>
             </div>
           ) : (
-            <p className="empty-text">Create a profile to see generated paths.</p>
+            <div className="empty-state">
+              <div className="empty-mark"><Rocket size={24} /></div>
+              <h3>No profiles yet</h3>
+              <p>Create a Codex profile with its own API key, provider, config, and launcher.</p>
+              <button className="button primary" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
+                <Plus size={15} />
+                Create Profile
+              </button>
+            </div>
           )}
         </section>
       </section>
+      {isCreateProfileOpen ? (
+        <Modal title="Create Profile" subtitle="Generate an isolated Codex app profile." onClose={() => setIsCreateProfileOpen(false)}>
+          <div className="modal-badge-row">
+            <span className="badge success">API key encrypted locally</span>
+          </div>
+          <WizardNav current={wizardStep} />
+          <WizardBody
+            form={form}
+            providerTest={providerTest}
+            isTestingProvider={isTestingProvider}
+            wizardStep={wizardStep}
+            onChange={setForm}
+            onPickLauncherDirectory={() => void pickLauncherDirectory()}
+            onTestProvider={() => void testProvider()}
+          />
+          <div className="wizard-actions">
+            <button className="button secondary" disabled={!canGoBack} onClick={previousStep} type="button">
+              <ChevronLeft size={15} />
+              Back
+            </button>
+            {wizardStep === "generate" ? (
+              <button className="button primary" disabled={isCreating || !isCurrentStepValid(wizardStep, form)} onClick={() => void createProfile()} type="button">
+                <Plus size={16} />
+                {isCreating ? "Generating..." : "Generate"}
+              </button>
+            ) : (
+              <button className="button primary" disabled={!canGoNext} onClick={nextStep} type="button">
+                Next
+                <ChevronRight size={15} />
+              </button>
+            )}
+          </div>
+        </Modal>
+      ) : null}
+      {isEnvironmentOpen ? (
+        <Modal title="Environment" subtitle="Local prerequisites used by generated profiles." onClose={() => setIsEnvironmentOpen(false)}>
+          <div className="checks">
+            {environment?.checks.map((check) => (
+              <div className="check-row" key={check.id}>
+                {check.status === "pass" ? (
+                  <CheckCircle2 className="ok" size={17} />
+                ) : (
+                  <TriangleAlert className={check.status === "warn" ? "warn" : "danger"} size={17} />
+                )}
+                <div>
+                  <strong>{check.label}</strong>
+                  <p>{check.detail}</p>
+                  {check.path ? <code>{check.path}</code> : null}
+                </div>
+              </div>
+            )) ?? <p className="empty-text">Loading checks...</p>}
+          </div>
+        </Modal>
+      ) : null}
     </main>
+  );
+}
+
+function Modal({ children, onClose, subtitle, title }: { children: React.ReactNode; onClose: () => void; subtitle: string; title: string }) {
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section aria-modal="true" className="modal" role="dialog">
+        <header className="modal-header">
+          <div className="modal-title">
+            <span className="modal-icon"><Info size={18} /></span>
+            <div>
+              <h3>{title}</h3>
+              <p>{subtitle}</p>
+            </div>
+          </div>
+          <button aria-label="Close" className="icon-button" onClick={onClose} type="button">
+            <X size={16} />
+          </button>
+        </header>
+        <div className="modal-body">{children}</div>
+      </section>
+    </div>
   );
 }
 
@@ -644,6 +709,25 @@ function RuntimeBadge({ runtime }: { runtime?: ProfileRuntimeInfo }) {
   const status = runtime?.status ?? "unknown";
   const label = status === "running" ? `Running${runtime?.pid ? ` : ${runtime.pid}` : ""}` : status === "not_running" ? "Not running" : "Unknown";
   return <span className={`runtime-badge ${status}`}>{label}</span>;
+}
+
+function summarizeEnvironment(environment: EnvironmentReport | null): { label: string; shortLabel: string; status: "pass" | "warn" | "fail" } {
+  if (!environment) {
+    return { label: "Checking", shortLabel: "Checking", status: "warn" };
+  }
+
+  const failed = environment.checks.filter((check) => check.status === "fail").length;
+  const warned = environment.checks.filter((check) => check.status === "warn").length;
+
+  if (failed > 0) {
+    return { label: `${failed} issue${failed === 1 ? "" : "s"}`, shortLabel: `${failed} issue${failed === 1 ? "" : "s"}`, status: "fail" };
+  }
+
+  if (warned > 0) {
+    return { label: `${warned} warning${warned === 1 ? "" : "s"}`, shortLabel: `${warned} warn`, status: "warn" };
+  }
+
+  return { label: "Environment OK", shortLabel: "OK", status: "pass" };
 }
 
 function PathRow({ icon, label, onReveal, value }: { icon?: React.ReactNode; label: string; onReveal?: () => void; value: string }) {
