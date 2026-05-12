@@ -48,6 +48,8 @@ This is only a local MVP workaround. Public distribution should use Developer ID
 - [User Flow](docs/USER_FLOW.md): setup wizard, provider test, dashboard, edit/delete flows.
 - [Design System](docs/DESIGN_SYSTEM.md): macOS utility visual direction, layout, colors, typography, and components.
 - [User Manual](docs/USER_MANUAL.md): screenshot-based guide for installing, creating profiles, configuring providers, and troubleshooting.
+- [Landing Page](docs/landing/index.html): static GitHub Pages-ready product page for public MVP distribution.
+- [Release Checklist](docs/RELEASE_CHECKLIST.md): checks before publishing a test build and collecting feedback.
 
 ## Suggested Implementation Order
 

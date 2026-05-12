@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 用户手册
+    url: https://github.com/your-org/codex-multi-launcher/blob/main/docs/USER_MANUAL.md
+    about: 先查看安装、创建 Profile、配置 Provider 和常见问题说明

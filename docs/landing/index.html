@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Codex 多开助手是一款 macOS 小工具，用于创建多个独立 Codex 桌面窗口，并为每个窗口配置不同 API Key、Base URL 和模型。" />
+    <meta property="og:title" content="Codex 多开助手" />
+    <meta property="og:description" content="一键创建多个独立 Codex 桌面窗口，为每个窗口配置不同 API Key / Base URL。" />
+    <meta property="og:image" content="assets/app-icon.png" />
+    <title>Codex 多开助手 | 独立窗口与第三方 API 配置工具</title>
+    <link rel="icon" href="assets/app-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Codex 多开助手首页">
+        <img src="assets/app-icon.png" alt="" />
+        <span>Codex 多开助手</span>
+      </a>
+      <nav aria-label="页面导航">
+        <a href="#features">功能</a>
+        <a href="#security">安全</a>
+        <a href="#faq">常见问题</a>
+        <a class="nav-button" href="https://github.com/your-org/codex-multi-launcher/issues">反馈问题</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section">
+        <div class="hero-copy">
+          <p class="eyebrow">macOS · Codex 多开 · 第三方 Responses API</p>
+          <h1>让每个 Codex 窗口都有自己的 API 配置。</h1>
+          <p class="hero-lede">
+            Codex 多开助手可以创建多个隔离的 Codex 桌面窗口，并为每个窗口配置独立的 API Key、Base URL、模型和启动器。
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/your-org/codex-multi-launcher/releases/latest">下载 macOS 测试版</a>
+            <a class="button secondary" href="../USER_MANUAL.md">查看用户手册</a>
+          </div>
+          <div class="trust-row" aria-label="产品特性">
+            <span>API Key 本地加密</span>
+            <span>不修改原 Codex App</span>
+            <span>支持第三方 Responses 兼容接口</span>
+          </div>
+        </div>
+        <div class="hero-art" aria-label="Codex 多开助手界面预览">
+          <img class="app-icon" src="assets/app-icon.png" alt="Codex 多开助手图标" />
+          <div class="screenshot-frame">
+            <img src="../user-manual-assets/01-dashboard.png" alt="Codex 多开助手主界面，展示 Profile 列表和选中 Profile 的路径、Provider 与启动按钮。" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section problem">
+        <div class="section-heading">
+          <p class="eyebrow">为什么需要它</p>
+          <h2>不用再靠命令行记住不同工作区。</h2>
+        </div>
+        <div class="problem-grid">
+          <article>
+            <strong>多窗口隔离</strong>
+            <p>为不同项目创建独立的 `CODEX_HOME` 和 `user-data-dir`，减少配置互相影响。</p>
+          </article>
+          <article>
+            <strong>第三方 API 配置</strong>
+            <p>通过表单填写 Base URL、API Key 和模型，不再手动编辑 `config.toml`。</p>
+          </article>
+          <article>
+            <strong>双击启动</strong>
+            <p>每个 Profile 都会生成自己的启动器 App，像普通应用一样双击打开。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="section-heading centered">
+          <p class="eyebrow">使用流程</p>
+          <h2>从创建到打开，只保留必要步骤。</h2>
+          <p>面向第一次配置的用户，默认继承已有 Codex 配置，并在关键位置给出测试和回退能力。</p>
+        </div>
+        <div class="steps">
+          <article>
+            <span>01</span>
+            <h3>创建 Profile</h3>
+            <p>命名新的工作区，选择是否继承默认 Codex 配置。</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>配置 Provider</h3>
+            <p>填写第三方 Responses 兼容接口，或使用官方 OpenAI API Key。</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>测试并生成</h3>
+            <p>测试 API 可用性，生成配置文件、本地密钥和启动器 App。</p>
+          </article>
+          <article>
+            <span>04</span>
+            <h3>双击打开</h3>
+            <p>从主界面或 Finder 启动对应 Codex 窗口。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div class="screenshot-frame">
+          <img src="../user-manual-assets/03-provider-settings.png" alt="创建 Profile 的 Provider 配置步骤，包含 Provider 类型、Base URL、模型和 API Key 输入框。" />
+        </div>
+        <div class="split-copy">
+          <p class="eyebrow">模型选择</p>
+          <h2>能获取模型列表就选择，获取不到就手动填。</h2>
+          <p>
+            很多第三方服务商提供 `/models` 接口。Codex 多开助手会尝试解析返回结果中的模型 ID，并给出可点击选择。服务商不支持时，不影响手动填写模型。
+          </p>
+          <ul class="check-list">
+            <li>支持常见 `data`、`list`、`results` 返回结构。</li>
+            <li>只使用明确的字符串 `id` 作为模型 ID。</li>
+            <li>测试失败也允许继续生成，便于排查服务商兼容性。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section security" id="security">
+        <div class="section-heading centered">
+          <p class="eyebrow">本地安全</p>
+          <h2>API Key 不进入诊断报告，也不写入启动脚本。</h2>
+        </div>
+        <div class="security-grid">
+          <article>
+            <h3>本地加密保存</h3>
+            <p>API Key 保存在本机加密文件中，用于启动对应 Profile。</p>
+          </article>
+          <article>
+            <h3>配置可恢复</h3>
+            <p>每次写入 `config.toml` 前都会创建备份，出错后可恢复。</p>
+          </article>
+          <article>
+            <h3>诊断可反馈</h3>
+            <p>复制诊断信息时不会包含 API Key，方便在 Issues 中描述问题。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section split reverse">
+        <div class="split-copy">
+          <p class="eyebrow">环境检查</p>
+          <h2>先确认本机条件，再生成启动器。</h2>
+          <p>
+            App 会检查 Codex App、Codex 可执行文件、Node runtime、启动器目录和 Profile 目录。只有 CLI 缺失时通常仍可继续使用桌面多开功能。
+          </p>
+          <a class="text-link" href="../USER_MANUAL.md">查看完整使用说明</a>
+        </div>
+        <div class="screenshot-frame">
+          <img src="../user-manual-assets/04-environment-check.png" alt="环境检查弹窗，展示 Codex App、Node runtime 和目录权限检查结果。" />
+        </div>
+      </section>
+
+      <section class="section download" id="download">
+        <div>
+          <p class="eyebrow">MVP 测试版</p>
+          <h2>欢迎小范围试用并提交反馈。</h2>
+          <p>
+            当前版本主要面向 macOS Apple Silicon，支持官方 OpenAI API Key 和第三方 Responses 兼容接口。未签名版本可能需要手动解除 macOS quarantine。
+          </p>
+        </div>
+        <div class="download-card">
+          <a class="button primary full" href="https://github.com/your-org/codex-multi-launcher/releases/latest">前往 GitHub Releases 下载</a>
+          <a class="button secondary full" href="https://github.com/your-org/codex-multi-launcher/issues">在 GitHub Issues 反馈</a>
+          <code>xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"</code>
+        </div>
+      </section>
+
+      <section class="section faq" id="faq">
+        <div class="section-heading centered">
+          <p class="eyebrow">常见问题</p>
+          <h2>分发试用前先说清边界。</h2>
+        </div>
+        <details open>
+          <summary>为什么打开时 macOS 提示无法验证？</summary>
+          <p>当前是未签名 MVP 测试版。正式公开分发前需要 Developer ID 签名和 notarization。</p>
+        </details>
+        <details>
+          <summary>是否支持 Windows？</summary>
+          <p>界面技术栈是 Electron，可跨平台；但当前启动器生成、路径检查和 Codex App 检测都按 macOS 实现，Windows 需要单独适配。</p>
+        </details>
+        <details>
+          <summary>第三方中转站都能用吗？</summary>
+          <p>不保证。MVP 只支持 Responses 兼容接口，服务商需要真正支持 Codex 使用的 Responses API。</p>
+        </details>
+        <details>
+          <summary>反馈问题时需要提供什么？</summary>
+          <p>请提供 macOS 版本、Codex App 版本、服务商名称、Base URL 是否以 `/v1` 结尾、Provider 测试错误信息，以及 App 内复制的诊断报告。</p>
+        </details>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Codex 多开助手</span>
+      <a href="../USER_MANUAL.md">用户手册</a>
+      <a href="https://github.com/your-org/codex-multi-launcher/issues">GitHub Issues</a>
+    </footer>
+  </body>
+</html>
