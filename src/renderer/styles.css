@@ -211,6 +211,7 @@ code {
 
 .language-switch {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 5px;
   height: 32px;
@@ -487,15 +488,15 @@ code {
   transition: transform 160ms ease;
 }
 
-.toggle-card input:checked + .switch-track {
+.toggle-card input:checked ~ .switch-track {
   background: #2563eb;
 }
 
-.toggle-card input:checked + .switch-track span {
+.toggle-card input:checked ~ .switch-track span {
   transform: translateX(18px);
 }
 
-.toggle-card input:focus-visible + .switch-track {
+.toggle-card input:focus-visible ~ .switch-track {
   box-shadow: 0 0 0 3px rgb(147 197 253 / 35%);
 }
 
