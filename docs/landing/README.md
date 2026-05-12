@@ -20,3 +20,5 @@ Replace placeholder links in `index.html`:
 - `https://github.com/your-org/codex-multi-launcher/issues`
 
 If GitHub Pages is configured to serve from `/docs`, keep the current relative image paths.
+
+`manual.html` is the user-facing HTML version of `../USER_MANUAL.md`; link to it from the landing page so visitors do not see raw Markdown on GitHub Pages.

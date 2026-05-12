@@ -17,7 +17,7 @@ Use this checklist before posting a public MVP build to X, Threads, Linux.do, or
 - [ ] Replace landing page placeholder GitHub Issues URL.
 - [ ] Replace `.github/ISSUE_TEMPLATE/config.yml` user manual URL.
 - [ ] Confirm screenshots are current app-window captures.
-- [ ] Confirm user manual link works from the landing page.
+- [ ] Confirm `docs/landing/manual.html` opens from the landing page.
 - [ ] Publish GitHub Pages.
 
 ## Release Notes
