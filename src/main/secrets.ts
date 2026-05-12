@@ -109,3 +109,11 @@ export async function getApiKey(profileId: string, providerId: string): Promise<
   const secrets = await loadSecrets();
   return secrets.secrets.find((item) => item.profileId === profileId && item.providerId === providerId)?.value ?? null;
 }
+
+export async function deleteProfileSecrets(profileId: string): Promise<void> {
+  const secrets = await loadSecrets();
+  await saveSecrets({
+    schemaVersion: 1,
+    secrets: secrets.secrets.filter((item) => item.profileId !== profileId)
+  });
+}

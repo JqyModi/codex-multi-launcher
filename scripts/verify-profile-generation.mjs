@@ -25,7 +25,7 @@ await fs.writeFile(
   { mode: 0o600 }
 );
 
-const { createProfile, deleteProfile, listConfigBackups, listProfiles, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
+const { createProfile, deleteProfile, listConfigBackups, listProfiles, permanentlyDeleteProfile, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const { getApiKey } = await import("../dist-electron/main/secrets.js");
 const { getDiagnosticsReport } = await import("../dist-electron/main/diagnostics.js");
@@ -222,6 +222,13 @@ assert(officialStoredKey === officialKey, "official API key should be retrievabl
 assert(!officialConfigRaw.includes(officialKey), "official config must not contain plaintext API key");
 assert(!officialLauncherRaw.includes(officialKey), "official launcher must not contain plaintext API key");
 assert(JSON.parse(officialAuthRaw).OPENAI_API_KEY === officialKey, "official auth bootstrap should contain API key");
+
+await permanentlyDeleteProfile(officialResult.profile.id);
+assert(!(await fileExists(officialResult.profile.paths.codexHome)), "permanent delete should remove CODEX_HOME");
+assert(!(await fileExists(officialResult.profile.paths.userDataDir)), "permanent delete should remove user-data-dir");
+assert(!(await fileExists(officialResult.profile.paths.launcherPath)), "permanent delete should remove launcher app");
+assert(await getApiKey(officialResult.profile.id, officialResult.profile.provider.id) === null, "permanent delete should remove stored API key");
+assert(!(await listProfiles(true)).some((profile) => profile.id === officialResult.profile.id), "permanent delete should remove registry record");
 
 await fs.rm(testRoot, { force: true, recursive: true });
 

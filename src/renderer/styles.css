@@ -147,6 +147,23 @@ code {
   gap: 8px;
 }
 
+.profile-group-separator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.profile-group-separator::before,
+.profile-group-separator::after {
+  content: "";
+  flex: 1;
+  border-top: 1px dashed #cbd5e1;
+}
+
 .sidebar-footer {
   display: flex;
   margin-top: auto;
@@ -409,14 +426,21 @@ code {
 }
 
 .backup-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   border: 1px solid #eef2f7;
   border-radius: 8px;
   padding: 8px;
   background: #f8fafc;
+}
+
+.backup-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .backup-row strong {

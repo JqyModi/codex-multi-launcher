@@ -1,10 +1,11 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs/promises";
 import { codexExecutablePath } from "./paths.js";
 import { listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
-import { createProfileRecord, findProfile, listProfiles, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
+import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
 import { testProvider } from "./provider-test.js";
-import { getApiKey, upsertApiKey } from "./secrets.js";
+import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
 import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
@@ -94,6 +95,17 @@ export async function testProfileProvider(input: ProfileProviderTestInput): Prom
 
 export async function deleteProfile(profileId: string): Promise<{ ok: true }> {
   await softDeleteProfile(profileId);
+  return { ok: true };
+}
+
+export async function permanentlyDeleteProfile(profileId: string): Promise<{ ok: true }> {
+  const profile = await removeProfileRecord(profileId);
+  await deleteProfileSecrets(profile.id);
+  await Promise.all([
+    fs.rm(profile.paths.codexHome, { force: true, recursive: true }),
+    fs.rm(profile.paths.userDataDir, { force: true, recursive: true }),
+    fs.rm(profile.paths.launcherPath, { force: true, recursive: true })
+  ]);
   return { ok: true };
 }
 

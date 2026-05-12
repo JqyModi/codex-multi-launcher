@@ -14,6 +14,7 @@ const api = {
   createProfile: (input) => ipcRenderer.invoke("profiles:create", input),
   updateProfile: (input) => ipcRenderer.invoke("profiles:update", input),
   deleteProfile: (profileId) => ipcRenderer.invoke("profiles:delete", profileId),
+  permanentlyDeleteProfile: (profileId) => ipcRenderer.invoke("profiles:delete-permanently", profileId),
   restoreProfile: (profileId) => ipcRenderer.invoke("profiles:restore", profileId),
   generateLauncher: (profileId) => ipcRenderer.invoke("profiles:generate-launcher", profileId),
   openProfile: (profileId) => ipcRenderer.invoke("profiles:open", profileId)

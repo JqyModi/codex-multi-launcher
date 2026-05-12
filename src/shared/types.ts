@@ -201,6 +201,7 @@ export interface CodexApi {
   updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult>;
   restoreConfigBackup(input: RestoreConfigBackupInput): Promise<RestoreConfigBackupResult>;
   deleteProfile(profileId: string): Promise<{ ok: true }>;
+  permanentlyDeleteProfile(profileId: string): Promise<{ ok: true }>;
   restoreProfile(profileId: string): Promise<{ ok: true }>;
   generateLauncher(profileId: string): Promise<LauncherResult>;
   openProfile(profileId: string): Promise<{ pid: number | null }>;

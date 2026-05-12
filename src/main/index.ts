@@ -11,6 +11,7 @@ import {
   listConfigBackups,
   listProfiles,
   openProfile,
+  permanentlyDeleteProfile,
   restoreProfile,
   restoreConfigBackup,
   testProfileProvider,
@@ -68,6 +69,7 @@ function registerIpc(): void {
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));
   ipcMain.handle("profiles:update", (_event, input: UpdateProfileInput) => updateProfile(input));
   ipcMain.handle("profiles:delete", (_event, profileId: string) => deleteProfile(profileId));
+  ipcMain.handle("profiles:delete-permanently", (_event, profileId: string) => permanentlyDeleteProfile(profileId));
   ipcMain.handle("profiles:restore", (_event, profileId: string) => restoreProfile(profileId));
   ipcMain.handle("profiles:generate-launcher", (_event, profileId: string) => generateProfileLauncher(profileId));
   ipcMain.handle("profiles:open", (_event, profileId: string) => openProfile(profileId));

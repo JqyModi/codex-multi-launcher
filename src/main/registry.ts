@@ -113,6 +113,18 @@ export async function restoreProfileRecord(profileId: string): Promise<void> {
   await saveRegistry(registry);
 }
 
+export async function removeProfileRecord(profileId: string): Promise<ManagedProfile> {
+  const registry = await loadRegistry();
+  const profile = registry.profiles.find((item) => item.id === profileId);
+  if (!profile) {
+    throw new Error(`Profile not found: ${profileId}`);
+  }
+
+  registry.profiles = registry.profiles.filter((item) => item.id !== profileId);
+  await saveRegistry(registry);
+  return profile;
+}
+
 export async function updateProfileRecord(input: UpdateProfileInput): Promise<ManagedProfile> {
   const registry = await loadRegistry();
   const profile = registry.profiles.find((item) => item.id === input.profileId);

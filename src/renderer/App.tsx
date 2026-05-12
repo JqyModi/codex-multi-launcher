@@ -53,6 +53,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     selectedProfile: "选中的 Profile",
     revealFiles: "显示文件",
     restore: "恢复",
+    deletePermanently: "彻底删除",
     remove: "移除",
     open: "打开",
     noProfilesTitle: "还没有 Profile",
@@ -108,7 +109,11 @@ const TEXT: Record<Language, Record<string, string>> = {
     notChecked: "未检查",
     never: "从未启动",
     diagnosticsCopied: "诊断报告已复制，不包含 API Key。",
-    loadingChecks: "正在加载检查项..."
+    loadingChecks: "正在加载检查项...",
+    activeProfiles: "可用 Profile",
+    removedProfiles: "已移除 Profile",
+    permanentDeleteConfirm: "彻底删除后无法恢复。将同时删除该 Profile 的 CODEX_HOME、user-data-dir、启动器和本地密钥。确定继续吗？",
+    permanentDeleteDone: "Profile 及附属文件已彻底删除。"
   },
   en: {
     appTitle: "Codex Profiles",
@@ -130,6 +135,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     selectedProfile: "Selected Profile",
     revealFiles: "Reveal Files",
     restore: "Restore",
+    deletePermanently: "Delete Permanently",
     remove: "Remove",
     open: "Open",
     noProfilesTitle: "No profiles yet",
@@ -185,7 +191,11 @@ const TEXT: Record<Language, Record<string, string>> = {
     notChecked: "Not checked",
     never: "Never",
     diagnosticsCopied: "Diagnostics report copied. API keys are not included.",
-    loadingChecks: "Loading checks..."
+    loadingChecks: "Loading checks...",
+    activeProfiles: "Active Profiles",
+    removedProfiles: "Removed Profiles",
+    permanentDeleteConfirm: "This cannot be undone. CODEX_HOME, user-data-dir, launcher, and local secret will be deleted. Continue?",
+    permanentDeleteDone: "Profile and generated files were permanently deleted."
   }
 };
 
@@ -232,6 +242,8 @@ export function App() {
     () => profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0] ?? null,
     [profiles, selectedProfileId]
   );
+  const activeProfiles = useMemo(() => profiles.filter((profile) => profile.status !== "deleted"), [profiles]);
+  const deletedProfiles = useMemo(() => profiles.filter((profile) => profile.status === "deleted"), [profiles]);
 
   const currentStepIndex = WIZARD_STEPS.findIndex((step) => step === wizardStep);
   const canGoBack = currentStepIndex > 0;
@@ -394,6 +406,17 @@ export function App() {
     await refresh();
   }
 
+  async function permanentlyDeleteSelectedProfile() {
+    if (!selectedProfile) return;
+    const confirmed = window.confirm(t.permanentDeleteConfirm);
+    if (!confirmed) return;
+
+    await window.codexProfileManager.permanentlyDeleteProfile(selectedProfile.id);
+    setSelectedProfileId(null);
+    setMessage(t.permanentDeleteDone);
+    await refresh();
+  }
+
   async function saveSelectedProfile() {
     if (!selectedProfile) return;
     setIsUpdatingProfile(true);
@@ -479,19 +502,19 @@ export function App() {
           {profiles.length === 0 ? (
             <p className="empty-text">{t.noProfiles}</p>
           ) : (
-            profiles.map((profile) => (
-              <button
-                className={`profile-row ${selectedProfile?.id === profile.id ? "selected" : ""}`}
-                key={profile.id}
-                onClick={() => setSelectedProfileId(profile.id)}
-                type="button"
-              >
-                <span className="profile-name">{profile.name}</span>
-                <span className="profile-meta">{profile.provider.displayName} / {profile.provider.model}</span>
-                {profile.status === "deleted" ? <span className="runtime-badge deleted">Removed</span> : null}
-                <RuntimeBadge runtime={runtimeStatuses.find((item) => item.profileId === profile.id)} />
-              </button>
-            ))
+            <>
+              {activeProfiles.map((profile) => (
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeStatuses.find((item) => item.profileId === profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
+              ))}
+              {deletedProfiles.length > 0 ? (
+                <div className="profile-group-separator">
+                  <span>{t.removedProfiles}</span>
+                </div>
+              ) : null}
+              {deletedProfiles.map((profile) => (
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeStatuses.find((item) => item.profileId === profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
+              ))}
+            </>
           )}
         </div>
         <div className="sidebar-footer">
@@ -551,6 +574,10 @@ export function App() {
                 <button className="button primary" onClick={() => void restoreSelectedProfile()} type="button">
                   {t.restore}
                 </button>
+                <button className="button danger" onClick={() => void permanentlyDeleteSelectedProfile()} type="button">
+                  <Trash2 size={15} />
+                  {t.deletePermanently}
+                </button>
               </div>
             ) : selectedProfile ? (
               <div className="detail-actions">
@@ -586,12 +613,14 @@ export function App() {
                         <strong>{new Date(backup.createdAt).toLocaleString()}</strong>
                         <p>{backup.reason}</p>
                       </div>
-                      <button className="icon-button" onClick={() => void revealPath(backup.backupPath)} title="Reveal backup" type="button">
-                        <FolderOpen size={15} />
-                      </button>
-                      <button className="button secondary compact" onClick={() => void restoreBackup(backup)} type="button">
-                        {t.restore}
-                      </button>
+                      <div className="backup-actions">
+                        <button className="icon-button" onClick={() => void revealPath(backup.backupPath)} title="Reveal backup" type="button">
+                          <FolderOpen size={15} />
+                        </button>
+                        <button className="button secondary compact" onClick={() => void restoreBackup(backup)} type="button">
+                          {t.restore}
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -876,6 +905,21 @@ function RuntimeBadge({ runtime }: { runtime?: ProfileRuntimeInfo }) {
   const status = runtime?.status ?? "unknown";
   const label = status === "running" ? `Running${runtime?.pid ? ` : ${runtime.pid}` : ""}` : status === "not_running" ? "Not running" : "Unknown";
   return <span className={`runtime-badge ${status}`}>{label}</span>;
+}
+
+function ProfileRow({ onSelect, profile, runtime, selected }: { onSelect: () => void; profile: ManagedProfile; runtime?: ProfileRuntimeInfo; selected: boolean }) {
+  return (
+    <button
+      className={`profile-row ${selected ? "selected" : ""}`}
+      onClick={onSelect}
+      type="button"
+    >
+      <span className="profile-name">{profile.name}</span>
+      <span className="profile-meta">{profile.provider.displayName} / {profile.provider.model}</span>
+      {profile.status === "deleted" ? <span className="runtime-badge deleted">Removed</span> : null}
+      <RuntimeBadge runtime={runtime} />
+    </button>
+  );
 }
 
 function summarizeEnvironment(environment: EnvironmentReport | null, t: Record<string, string>): { label: string; shortLabel: string; status: "pass" | "warn" | "fail" } {
