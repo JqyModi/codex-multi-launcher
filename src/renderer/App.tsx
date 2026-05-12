@@ -24,6 +24,7 @@ import type {
   ConfigBackupInfo,
   ManagedProfile,
   ProfileRuntimeInfo,
+  ProviderModelsResult,
   ProviderTestResult
 } from "../shared/types";
 
@@ -80,6 +81,11 @@ const TEXT: Record<Language, Record<string, string>> = {
     providerName: "Provider 名称",
     baseUrl: "Base URL",
     model: "模型",
+    fetchModels: "获取模型",
+    fetchingModels: "获取中",
+    modelsFound: "可用模型",
+    modelsUnavailable: "未获取到模型列表，可继续手动输入。",
+    chooseModel: "选择",
     apiKey: "API Key",
     testProvider: "测试 Provider",
     testing: "测试中",
@@ -162,6 +168,11 @@ const TEXT: Record<Language, Record<string, string>> = {
     providerName: "Provider name",
     baseUrl: "Base URL",
     model: "Model",
+    fetchModels: "Fetch Models",
+    fetchingModels: "Fetching",
+    modelsFound: "Available Models",
+    modelsUnavailable: "No model list found. You can keep typing manually.",
+    chooseModel: "Use",
     apiKey: "API key",
     testProvider: "Test Provider",
     testing: "Testing...",
@@ -230,6 +241,10 @@ export function App() {
   const [language, setLanguage] = useState<Language>("zh");
   const [providerTest, setProviderTest] = useState<ProviderTestResult | null>(null);
   const [editProviderTest, setEditProviderTest] = useState<ProviderTestResult | null>(null);
+  const [providerModels, setProviderModels] = useState<ProviderModelsResult | null>(null);
+  const [editProviderModels, setEditProviderModels] = useState<ProviderModelsResult | null>(null);
+  const [isFetchingProviderModels, setIsFetchingProviderModels] = useState(false);
+  const [isFetchingEditProviderModels, setIsFetchingEditProviderModels] = useState(false);
   const [editForm, setEditForm] = useState({
     providerName: "",
     baseUrl: "",
@@ -281,6 +296,7 @@ export function App() {
       apiKey: ""
     });
     setEditProviderTest(null);
+    setEditProviderModels(null);
     void window.codexProfileManager.listConfigBackups(selectedProfile.id).then(setConfigBackups);
   }, [selectedProfile]);
 
@@ -318,6 +334,7 @@ export function App() {
       setMessage(`Created ${result.profile.name}. Launcher: ${result.launcherPath}`);
       setForm({ ...DEFAULT_FORM, name: `${form.name} 2` });
       setProviderTest(null);
+      setProviderModels(null);
       setWizardStep("profile");
       setIsCreateProfileOpen(false);
     } catch (error) {
@@ -353,6 +370,30 @@ export function App() {
     }
   }
 
+  async function fetchProviderModels() {
+    setIsFetchingProviderModels(true);
+    setProviderModels(null);
+    setMessage(null);
+
+    try {
+      const result = await window.codexProfileManager.listProviderModels({
+        baseUrl: form.providerType === "third_party_responses" ? form.baseUrl : "https://api.openai.com/v1",
+        apiKey: form.apiKey
+      });
+      setProviderModels(result);
+    } catch (error) {
+      setProviderModels({
+        status: "unknown_error",
+        ok: false,
+        summary: "Model list failed",
+        details: error instanceof Error ? error.message : "Unknown model list error.",
+        models: []
+      });
+    } finally {
+      setIsFetchingProviderModels(false);
+    }
+  }
+
   async function testEditProvider() {
     if (!selectedProfile) return;
 
@@ -378,6 +419,32 @@ export function App() {
       });
     } finally {
       setIsTestingEditProvider(false);
+    }
+  }
+
+  async function fetchEditProviderModels() {
+    if (!selectedProfile) return;
+
+    setIsFetchingEditProviderModels(true);
+    setEditProviderModels(null);
+
+    try {
+      const result = await window.codexProfileManager.listProfileProviderModels({
+        profileId: selectedProfile.id,
+        baseUrl: editForm.baseUrl,
+        apiKey: editForm.apiKey || undefined
+      });
+      setEditProviderModels(result);
+    } catch (error) {
+      setEditProviderModels({
+        status: "unknown_error",
+        ok: false,
+        summary: "Model list failed",
+        details: error instanceof Error ? error.message : "Unknown model list error.",
+        models: []
+      });
+    } finally {
+      setIsFetchingEditProviderModels(false);
     }
   }
 
@@ -637,8 +704,20 @@ export function App() {
                 </label>
                 <label>
                   {t.model}
-                  <input value={editForm.model} onChange={(event) => setEditForm({ ...editForm, model: event.target.value })} />
+                  <div className="input-action-row">
+                    <input value={editForm.model} onChange={(event) => setEditForm({ ...editForm, model: event.target.value })} />
+                    <button className="button secondary compact" disabled={isFetchingEditProviderModels || !editForm.baseUrl} onClick={() => void fetchEditProviderModels()} type="button">
+                      <RefreshCcw size={14} />
+                      {isFetchingEditProviderModels ? t.fetchingModels : t.fetchModels}
+                    </button>
+                  </div>
                 </label>
+                <ModelPicker
+                  modelsResult={editProviderModels}
+                  selectedModel={editForm.model}
+                  t={t}
+                  onSelect={(model) => setEditForm((current) => ({ ...current, model }))}
+                />
                 <label>
                   {t.newApiKey}
                   <input placeholder={t.keepCurrentKey} type="password" value={editForm.apiKey} onChange={(event) => setEditForm({ ...editForm, apiKey: event.target.value })} />
@@ -678,9 +757,17 @@ export function App() {
             form={form}
             providerTest={providerTest}
             isTestingProvider={isTestingProvider}
+            isFetchingProviderModels={isFetchingProviderModels}
+            providerModels={providerModels}
             wizardStep={wizardStep}
             t={t}
-            onChange={setForm}
+            onChange={(nextForm) => {
+              setForm(nextForm);
+              if (nextForm.baseUrl !== form.baseUrl || nextForm.apiKey !== form.apiKey || nextForm.providerType !== form.providerType) {
+                setProviderModels(null);
+              }
+            }}
+            onFetchModels={() => void fetchProviderModels()}
             onPickLauncherDirectory={() => void pickLauncherDirectory()}
             onTestProvider={() => void testProvider()}
           />
@@ -766,18 +853,24 @@ function WizardBody({
   form,
   providerTest,
   isTestingProvider,
+  isFetchingProviderModels,
+  providerModels,
   wizardStep,
   t,
   onChange,
+  onFetchModels,
   onPickLauncherDirectory,
   onTestProvider
 }: {
   form: typeof DEFAULT_FORM;
   providerTest: ProviderTestResult | null;
   isTestingProvider: boolean;
+  isFetchingProviderModels: boolean;
+  providerModels: ProviderModelsResult | null;
   wizardStep: WizardStep;
   t: Record<string, string>;
   onChange: (nextForm: typeof DEFAULT_FORM) => void;
+  onFetchModels: () => void;
   onPickLauncherDirectory: () => void;
   onTestProvider: () => void;
 }) {
@@ -823,8 +916,20 @@ function WizardBody({
         ) : null}
         <label>
           {t.model}
-          <input value={form.model} onChange={(event) => onChange({ ...form, model: event.target.value })} />
+          <div className="input-action-row">
+            <input value={form.model} onChange={(event) => onChange({ ...form, model: event.target.value })} />
+            <button className="button secondary compact" disabled={isFetchingProviderModels || (form.providerType === "third_party_responses" && !form.baseUrl) || !form.apiKey} onClick={onFetchModels} type="button">
+              <RefreshCcw size={14} />
+              {isFetchingProviderModels ? t.fetchingModels : t.fetchModels}
+            </button>
+          </div>
         </label>
+        <ModelPicker
+          modelsResult={providerModels}
+          selectedModel={form.model}
+          t={t}
+          onSelect={(model) => onChange({ ...form, model })}
+        />
         <label>
           {t.apiKey}
           <input type="password" value={form.apiKey} onChange={(event) => onChange({ ...form, apiKey: event.target.value })} />
@@ -877,6 +982,41 @@ function WizardBody({
       <PathRow label={t.launcherDirectory} value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
       <PathRow label={t.inheritConfigReview} value={form.inheritDefaultConfig ? t.yes : t.no} />
       <PathRow label={t.providerTestReview} value={providerTest ? providerTest.summary : t.notTested} />
+    </div>
+  );
+}
+
+function ModelPicker({ modelsResult, onSelect, selectedModel, t }: { modelsResult: ProviderModelsResult | null; onSelect: (model: string) => void; selectedModel: string; t: Record<string, string> }) {
+  if (!modelsResult) {
+    return null;
+  }
+
+  if (!modelsResult.ok || modelsResult.models.length === 0) {
+    return (
+      <div className="model-discovery muted">
+        <div>
+          <strong>{modelsResult.summary}</strong>
+          <p>{modelsResult.details || t.modelsUnavailable}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="model-discovery">
+      <div className="model-discovery-heading">
+        <strong>{t.modelsFound}</strong>
+        <span>{modelsResult.models.length}</span>
+      </div>
+      <div className="model-options">
+        {modelsResult.models.slice(0, 12).map((model) => (
+          <button className={`model-option ${selectedModel === model.id ? "selected" : ""}`} key={model.id} onClick={() => onSelect(model.id)} type="button">
+            <span>{model.displayName ?? model.id}</span>
+            {model.displayName ? <code>{model.id}</code> : null}
+            <small>{t.chooseModel}</small>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

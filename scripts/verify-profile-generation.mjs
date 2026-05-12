@@ -29,6 +29,27 @@ const { createProfile, deleteProfile, listConfigBackups, listProfiles, permanent
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const { getApiKey } = await import("../dist-electron/main/secrets.js");
 const { getDiagnosticsReport } = await import("../dist-electron/main/diagnostics.js");
+const { extractModelOptions } = await import("../dist-electron/main/provider-test.js");
+
+assertExtractedModels(
+  {
+    object: "list",
+    data: [
+      {
+        id: "gpt-5.2",
+        object: "model",
+        display_name: "GPT-5.2"
+      }
+    ]
+  },
+  ["gpt-5.2"],
+  "OpenAI-style /models response should parse data[].id"
+);
+assertExtractedModels({ results: [{ id: "proxy-model" }] }, ["proxy-model"], "results[].id should parse as models");
+assertExtractedModels({ list: [{ id: "listed-model" }] }, ["listed-model"], "list[].id should parse as models");
+assertExtractedModels({ "data/list/results": [{ id: "slash-key-model" }] }, ["slash-key-model"], "slash-key array response should parse as models");
+assertExtractedModels({ nested: { data: [{ id: "deep-model" }, { id: 123 }] } }, ["deep-model"], "nested model arrays should parse string ids only");
+assertExtractedModels({ data: [{ name: "missing-id" }] }, [], "responses without id strings should not produce models");
 
 const fakeKey = "sk-test-verify-profile-generation";
 const result = await createProfile({
@@ -238,6 +259,11 @@ function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function assertExtractedModels(payload, expectedIds, message) {
+  const actualIds = extractModelOptions(payload).map((model) => model.id);
+  assert(JSON.stringify(actualIds) === JSON.stringify(expectedIds), message);
 }
 
 async function fileExists(targetPath) {

@@ -4,10 +4,10 @@ import { codexExecutablePath } from "./paths.js";
 import { listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
 import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
-import { testProvider } from "./provider-test.js";
+import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
-import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
+import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderModelsInput, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderModelsResult, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
 export { listProfiles };
 
@@ -90,6 +90,25 @@ export async function testProfileProvider(input: ProfileProviderTestInput): Prom
     baseUrl: profile.provider.type === "third_party_responses" ? input.baseUrl ?? profile.provider.baseUrl ?? "" : "https://api.openai.com/v1",
     apiKey,
     model: input.model
+  });
+}
+
+export async function listProfileProviderModels(input: ProfileProviderModelsInput): Promise<ProviderModelsResult> {
+  const profile = await mustFindProfile(input.profileId);
+  const apiKey = input.apiKey || await getApiKey(profile.id, profile.provider.id);
+  if (!apiKey) {
+    return {
+      status: "auth_failed",
+      ok: false,
+      summary: "API key not found",
+      details: "No saved API key was found for this profile. Enter a new API key and try again.",
+      models: []
+    };
+  }
+
+  return listProviderModels({
+    baseUrl: profile.provider.type === "third_party_responses" ? input.baseUrl ?? profile.provider.baseUrl ?? "" : "https://api.openai.com/v1",
+    apiKey
   });
 }
 

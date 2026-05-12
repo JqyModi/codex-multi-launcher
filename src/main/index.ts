@@ -8,6 +8,7 @@ import {
   deleteProfile,
   generateProfileLauncher,
   getRuntimeStatus,
+  listProfileProviderModels,
   listConfigBackups,
   listProfiles,
   openProfile,
@@ -17,8 +18,8 @@ import {
   testProfileProvider,
   updateProfile
 } from "./profile-service.js";
-import { testProvider } from "./provider-test.js";
-import type { CreateProfileInput, ProfileProviderTestInput, ProviderTestInput, RestoreConfigBackupInput, UpdateProfileInput } from "../shared/types.js";
+import { listProviderModels, testProvider } from "./provider-test.js";
+import type { CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTestInput, ProviderModelsInput, ProviderTestInput, RestoreConfigBackupInput, UpdateProfileInput } from "../shared/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +67,8 @@ function registerIpc(): void {
   ipcMain.handle("profiles:runtime", () => getRuntimeStatus());
   ipcMain.handle("provider:test", (_event, input: ProviderTestInput) => testProvider(input));
   ipcMain.handle("profiles:test-provider", (_event, input: ProfileProviderTestInput) => testProfileProvider(input));
+  ipcMain.handle("provider:models", (_event, input: ProviderModelsInput) => listProviderModels(input));
+  ipcMain.handle("profiles:models", (_event, input: ProfileProviderModelsInput) => listProfileProviderModels(input));
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));
   ipcMain.handle("profiles:update", (_event, input: UpdateProfileInput) => updateProfile(input));
   ipcMain.handle("profiles:delete", (_event, profileId: string) => deleteProfile(profileId));

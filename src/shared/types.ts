@@ -172,6 +172,31 @@ export interface ProfileProviderTestInput {
   model: string;
 }
 
+export interface ProviderModelOption {
+  id: string;
+  displayName?: string;
+}
+
+export interface ProviderModelsInput {
+  baseUrl: string;
+  apiKey: string;
+}
+
+export interface ProfileProviderModelsInput {
+  profileId: string;
+  baseUrl?: string;
+  apiKey?: string;
+}
+
+export interface ProviderModelsResult {
+  status: "passed" | "auth_failed" | "unreachable" | "invalid_url" | "no_models" | "unknown_error";
+  ok: boolean;
+  summary: string;
+  details: string;
+  models: ProviderModelOption[];
+  httpStatus?: number;
+}
+
 export interface ProviderTestResult {
   status: "passed" | "auth_failed" | "unreachable" | "responses_unsupported" | "invalid_url" | "unknown_error";
   ok: boolean;
@@ -197,6 +222,8 @@ export interface CodexApi {
   getRuntimeStatus(): Promise<ProfileRuntimeInfo[]>;
   testProvider(input: ProviderTestInput): Promise<ProviderTestResult>;
   testProfileProvider(input: ProfileProviderTestInput): Promise<ProviderTestResult>;
+  listProviderModels(input: ProviderModelsInput): Promise<ProviderModelsResult>;
+  listProfileProviderModels(input: ProfileProviderModelsInput): Promise<ProviderModelsResult>;
   createProfile(input: CreateProfileInput): Promise<CreateProfileResult>;
   updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult>;
   restoreConfigBackup(input: RestoreConfigBackupInput): Promise<RestoreConfigBackupResult>;

@@ -1,4 +1,4 @@
-import type { ProviderTestInput, ProviderTestResult } from "../shared/types.js";
+import type { ProviderModelOption, ProviderModelsInput, ProviderModelsResult, ProviderTestInput, ProviderTestResult } from "../shared/types.js";
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -31,6 +31,17 @@ function errorResult(status: ProviderTestResult["status"], summary: string, deta
   };
 }
 
+function modelErrorResult(status: ProviderModelsResult["status"], summary: string, details: string, extra: Partial<ProviderModelsResult> = {}): ProviderModelsResult {
+  return {
+    status,
+    ok: false,
+    summary,
+    details,
+    models: [],
+    ...extra
+  };
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -42,6 +53,124 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
     });
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+export function extractModelOptions(payload: unknown): ProviderModelOption[] {
+  const seen = new Set<string>();
+  const models: ProviderModelOption[] = [];
+  const visited = new Set<object>();
+  const queue: unknown[] = [payload];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== "object") {
+      continue;
+    }
+
+    if (visited.has(current)) {
+      continue;
+    }
+    visited.add(current);
+
+    if (Array.isArray(current)) {
+      const candidateModels = current
+        .map((item) => modelOptionFromUnknown(item))
+        .filter((item): item is ProviderModelOption => Boolean(item));
+
+      if (candidateModels.length > 0) {
+        for (const model of candidateModels) {
+          if (seen.has(model.id)) {
+            continue;
+          }
+          seen.add(model.id);
+          models.push(model);
+        }
+      }
+
+      for (const item of current) {
+        queue.push(item);
+      }
+      continue;
+    }
+
+    for (const value of Object.values(current)) {
+      queue.push(value);
+    }
+  }
+
+  return models;
+}
+
+function modelOptionFromUnknown(value: unknown): ProviderModelOption | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string" || !record.id.trim()) {
+    return null;
+  }
+
+  const displayName = [record.display_name, record.name, record.label].find((item): item is string => typeof item === "string" && item.trim().length > 0);
+  return {
+    id: record.id.trim(),
+    ...(displayName ? { displayName: displayName.trim() } : {})
+  };
+}
+
+export async function listProviderModels(input: ProviderModelsInput): Promise<ProviderModelsResult> {
+  const baseUrl = normalizeBaseUrl(input.baseUrl);
+  if (!baseUrl) {
+    return modelErrorResult("invalid_url", "Invalid Base URL", "Base URL must be a valid http or https URL.");
+  }
+
+  if (!input.apiKey.trim()) {
+    return modelErrorResult("auth_failed", "Missing API key", "Enter an API key before fetching models.");
+  }
+
+  const headers = {
+    Authorization: `Bearer ${input.apiKey}`,
+    "Content-Type": "application/json"
+  };
+
+  try {
+    const response = await fetchWithTimeout(endpoint(baseUrl, "/models"), {
+      method: "GET",
+      headers
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      return modelErrorResult("auth_failed", "Authentication failed", "The provider rejected the API key.", {
+        httpStatus: response.status
+      });
+    }
+
+    if (!response.ok) {
+      const body = await response.text();
+      return modelErrorResult("unknown_error", "Model list unavailable", body.slice(0, 800) || response.statusText, {
+        httpStatus: response.status
+      });
+    }
+
+    const payload = await response.json();
+    const models = extractModelOptions(payload);
+    if (models.length === 0) {
+      return modelErrorResult("no_models", "No models found", "The /models response did not contain an array of objects with string id fields.", {
+        httpStatus: response.status
+      });
+    }
+
+    return {
+      status: "passed",
+      ok: true,
+      summary: `${models.length} models found`,
+      details: "Select one below, or keep typing a model name manually.",
+      models,
+      httpStatus: response.status
+    };
+  } catch (error) {
+    return modelErrorResult("unreachable", "Provider unreachable", error instanceof Error ? error.message : "Could not connect to /models.");
   }
 }
 
