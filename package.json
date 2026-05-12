@@ -2,7 +2,7 @@
   "name": "codex-profile-manager",
   "version": "0.1.0",
   "private": true,
-  "description": "macOS desktop utility for managing isolated Codex App profiles.",
+  "description": "Desktop utility for creating isolated Codex App windows with separate API provider profiles.",
   "main": "dist-electron/main/index.js",
   "type": "module",
   "scripts": {
@@ -11,7 +11,9 @@
     "build:renderer": "tsc -p tsconfig.renderer.json && vite build",
     "dev": "npm run build:main && concurrently -k \"tsc -p tsconfig.main.json --watch\" \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build:icon": "node scripts/build-icon.mjs",
-    "package:mac": "npm run build:icon && npm run build && electron-builder --mac dir --arm64 --config electron-builder.yml",
+    "package:mac": "npm run build:icon && npm run build && electron-builder --mac zip dir --arm64 --config electron-builder.yml",
+    "package:mac:dir": "npm run build:icon && npm run build && electron-builder --mac dir --arm64 --config electron-builder.yml",
+    "package:mac:dmg": "npm run build:icon && npm run build && electron-builder --mac dmg --arm64 --config electron-builder.yml",
     "start": "npm run build && electron .",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
     "verify:e2e": "npm run build && node scripts/verify-profile-generation.mjs"

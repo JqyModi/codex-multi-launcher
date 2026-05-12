@@ -30,7 +30,7 @@ function createWindow(): void {
     height: 760,
     minWidth: 1040,
     minHeight: 680,
-    title: "Codex Profile Manager",
+    title: "Codex 多开助手",
     backgroundColor: "#F6F7F9",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.cjs"),

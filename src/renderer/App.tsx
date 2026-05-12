@@ -35,7 +35,7 @@ const WIZARD_STEPS: WizardStep[] = ["profile", "provider", "test", "launcher", "
 
 const TEXT: Record<Language, Record<string, string>> = {
   zh: {
-    appTitle: "Codex Profiles",
+    appTitle: "Codex 多开助手",
     appSubtitle: "本地多开配置管理",
     pageTitle: "Profile Manager",
     pageSubtitle: "创建隔离的 Codex 桌面窗口，并为每个窗口使用独立配置。",
@@ -122,7 +122,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     permanentDeleteDone: "Profile 及附属文件已彻底删除。"
   },
   en: {
-    appTitle: "Codex Profiles",
+    appTitle: "Codex Launcher",
     appSubtitle: "Local multi-instance manager",
     pageTitle: "Profile Manager",
     pageSubtitle: "Create isolated Codex desktop windows with separate provider configuration.",

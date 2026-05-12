@@ -2,7 +2,7 @@
 
 ## 1. Direction
 
-Codex Profile Manager should feel like a focused macOS developer utility, not a marketing SaaS page.
+Codex 多开助手 should feel like a focused macOS utility for non-expert Codex users, not a marketing SaaS page.
 
 The interface should prioritize:
 
@@ -35,6 +35,7 @@ The MVP now follows a light macOS utility style inspired by QClaw's product rhyt
 - Empty states should be compact and useful, never a marketing landing page.
 - Global utility controls such as language, environment, refresh, and diagnostics belong in the top toolbar.
 - For Chinese users, Simplified Chinese is the default UI language. English is available as a secondary global toggle.
+- The public Chinese product name should communicate the core job directly. Prefer `Codex 多开助手` over technical names like `Codex Profile Manager` in user-facing surfaces.
 
 ## 3. Layout
 
@@ -160,10 +161,18 @@ Current shell controls use 10px radius for compact toolbar and sidebar buttons, 
 
 ### Global Language Switch
 
-- Place language switching in the top toolbar as a compact segmented control.
+- Place language switching in the fixed sidebar footer as a compact pill.
 - Default to Simplified Chinese.
 - Keep labels short: `中文` and `EN`.
 - Do not place language switching inside profile setup; it is an app-level preference.
+
+### App Icon
+
+- Use a rounded macOS-style square.
+- Communicate "multiple isolated Codex windows" through layered window panels.
+- Use a small forward arrow or launch mark to imply opening a generated instance.
+- Keep the icon legible at 16px by avoiding text and thin strokes.
+- Use the product palette: blue primary, white surface, dark code accent, restrained green success accent.
 
 ### Status Badges
 

@@ -1,6 +1,6 @@
-# Codex Profile Manager
+# Codex 多开助手
 
-MVP planning workspace for a macOS desktop app that creates and manages isolated Codex App profiles.
+MVP planning workspace for a desktop app that creates and manages isolated Codex App windows with separate provider profiles.
 
 ## MVP Decisions
 
@@ -11,6 +11,34 @@ MVP planning workspace for a macOS desktop app that creates and manages isolated
 - Secret storage: local encrypted file for fast validation.
 - Launcher location: `~/Applications/Codex Profiles/` by default, with user-selectable custom location.
 - Generated launchers must set both `CODEX_HOME` and `--user-data-dir`.
+
+## Product Naming
+
+Current user-facing Chinese name: **Codex 多开助手**.
+
+Reasoning:
+
+- `多开` directly names the main pain point for Chinese users.
+- `助手` lowers the perceived technical barrier compared with `Profile Manager`.
+- English-facing copy can still use `Codex Launcher` or `Codex Profile Manager` in technical documentation.
+
+## Local Packaging
+
+Build a local macOS package:
+
+```bash
+npm run package:mac
+```
+
+Artifacts are written to `dist-app/`. Unsigned local builds are useful for MVP validation, but macOS may block them on another machine until the user removes quarantine or the app is signed and notarized.
+
+For a quick teammate share, send the generated zip from `dist-app/`. If macOS blocks the app after unzip, the recipient can run:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
+```
+
+This is only a local MVP workaround. Public distribution should use Developer ID signing and notarization.
 
 ## Documents
 
