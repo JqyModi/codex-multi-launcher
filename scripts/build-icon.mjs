@@ -5,11 +5,11 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const iconset = "build/icon.iconset";
 const sourcePng = `${iconset}/icon_512x512@2x.png`;
+const sourceAsset = "assets/logo-light-2.png";
 
 await fs.rm("build", { recursive: true, force: true });
 await fs.mkdir(iconset, { recursive: true });
-await execFileAsync("qlmanage", ["-t", "-s", "1024", "-o", iconset, "assets/icon.svg"]);
-await fs.rename(`${iconset}/icon.svg.png`, sourcePng);
+await execFileAsync("sips", ["-z", "1024", "1024", sourceAsset, "--out", sourcePng]);
 
 const sizes = [
   ["16", "icon_16x16.png"],
