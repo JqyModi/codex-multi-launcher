@@ -494,6 +494,12 @@ export function App() {
             ))
           )}
         </div>
+        <div className="sidebar-footer">
+          <button className="language-switch" aria-label="Language" onClick={() => setLanguage(language === "zh" ? "en" : "zh")} type="button">
+            <Languages size={15} />
+            <span>{language === "zh" ? "中文" : "EN"}</span>
+          </button>
+        </div>
       </aside>
 
       <section className="content">
@@ -501,10 +507,6 @@ export function App() {
           <div>
             <h2>{t.pageTitle}</h2>
             <p>{t.pageSubtitle}</p>
-          </div>
-          <div className="language-switch" aria-label="Language">
-            <Languages size={15} />
-            <button onClick={() => setLanguage(language === "zh" ? "en" : "zh")} type="button">{language === "zh" ? "中文" : "EN"}</button>
           </div>
           <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
             {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}

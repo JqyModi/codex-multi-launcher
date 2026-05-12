@@ -42,6 +42,8 @@ code {
 }
 
 .sidebar {
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid rgb(225 228 234 / 80%);
   background: rgb(255 255 255 / 76%);
   backdrop-filter: blur(18px);
@@ -134,6 +136,12 @@ code {
   gap: 8px;
 }
 
+.sidebar-footer {
+  display: flex;
+  margin-top: auto;
+  padding-top: 18px;
+}
+
 .profile-row {
   align-items: flex-start;
   flex-direction: column;
@@ -213,6 +221,7 @@ code {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   height: 32px;
   border: 1px solid #dde3ed;
@@ -221,16 +230,7 @@ code {
   color: #667085;
   background: rgb(255 255 255 / 86%);
   box-shadow: 0 10px 24px rgb(15 23 42 / 4%);
-}
-
-.language-switch button {
-  height: 24px;
-  min-width: 32px;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 4px;
   color: #1d4ed8;
-  background: #edf4ff;
   font-size: 12px;
   font-weight: 650;
 }
