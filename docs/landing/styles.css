@@ -406,6 +406,39 @@ p {
   padding: 18px;
 }
 
+.wechat-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgb(216 222 232 / 78%);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgb(255 255 255 / 72%);
+}
+
+.wechat-card strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.wechat-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.wechat-card img {
+  width: 104px;
+  height: 104px;
+  border: 1px solid rgb(216 222 232 / 78%);
+  border-radius: 16px;
+  background: #fff;
+}
+
 code {
   overflow: auto;
   border-radius: 14px;
