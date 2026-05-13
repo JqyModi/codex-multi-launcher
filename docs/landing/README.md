@@ -16,8 +16,8 @@ Then open `http://127.0.0.1:4174/landing/`. You can also open `docs/landing/inde
 
 Replace placeholder links in `index.html`:
 
-- `https://github.com/your-org/codex-multi-launcher/releases/latest`
-- `https://github.com/your-org/codex-multi-launcher/issues`
+- `https://github.com/JqyModi/codex-multi-launcher/releases/latest`
+- `https://github.com/JqyModi/codex-multi-launcher/issues`
 
 If GitHub Pages is configured to serve from `/docs`, keep the current relative image paths.
 
