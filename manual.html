@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Codex 多开助手图文用户手册，介绍安装、创建 Profile、配置 Provider、测试、启动和排错。" />
+    <title>用户手册 | Codex 多开助手</title>
+    <link rel="icon" href="assets/app-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="manual-page">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="返回 Codex 多开助手首页">
+        <img src="assets/app-icon.png" alt="" />
+        <span>Codex 多开助手</span>
+      </a>
+      <nav aria-label="手册导航">
+        <a href="index.html">首页</a>
+        <a href="#install">安装</a>
+        <a href="#provider">Provider</a>
+        <a href="#faq">排错</a>
+      </nav>
+    </header>
+
+    <main class="manual-layout">
+      <aside class="manual-toc" aria-label="手册目录">
+        <strong>用户手册</strong>
+        <a href="#overview">适用场景</a>
+        <a href="#install">安装与打开</a>
+        <a href="#dashboard">主界面说明</a>
+        <a href="#create">创建 Profile</a>
+        <a href="#provider">配置 Provider</a>
+        <a href="#test">测试与生成</a>
+        <a href="#edit">修改与备份</a>
+        <a href="#environment">环境检查</a>
+        <a href="#delete">移除与删除</a>
+        <a href="#faq">常见问题</a>
+      </aside>
+
+      <article class="manual-content">
+        <section id="overview" class="manual-hero">
+          <p class="eyebrow">图文用户手册</p>
+          <h1>从安装到创建第一个 Codex 多开窗口。</h1>
+          <p>
+            Codex 多开助手用于创建多个相互隔离的 Codex 桌面窗口。每个窗口都可以拥有独立的工作区、配置文件、API Key、Base URL 和模型。
+          </p>
+          <div class="manual-note">
+            <strong>适合这些场景</strong>
+            <ul>
+              <li>一个 Codex 窗口不够用，需要同时开启多个窗口处理不同项目。</li>
+              <li>希望一个窗口使用官方 OpenAI API Key，另一个窗口使用第三方 Responses 兼容接口。</li>
+              <li>不想手动修改 `config.toml`、启动脚本或命令行参数。</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="install" class="manual-section">
+          <h2>1. 安装与打开</h2>
+          <ol>
+            <li>解压 `Codex 多开助手-版本号-arm64-mac.zip`。</li>
+            <li>将 `Codex 多开助手.app` 拖到 `Applications`，或直接双击打开。</li>
+            <li>如果 macOS 提示无法打开，说明这是未签名测试版，可以在终端执行下面的命令。</li>
+          </ol>
+          <pre><code>xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"</code></pre>
+          <p>当前测试版主要面向 macOS Apple Silicon。正式公开分发前需要签名和 notarization。</p>
+        </section>
+
+        <section id="dashboard" class="manual-section">
+          <h2>2. 主界面说明</h2>
+          <figure>
+            <img src="user-manual-assets/01-dashboard.png" alt="Codex 多开助手主界面，展示 Profile 列表和选中 Profile 的详细信息。" />
+            <figcaption>左侧是 Profile 列表，右侧是当前选中 Profile 的路径、Provider、运行状态和操作按钮。</figcaption>
+          </figure>
+          <p>一个 Profile 就是一套独立 Codex 工作区配置。主界面会显示：</p>
+          <ul>
+            <li>`CODEX_HOME`：该 Codex 窗口使用的配置目录。</li>
+            <li>`user-data-dir`：该 Codex 桌面窗口自己的应用数据目录。</li>
+            <li>`Launcher`：生成的双击启动器 App。</li>
+            <li>`Provider`：当前使用的 API 服务商。</li>
+            <li>`Base URL`：第三方接口地址。</li>
+            <li>`Env key`：启动器内部使用的环境变量名。</li>
+          </ul>
+        </section>
+
+        <section id="create" class="manual-section">
+          <h2>3. 创建新的 Codex 多开窗口</h2>
+          <p>点击左侧 `创建 Profile` 后，会打开创建向导。</p>
+          <figure>
+            <img src="user-manual-assets/02-create-profile.png" alt="创建 Profile 第一步，填写名称并选择是否继承默认 Codex 配置。" />
+            <figcaption>建议保持“继承默认 Codex 配置”开启，以保留已有插件、MCP 服务、可信项目和功能开关。</figcaption>
+          </figure>
+          <ul>
+            <li>`Profile 名称`：建议使用容易识别的名字，例如 `Su8 工作区`、`官方账号`、`项目 A`。</li>
+            <li>`继承默认 Codex 配置`：建议保持开启。</li>
+          </ul>
+        </section>
+
+        <section id="provider" class="manual-section">
+          <h2>4. 配置 Provider</h2>
+          <figure>
+            <img src="user-manual-assets/03-provider-settings.png" alt="Provider 配置步骤，包含 Provider 类型、Base URL、模型和 API Key。" />
+            <figcaption>第三方中转站一般选择“第三方 Responses 兼容接口”，并填写 Base URL、模型和 API Key。</figcaption>
+          </figure>
+          <p>如果使用第三方中转站，按下面填写：</p>
+          <ul>
+            <li>`Provider 类型`：选择 `第三方 Responses 兼容接口`。</li>
+            <li>`Provider 名称`：填写便于识别的名称，例如 `Su8`、`公司代理`。</li>
+            <li>`Base URL`：填写第三方提供的 OpenAI 兼容地址，通常以 `/v1` 结尾。</li>
+            <li>`模型`：填写模型 ID，例如 `gpt-5.2`。如果服务商支持 `/models`，可以点击 `获取模型` 后从列表中选择。</li>
+            <li>`API Key`：填写第三方服务商提供的 API Key。</li>
+          </ul>
+          <p>如果使用官方 OpenAI API Key，`Provider 类型` 选择 `官方 OpenAI API Key`，填写模型和 API Key 即可。</p>
+          <div class="manual-note">
+            API Key 会保存在本地加密文件中，不会写入 `config.toml`，也不会出现在诊断报告中。
+          </div>
+        </section>
+
+        <section id="test" class="manual-section">
+          <h2>5. 测试、选择启动器位置并生成</h2>
+          <p>进入 `测试` 步骤后，点击 `测试 Provider`。测试会检查 Base URL 是否可访问、API Key 是否能通过认证、Provider 是否支持 Responses API。</p>
+          <p>进入 `启动器` 步骤后，可以选择生成的 `.app` 启动器保存位置。默认位置：</p>
+          <pre><code>~/Applications/Codex Profiles/</code></pre>
+          <p>最后一步确认信息后点击 `生成`。生成完成后，在主界面选择 Profile 并点击 `打开`，Codex 会使用对应 API Key 和 Base URL 配置。</p>
+        </section>
+
+        <section id="edit" class="manual-section">
+          <h2>6. 修改已有 Provider 和恢复备份</h2>
+          <p>在主界面下方可以编辑当前 Profile 的 Provider：</p>
+          <ul>
+            <li>修改 `Provider 名称`、`Base URL` 或 `模型`。</li>
+            <li>如果不想更换 API Key，`新的 API Key` 保持空白。</li>
+            <li>点击 `测试` 可以复用已保存的 API Key 进行测试。</li>
+            <li>点击 `保存 Provider` 会同步更新 Profile 的 `config.toml` 和启动器。</li>
+          </ul>
+          <p>每次保存前，App 会自动创建配置备份。你可以在 `最近配置备份` 中恢复旧配置。</p>
+        </section>
+
+        <section id="environment" class="manual-section">
+          <h2>7. 查看环境检查</h2>
+          <p>点击顶部环境状态按钮，例如 `1 warning`，可以查看本机环境。</p>
+          <figure>
+            <img src="user-manual-assets/04-environment-check.png" alt="环境检查弹窗，展示 Codex App、Node runtime 和目录权限检查。" />
+            <figcaption>如果只有 Codex CLI 是 warning，一般仍可继续使用桌面多开功能。</figcaption>
+          </figure>
+        </section>
+
+        <section id="delete" class="manual-section">
+          <h2>8. 移除、恢复和彻底删除</h2>
+          <p>`移除` 只是把 Profile 从常用列表里隐藏，配置文件和启动器仍保留。</p>
+          <p>如需查看已移除的 Profile，勾选左侧 `显示已移除`。选择已移除 Profile 后，可以点击 `恢复` 重新启用。</p>
+          <p>`彻底删除` 会删除该 Profile 的 `CODEX_HOME`、`user-data-dir`、生成的启动器 App 和本地加密保存的 API Key。彻底删除无法恢复，请谨慎操作。</p>
+        </section>
+
+        <section id="faq" class="manual-section">
+          <h2>9. 常见问题</h2>
+          <details open>
+            <summary>打开生成的 Codex 后还是进入登录页</summary>
+            <p>通常说明 Profile 配置或 `auth.json` 没有正确生成。请回到 Codex 多开助手，选择该 Profile，点击 `保存 Provider` 后再点击 `打开`。</p>
+          </details>
+          <details>
+            <summary>对话请求走了官方 Base URL</summary>
+            <p>请检查当前 Profile 的 `Provider` 和 `Base URL` 是否正确。修改后点击 `保存 Provider`，再重新打开该 Profile。</p>
+          </details>
+          <details>
+            <summary>获取模型失败</summary>
+            <p>部分第三方服务商不提供 `/models`，或者返回格式不兼容。此时可以继续手动填写模型 ID。</p>
+          </details>
+          <details>
+            <summary>测试 Provider 报 401 或 403</summary>
+            <p>通常是 API Key 不正确、额度不足，或服务商要求使用不同的 Key 格式。请在服务商后台确认 Key 可用。</p>
+          </details>
+        </section>
+
+        <section class="manual-section">
+          <h2>10. 安全说明</h2>
+          <ul>
+            <li>API Key 只保存在本机。</li>
+            <li>API Key 使用本地加密文件保存。</li>
+            <li>诊断报告不会包含 API Key。</li>
+            <li>`config.toml` 和启动器脚本不会写入明文 API Key。</li>
+            <li>反馈问题时优先使用 `复制诊断`，不要直接发送自己的 API Key。</li>
+          </ul>
+        </section>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <span>Codex 多开助手</span>
+      <a href="index.html">返回首页</a>
+      <a href="https://github.com/JqyModi/codex-multi-launcher/issues">GitHub Issues</a>
+    </footer>
+  </body>
+</html>

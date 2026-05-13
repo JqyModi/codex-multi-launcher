@@ -1,0 +1,82 @@
+name: 使用反馈 / Bug Report
+description: 反馈 Codex 多开助手的安装、创建 Profile、Provider 测试或启动问题
+title: "[反馈] "
+labels:
+  - feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢试用 Codex 多开助手。请不要粘贴真实 API Key。
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS 版本
+      placeholder: "例如：macOS 15.5"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: chip
+    attributes:
+      label: Mac 芯片
+      options:
+        - Apple Silicon
+        - Intel
+        - 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: codex-version
+    attributes:
+      label: Codex App 版本
+      placeholder: "如果不确定，可以填写不知道"
+    validations:
+      required: true
+
+  - type: input
+    id: provider
+    attributes:
+      label: Provider 名称
+      placeholder: "例如：OpenAI / Su8 / 自建代理"
+
+  - type: input
+    id: base-url
+    attributes:
+      label: Base URL 形式
+      description: 请不要填写敏感 token。可以只写域名和路径结构。
+      placeholder: "例如：https://example.com/codex/v1"
+
+  - type: input
+    id: model
+    attributes:
+      label: 模型
+      placeholder: "例如：gpt-5.2"
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 遇到的问题
+      description: 请描述你执行到哪一步、预期是什么、实际发生了什么。
+    validations:
+      required: true
+
+  - type: textarea
+    id: provider-test-error
+    attributes:
+      label: Provider 测试错误
+      description: 如果测试 Provider 失败，请粘贴错误信息。不要粘贴 API Key。
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断报告
+      description: 可以使用 App 右上角“复制诊断”。诊断报告不包含 API Key。
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或补充信息
+      description: 可拖拽截图到这里。请先遮挡敏感路径、API Key 或账号信息。
