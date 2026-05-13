@@ -11,7 +11,7 @@
   --success: #16a34a;
   --warning: #d97706;
   --code: #111827;
-  --shadow: 0 24px 70px rgb(15 23 42 / 10%);
+  --shadow: 0 22px 56px rgb(15 23 42 / 9%);
 }
 
 * {
@@ -58,9 +58,9 @@ img {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  width: min(1180px, calc(100% - 40px));
+  width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 16px 0;
+  padding: 14px 0;
   backdrop-filter: blur(18px);
 }
 
@@ -79,15 +79,15 @@ img {
 }
 
 .brand img {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   box-shadow: 0 10px 24px rgb(37 99 235 / 18%);
 }
 
 .site-header nav {
-  gap: 8px;
-  padding: 6px;
+  gap: 4px;
+  padding: 5px;
   border: 1px solid rgb(216 222 232 / 72%);
   border-radius: 999px;
   background: rgb(255 255 255 / 76%);
@@ -96,7 +96,7 @@ img {
 
 .site-header nav a {
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 8px 13px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 650;
@@ -113,18 +113,19 @@ img {
 }
 
 .section {
-  width: min(1180px, calc(100% - 40px));
+  width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 68px 0;
+  padding: 58px 0;
+  scroll-margin-top: 92px;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.86fr) minmax(460px, 1.14fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(440px, 1.1fr);
   align-items: center;
-  gap: 54px;
-  min-height: calc(100vh - 74px);
-  padding-top: 42px;
+  gap: 48px;
+  min-height: min(820px, calc(100vh - 68px));
+  padding: 48px 0 76px;
 }
 
 .eyebrow {
@@ -142,17 +143,17 @@ p {
 }
 
 h1 {
-  max-width: 720px;
-  margin-bottom: 18px;
-  font-size: clamp(44px, 6vw, 76px);
-  line-height: 1.04;
+  max-width: 680px;
+  margin-bottom: 20px;
+  font-size: clamp(44px, 5.6vw, 68px);
+  line-height: 1.08;
   letter-spacing: 0;
 }
 
 h2 {
-  margin-bottom: 14px;
-  font-size: clamp(30px, 4vw, 48px);
-  line-height: 1.12;
+  margin-bottom: 16px;
+  font-size: clamp(30px, 3.7vw, 44px);
+  line-height: 1.16;
   letter-spacing: 0;
 }
 
@@ -169,14 +170,15 @@ p {
 }
 
 .hero-lede {
-  max-width: 610px;
-  font-size: 19px;
+  max-width: 570px;
+  font-size: 18px;
+  line-height: 1.78;
 }
 
 .hero-actions {
   flex-wrap: wrap;
   gap: 12px;
-  margin: 28px 0 18px;
+  margin: 30px 0 18px;
 }
 
 .button {
@@ -241,12 +243,12 @@ p {
 
 .app-icon {
   position: absolute;
-  top: -42px;
-  left: 22px;
+  top: -38px;
+  left: 24px;
   z-index: 2;
-  width: 118px;
-  height: 118px;
-  border-radius: 28px;
+  width: 108px;
+  height: 108px;
+  border-radius: 26px;
   box-shadow: 0 22px 54px rgb(15 23 42 / 18%);
 }
 
@@ -259,7 +261,7 @@ p {
 }
 
 .hero .screenshot-frame {
-  transform: translateY(22px);
+  transform: translateY(14px);
 }
 
 .section-heading {
@@ -267,15 +269,19 @@ p {
 }
 
 .section-heading.centered {
-  margin: 0 auto 34px;
+  margin: 0 auto 30px;
   text-align: center;
+}
+
+.problem {
+  padding-top: 28px;
 }
 
 .problem-grid,
 .security-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
 .problem-grid article,
@@ -290,7 +296,7 @@ p {
 
 .problem-grid article,
 .security-grid article {
-  padding: 22px;
+  padding: 24px;
 }
 
 .problem-grid strong {
@@ -310,11 +316,11 @@ p {
 .steps {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
 .steps article {
-  min-height: 188px;
+  min-height: 176px;
   padding: 22px;
 }
 
@@ -335,7 +341,7 @@ p {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
   align-items: center;
-  gap: 46px;
+  gap: 52px;
 }
 
 .split.reverse {
@@ -375,6 +381,7 @@ p {
 
 .security {
   border-block: 1px solid rgb(216 222 232 / 70%);
+  padding-block: 64px;
 }
 
 .text-link {
@@ -390,7 +397,7 @@ p {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
   align-items: center;
-  gap: 34px;
+  gap: 42px;
 }
 
 .download-card {
@@ -412,6 +419,7 @@ code {
 
 .faq {
   max-width: 880px;
+  padding-top: 48px;
 }
 
 .faq details {
@@ -436,7 +444,7 @@ code {
 .site-footer {
   justify-content: center;
   gap: 18px;
-  width: min(1180px, calc(100% - 40px));
+  width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
   border-top: 1px solid rgb(216 222 232 / 82%);
   padding: 28px 0 40px;
@@ -459,11 +467,11 @@ code {
 
 .manual-layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 860px);
-  gap: 34px;
-  width: min(1180px, calc(100% - 40px));
+  grid-template-columns: 216px minmax(0, 840px);
+  gap: 36px;
+  width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 42px 0 76px;
+  padding: 38px 0 76px;
 }
 
 .manual-toc {
@@ -507,14 +515,15 @@ code {
   border: 1px solid rgb(216 222 232 / 78%);
   border-radius: 24px;
   margin-bottom: 16px;
-  padding: 30px;
+  padding: 32px;
   background: rgb(255 255 255 / 82%);
   box-shadow: 0 16px 44px rgb(15 23 42 / 5%);
 }
 
 .manual-hero h1 {
   max-width: 760px;
-  font-size: clamp(36px, 5vw, 58px);
+  font-size: clamp(36px, 4.6vw, 54px);
+  line-height: 1.12;
 }
 
 .manual-section h2 {
