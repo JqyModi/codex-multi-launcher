@@ -14,6 +14,7 @@
 - Threads
 - 小红书
 - 知乎
+- Reddit
 
 协作边界：
 
@@ -95,6 +96,15 @@ X / Threads：
 - 长文优先复用公众号稿，短内容复用 Linux.do 的精简版本。
 - 发布前检查：标题是否像问题解决方案，正文是否清楚说明边界，是否引导到 GitHub Issues。
 
+Reddit：
+
+- 用户在浏览器登录 Reddit。
+- Codex 辅助选择合适 subreddit、填写标题、正文和链接。
+- 优先发布为 text post，正文说明开源求测背景、边界和反馈入口；如果 subreddit 更适合 link post，则使用落地页链接。
+- 素材优先使用 MP4 或主视觉图，视 subreddit 发帖规则而定。
+- 发布前检查：subreddit 规则、是否允许 self-promotion、标题是否过度营销、链接是否可访问。
+- Reddit 发布建议使用英文短版文案，并明确这是 early MVP / looking for feedback。
+
 ### 发布前确认模板
 
 每次正式发布前，Codex 应给出如下确认信息：
@@ -154,7 +164,7 @@ X / Threads：
 2. 微信公众号跟进。
    - 目标：承接长期更新、教程和兼容记录。
    - 语气：正式发布说明 + 使用教程 + 反馈入口。
-3. X / Threads / 小红书 / 知乎 分批发布。
+3. X / Threads / 小红书 / 知乎 / Reddit 分批发布。
    - 目标：扩展触达面，拿到不同平台反馈。
 
 ## 发布入口
