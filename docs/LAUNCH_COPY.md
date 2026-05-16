@@ -105,6 +105,79 @@ https://github.com/JqyModi/codex-multi-launcher/raw/main/marketing-assets/codex-
 - 如果帖子不支持视频，可上传 `codex-workflow-demo.gif`。
 - 语气保持求测，不要写“神器”“完美兼容”“无限多开”。
 
+## X 首发帖
+
+发布策略：
+
+- X 先作为轻量首发渠道使用，不等待 Linux.do 审核结果。
+- 首条只放落地页链接，减少链接噪音；GitHub 和 Issues 放在线程回复里。
+- 素材优先附 `docs/marketing-assets/codex-workflow-demo.mp4`，如果视频转码失败则改用 `docs/marketing-assets/hero-annotated.png`。
+- 语气保持开源求测，不写夸张承诺。
+
+单条短帖：
+
+```text
+做了一个 macOS 小工具：Codex 多开助手。
+
+它可以给 Codex App 创建多个隔离 Profile，让每个窗口都有独立的 API Key、Base URL 和模型配置，也支持第三方 Responses 兼容接口。
+
+现在开源求测，想收集真实兼容反馈：
+https://jqymodi.github.io/codex-multi-launcher/
+```
+
+线程版：
+
+```text
+1/4
+我做了一个 macOS 小工具：Codex 多开助手。
+
+目标很简单：让每个 Codex 窗口都有自己的 API 配置。
+
+如果你经常在不同项目、API Key、Base URL 或第三方 Responses 兼容接口之间切换，欢迎帮忙测一下：
+https://jqymodi.github.io/codex-multi-launcher/
+```
+
+```text
+2/4
+它目前支持：
+
+- 创建多个隔离 Codex Profile
+- 每个 Profile 独立 API Key / Base URL / 模型
+- 生成可双击打开的启动器 App
+- 测试第三方 Responses 兼容接口
+- API Key 本地保存，诊断报告不包含密钥
+```
+
+```text
+3/4
+当前还是 MVP，边界先说清楚：
+
+- 主要面向 macOS Apple Silicon
+- App 还没有签名和 notarization
+- 第三方接口只按 Responses 兼容接口验证
+- 不承诺兼容所有服务商
+
+我现在更想要真实使用反馈，而不是泛下载量。
+```
+
+```text
+4/4
+GitHub：
+https://github.com/JqyModi/codex-multi-launcher
+
+Issues 反馈：
+https://github.com/JqyModi/codex-multi-launcher/issues
+
+如果你正在用 Codex App，并且有多 API Key / 多 Base URL / 第三方兼容接口需求，欢迎试一下。
+```
+
+发布备注：
+
+- 推荐使用线程版，首条附 MP4 演示视频。
+- 如果只想快速试水，使用单条短帖并附主视觉图。
+- 发出后 1 小时内重点观察：转发、收藏、GitHub Star、Release 下载、Issues。
+- 若有人问“和直接命令行指定工作区有什么区别”，重点回复：降低小白操作成本、可恢复配置、可双击启动、多个 Profile 可视化管理。
+
 ## 微信公众号发布稿
 
 标题：
