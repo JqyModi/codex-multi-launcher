@@ -1,45 +1,60 @@
-# Codex 多开助手
+English | [中文](README.zh-CN.md)
 
-Codex 多开助手是一个面向 macOS 的小工具，用来创建多个彼此隔离的 Codex 桌面窗口，并为每个窗口配置独立的 API Key、Base URL、模型和启动器。
+# Codex Multi Launcher
 
-这个仓库承接三件事：
+Codex Multi Launcher is the public landing-page repository for **Codex 多开助手**, a macOS utility that creates isolated Codex desktop profiles. Each profile can use its own API key, Base URL, model, and launcher app.
 
-- 发布产品落地页和用户手册。
-- 通过 GitHub Issues 收集试用反馈。
-- 通过 GitHub Releases 分发 macOS 测试版安装包。
+This repository is used for:
 
-## 在线访问
+- publishing the product landing page and user manual;
+- collecting early user feedback through GitHub Issues;
+- distributing macOS test builds through GitHub Releases.
 
-- 落地页：<https://jqymodi.github.io/codex-multi-launcher/>
-- 用户手册：<https://jqymodi.github.io/codex-multi-launcher/manual.html>
-- 问题反馈：<https://github.com/JqyModi/codex-multi-launcher/issues>
-- 下载测试版：<https://github.com/JqyModi/codex-multi-launcher/releases/latest>
+## Live Links
 
-## 当前能力
+- Product page: <https://jqymodi.github.io/codex-multi-launcher/>
+- User manual: <https://jqymodi.github.io/codex-multi-launcher/manual.html>
+- Feedback: <https://github.com/JqyModi/codex-multi-launcher/issues>
+- Latest release: <https://github.com/JqyModi/codex-multi-launcher/releases/latest>
 
-- 创建独立 `CODEX_HOME` 和 `user-data-dir`。
-- 生成可双击打开的 Codex 启动器 App。
-- 支持官方 OpenAI API Key 和第三方 Responses 兼容接口。
-- 可尝试通过 `/models` 获取模型列表，失败时保留手动填写。
-- API Key 本地加密保存，诊断信息不包含密钥。
+## What It Does
 
-## 试用边界
+- Creates isolated `CODEX_HOME` and `user-data-dir` paths.
+- Generates double-clickable Codex launcher apps.
+- Supports official OpenAI API keys and third-party Responses-compatible APIs.
+- Tries to load model IDs from the provider `/models` endpoint.
+- Keeps manual model input available when `/models` is unavailable.
+- Stores API keys in a local encrypted file.
+- Excludes API keys from diagnostics reports.
 
-当前版本主要面向 macOS Apple Silicon。App 暂未签名和 notarization，首次打开可能需要手动解除 quarantine。
+## Current Test Scope
+
+The current MVP mainly targets macOS Apple Silicon.
+
+The app is not signed or notarized yet, so macOS may block it on first launch. If that happens, remove quarantine manually:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
 ```
 
-Windows 版本在技术上可适配，但当前启动器生成、路径检测和 Codex App 探测仍以 macOS 为主。
+Windows support is technically possible, but the current launcher generation, path checks, and Codex App detection are still macOS-first.
 
-## 反馈建议
+## Feedback
 
-提交 Issue 时建议包含：
+Please open a GitHub Issue if you test the app:
 
-- macOS 版本和芯片架构。
-- Codex App 版本。
-- 使用官方 API Key 还是第三方 Responses 兼容接口。
-- Base URL 是否以 `/v1` 结尾。
-- App 内复制的诊断报告。
-- 可复现步骤和截图。
+<https://github.com/JqyModi/codex-multi-launcher/issues>
+
+Helpful reports include:
+
+- macOS version and chip architecture;
+- Codex App version;
+- whether you use official OpenAI API or a third-party Responses-compatible API;
+- whether the Base URL ends with `/v1`;
+- the diagnostics report copied from the app;
+- reproduction steps and screenshots.
+
+## Thanks
+
+Thank you to the [LinuxDo](https://linux.do/) community for your support.
+
