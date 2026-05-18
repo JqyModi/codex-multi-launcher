@@ -50,7 +50,7 @@ Codex 多开助手目前主要解决四件事：
 - 当前主要面向 macOS Apple Silicon
 - App 还没有签名和 notarization，首次打开可能需要手动解除 quarantine
 - 第三方接口只按 Responses 兼容接口验证，不保证所有服务商都能用
-- 目前是 MVP，不是正式商业版本
+- 目前是 MVP，不是正式版本
 
 未签名 App 如果打不开，可以参考 Release 说明里的命令：
 
@@ -60,13 +60,13 @@ xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
 
 ## 现在最想求测什么
 
-我现在最需要的不是泛下载量，而是真实使用反馈，尤其是这些点：
+我现在最需要的真实使用反馈，尤其是这些点：
 
 1. 你的 macOS 版本下能否正常启动
 2. 是否能成功创建多个独立 Profile
 3. 多个 Profile 的 API Key / Base URL / 模型是否符合你的工作流
 4. 第三方 Responses 兼容接口能否正常测试和对话
-5. 哪一步让你困惑、不敢填或失败
+5. 哪一步让你困惑、不会填写或失败
 6. 是否需要 Provider 预设、导入导出、菜单栏快速启动等功能
 
 ## 反馈方式
@@ -96,7 +96,7 @@ https://github.com/JqyModi/codex-multi-launcher/issues
 演示视频/GIF：
 https://github.com/JqyModi/codex-multi-launcher/raw/main/marketing-assets/codex-workflow-demo.mp4
 
-如果你正在用 Codex App，并且有多 API Key、多 Base URL 或第三方 Responses 兼容接口的需求，欢迎帮忙测一下。
+如果你正在用 Codex App，并且有多 API Key、多 Base URL 或第三方 Responses 兼容接口的需求，欢迎体验。
 ```
 
 发布备注：
@@ -177,6 +177,70 @@ https://github.com/JqyModi/codex-multi-launcher/issues
 - 如果只想快速试水，使用单条短帖并附主视觉图。
 - 发出后 1 小时内重点观察：转发、收藏、GitHub Star、Release 下载、Issues。
 - 若有人问“和直接命令行指定工作区有什么区别”，重点回复：降低小白操作成本、可恢复配置、可双击启动、多个 Profile 可视化管理。
+
+## X 二次分发帖
+
+发布策略：
+
+- 适合换账号后重新分发。
+- 重点从“我做了一个工具”改成“Codex 重度用户的具体痛点”。
+- 首帖尽量短，突出问题和结果；回复里补链接与反馈入口。
+- 优先附主视觉图或演示视频。无法上传素材时，先发纯文本，后续单独补图。
+
+推荐主帖：
+
+```text
+Codex 用久了以后，我最烦的不是模型能力，而是配置切来切去。
+
+个人项目一个 API Key，工作项目一个 Base URL，测试第三方 Responses 接口又是另一套配置。
+
+所以我做了一个小工具：给 Codex App 创建多个独立 Profile，每个窗口都有自己的 API Key / Base URL / 模型。
+
+macOS 版开源求测。
+```
+
+推荐回复：
+
+```text
+它目前能做：
+
+- 多个 Codex Profile 隔离
+- 每个 Profile 独立 API Key / Base URL / 模型
+- 生成可双击打开的启动器 App
+- API Key 本地保存
+- 支持第三方 Responses 兼容接口测试
+
+落地页：
+https://jqymodi.github.io/codex-multi-launcher/
+```
+
+反馈回复：
+
+```text
+GitHub：
+https://github.com/JqyModi/codex-multi-launcher
+
+Issues：
+https://github.com/JqyModi/codex-multi-launcher/issues
+
+现在最想收集：
+1. 第三方接口兼容反馈
+2. 多 Profile 是否真的解决你的工作流
+3. 是否需要 Windows 版 / 多账号登录支持
+```
+
+短版备选：
+
+```text
+如果你用 Codex App，同时有多个 API Key、多个 Base URL、或者第三方 Responses 兼容接口需求，可以试试这个：
+
+Codex 多开助手。
+
+它给每个 Codex 窗口创建独立 Profile，让配置不再互相串。
+
+开源求测：
+https://jqymodi.github.io/codex-multi-launcher/
+```
 
 ## 微信公众号发布稿
 
