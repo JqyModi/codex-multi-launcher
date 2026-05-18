@@ -298,6 +298,160 @@ Early MVP, looking for feedback:
 https://github.com/JqyModi/codex-multi-launcher
 ```
 
+## Reddit English Launch
+
+Posting strategy:
+
+- Use Reddit as a feedback channel, not a traffic channel.
+- Read subreddit rules before posting. If self-promotion is not allowed, do not post there.
+- Prefer a text post over a link post so the value, boundaries, and feedback ask are clear.
+- Good candidate communities to evaluate manually: `r/OpenAI`, `r/ChatGPTCoding`, `r/macapps`, `r/LocalLLaMA`.
+- Do not cross-post the same wording into many communities on the same day.
+
+Title options:
+
+```text
+I built a small macOS utility for isolated Codex Desktop profiles
+```
+
+```text
+Early MVP: separate API keys, Base URLs, and launchers for Codex Desktop profiles
+```
+
+Recommended body:
+
+```markdown
+I kept running into a small but annoying Codex Desktop workflow problem:
+
+- one project uses my default OpenAI setup
+- another project needs a different API key
+- provider testing needs a custom Base URL
+- I want separate Codex windows without manually editing config files every time
+
+So I built an early macOS MVP for isolated Codex profiles.
+
+What it does today:
+
+- creates separate Codex profile folders
+- stores a per-profile API key locally
+- writes per-profile Base URL / model config
+- generates a double-clickable launcher app for each profile
+- can test basic Responses-compatible third-party providers
+
+It is not a polished commercial app yet. The current build is mainly for macOS, unsigned, and focused on validating whether this workflow is useful to other Codex users.
+
+GitHub:
+https://github.com/JqyModi/codex-multi-launcher
+
+Latest release:
+https://github.com/JqyModi/codex-multi-launcher/releases/latest
+
+I am especially looking for feedback on:
+
+1. whether the profile isolation matches your workflow
+2. which third-party Responses-compatible providers work or fail
+3. whether Windows support is important
+4. whether multi-account login isolation matters more than API key isolation
+5. any confusing step in setup
+
+If this is useful, please open an issue with your environment and provider details:
+https://github.com/JqyModi/codex-multi-launcher/issues
+```
+
+Short comment to add after posting if needed:
+
+```text
+For clarity: this does not modify the original Codex app. It creates separate profile folders and launcher apps so each workspace can carry its own config.
+```
+
+## Threads English Launch
+
+Posting strategy:
+
+- Threads should be lighter than Reddit.
+- Use one concise post plus one follow-up reply.
+- Lead with the workflow pain. Do not over-explain implementation details in the first post.
+- Use the landing page or GitHub link. If only one link is allowed to look clean, use GitHub for global developers.
+
+Recommended post:
+
+```text
+I built a small macOS MVP for Codex Desktop users who switch between multiple API keys, Base URLs, or Responses-compatible providers.
+
+Each profile gets its own config and a double-click launcher, so you can keep separate Codex windows for different projects.
+
+Early feedback welcome:
+https://github.com/JqyModi/codex-multi-launcher
+```
+
+Recommended follow-up:
+
+```text
+Current scope:
+
+- macOS first
+- per-profile API key / Base URL / model
+- local encrypted key storage
+- separate launcher apps
+- basic provider test flow
+
+I am mainly looking for compatibility feedback and whether Windows support should be next.
+```
+
+## 中文二次分发稿
+
+来源反馈：
+
+- Linux.do 首发帖已经出现真实需求确认，有用户表示“也有这个需求”。
+- 有用户直接询问 Windows 支持。
+- 有用户关心是否能以不同账号登录多开，而不只是 API Key 隔离。
+
+二次分发策略：
+
+- 不再重复“我做了一个工具”，改成“首轮反馈后，我准备怎么迭代”。
+- 中文平台优先回应 Windows、多账号、第三方 Provider 兼容这三个问题。
+- 适合发布在公众号、小红书、知乎想法或 X 中文回复。
+
+推荐标题：
+
+```text
+Codex 多开助手首轮反馈：Windows、多账号和第三方接口会怎么做
+```
+
+正文骨架：
+
+```markdown
+Codex 多开助手发出第一版后，收到的反馈比我预期更集中。
+
+大家最关心的不是“能不能多开”本身，而是三个更具体的问题：
+
+1. 能不能支持 Windows
+2. 能不能隔离不同 Codex 账号登录
+3. 第三方 Responses 兼容接口到底能兼容到什么程度
+
+当前版本已经能解决 macOS 下的多 Profile、多 API Key、多 Base URL 和双击启动器问题。也就是说，如果你的主要痛点是不同项目使用不同 API 配置，现在可以先试。
+
+但 Windows 和多账号隔离会是后续重点。
+
+我接下来会优先验证：
+
+- Windows 下 Codex 配置目录和启动参数是否能稳定隔离
+- 账号登录态是否能跟 `user-data-dir` 完整隔离
+- 常见第三方 Provider 的 `/models` 和 Responses 接口兼容情况
+- 是否需要 Provider 预设，让新用户不必手填太多配置
+
+如果你已经试过，最希望你反馈两类信息：
+
+- 你的系统、Codex 版本、Provider 和 Base URL
+- 你希望它解决 API Key 隔离，还是账号登录隔离
+
+GitHub Issues：
+https://github.com/JqyModi/codex-multi-launcher/issues
+
+Release：
+https://github.com/JqyModi/codex-multi-launcher/releases/latest
+```
+
 ## 微信公众号发布稿
 
 标题：
