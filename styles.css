@@ -278,7 +278,8 @@ p {
 }
 
 .problem-grid,
-.security-grid {
+.security-grid,
+.roadmap-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
@@ -286,6 +287,7 @@ p {
 
 .problem-grid article,
 .security-grid article,
+.roadmap-grid article,
 .steps article,
 .download-card {
   border: 1px solid rgb(216 222 232 / 78%);
@@ -295,7 +297,8 @@ p {
 }
 
 .problem-grid article,
-.security-grid article {
+.security-grid article,
+.roadmap-grid article {
   padding: 24px;
 }
 
@@ -415,6 +418,42 @@ p {
 .security {
   border-block: 1px solid rgb(216 222 232 / 70%);
   padding-block: 64px;
+}
+
+.roadmap {
+  border-block: 1px solid rgb(216 222 232 / 70%);
+  padding-block: 64px;
+}
+
+.roadmap-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.roadmap-grid article {
+  display: flex;
+  min-height: 230px;
+  flex-direction: column;
+}
+
+.roadmap-grid span {
+  align-self: flex-start;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  margin-bottom: 18px;
+  padding: 6px 10px;
+  color: var(--primary);
+  background: #eff6ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.roadmap-grid p {
+  flex: 1;
+  margin-bottom: 18px;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .text-link {
@@ -683,6 +722,7 @@ code {
 
   .problem-grid,
   .security-grid,
+  .roadmap-grid,
   .steps {
     grid-template-columns: 1fr 1fr;
   }
@@ -709,6 +749,7 @@ code {
 
   .problem-grid,
   .security-grid,
+  .roadmap-grid,
   .steps {
     grid-template-columns: 1fr;
   }

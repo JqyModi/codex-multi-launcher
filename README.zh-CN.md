@@ -39,6 +39,13 @@ xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
 
 Windows 版本在技术上可适配，但当前启动器生成、路径检测和 Codex App 探测仍以 macOS 为主。
 
+## Roadmap
+
+早期用户反馈里已经出现两个明确方向：
+
+- [Windows support](https://github.com/JqyModi/codex-multi-launcher/issues/2)：适配 Windows 下的 Codex 检测、Profile 路径和启动器生成。
+- [多账号隔离验证](https://github.com/JqyModi/codex-multi-launcher/issues/1)：确认不同 Profile 是否可以保持独立 Codex 登录状态。
+
 ## 反馈建议
 
 如果你试用了这个工具，欢迎提交 GitHub Issue：
@@ -57,4 +64,3 @@ Windows 版本在技术上可适配，但当前启动器生成、路径检测和
 ## 致谢
 
 感谢 [LinuxDo](https://linux.do/) 社区的支持。
-

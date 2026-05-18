@@ -39,6 +39,13 @@ xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
 
 Windows support is technically possible, but the current launcher generation, path checks, and Codex App detection are still macOS-first.
 
+## Roadmap
+
+Early feedback has already surfaced two clear directions:
+
+- [Windows support](https://github.com/JqyModi/codex-multi-launcher/issues/2): adapt Codex detection, profile paths, and launcher generation for Windows.
+- [Multi-account profile isolation](https://github.com/JqyModi/codex-multi-launcher/issues/1): verify whether separate profiles can keep independent Codex account sessions.
+
 ## Feedback
 
 Please open a GitHub Issue if you test the app:
@@ -57,4 +64,3 @@ Helpful reports include:
 ## Thanks
 
 Thank you to the [LinuxDo](https://linux.do/) community for your support.
-

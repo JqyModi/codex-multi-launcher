@@ -20,6 +20,7 @@
       <nav aria-label="页面导航">
         <a href="#features">功能</a>
         <a href="#security">安全</a>
+        <a href="#roadmap">Roadmap</a>
         <a href="#faq">常见问题</a>
         <a class="nav-button" href="https://github.com/JqyModi/codex-multi-launcher/issues">反馈问题</a>
       </nav>
@@ -164,6 +165,28 @@
         </div>
       </section>
 
+      <section class="section roadmap" id="roadmap">
+        <div class="section-heading centered">
+          <p class="eyebrow">来自早期用户反馈</p>
+          <h2>下一步优先验证 Windows 和多账号隔离。</h2>
+          <p>Linux.do 社区已经反馈了两个高频方向：希望支持 Windows，也希望确认不同 Codex 账号能否真正隔离运行。</p>
+        </div>
+        <div class="roadmap-grid">
+          <article>
+            <span>Roadmap 01</span>
+            <h3>Windows support</h3>
+            <p>适配 Windows 下的 Codex 检测、Profile 路径、启动器生成和第三方 Provider 配置。</p>
+            <a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/issues/2">查看 issue #2</a>
+          </article>
+          <article>
+            <span>Roadmap 02</span>
+            <h3>多账号隔离验证</h3>
+            <p>验证不同 Profile 是否能保留独立 Codex 登录状态，并把账号隔离和 API 配置隔离讲清楚。</p>
+            <a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/issues/1">查看 issue #1</a>
+          </article>
+        </div>
+      </section>
+
       <section class="section download" id="download">
         <div>
           <p class="eyebrow">MVP 测试版</p>
@@ -197,7 +220,11 @@
         </details>
         <details>
           <summary>是否支持 Windows？</summary>
-          <p>界面技术栈是 Electron，可跨平台；但当前启动器生成、路径检查和 Codex App 检测都按 macOS 实现，Windows 需要单独适配。</p>
+          <p>界面技术栈是 Electron，可跨平台；但当前启动器生成、路径检查和 Codex App 检测都按 macOS 实现，Windows 需要单独适配。进展会记录在 <a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/issues/2">issue #2</a>。</p>
+        </details>
+        <details>
+          <summary>是否支持不同 Codex 账号同时登录？</summary>
+          <p>多 Profile 已经隔离 `CODEX_HOME` 和 `user-data-dir`，但账号登录态还需要更多真实环境验证。多账号隔离进展会记录在 <a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/issues/1">issue #1</a>。</p>
         </details>
         <details>
           <summary>第三方中转站都能用吗？</summary>
