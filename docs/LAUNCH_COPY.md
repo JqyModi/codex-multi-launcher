@@ -242,6 +242,62 @@ Codex 多开助手。
 https://jqymodi.github.io/codex-multi-launcher/
 ```
 
+## X Global Launch
+
+Distribution strategy:
+
+- Use English on X for global developer reach.
+- Do not mix Chinese and English in the same post. Use one English thread, then repost/quote in Chinese later if needed.
+- Lead with the workflow pain, not the product name.
+- Put GitHub before the Chinese landing page until the landing page has a full English version.
+- Keep the ask narrow: early feedback from Codex users who switch API keys, Base URLs, or Responses-compatible providers.
+
+Recommended thread:
+
+```text
+I kept hitting a Codex Desktop workflow problem:
+
+one project needs one API key, another uses a custom Base URL, and provider testing needs a third setup.
+
+So I built a macOS utility for isolated Codex profiles. Each profile has its own API key, Base URL, model, and launcher.
+```
+
+```text
+What it does today:
+
+- isolated Codex profiles
+- per-profile API key / Base URL / model
+- double-clickable launcher apps
+- local encrypted API key storage
+- basic testing for third-party Responses-compatible APIs
+
+It is an early MVP, and I am looking for real feedback.
+```
+
+```text
+GitHub:
+https://github.com/JqyModi/codex-multi-launcher
+
+Latest release:
+https://github.com/JqyModi/codex-multi-launcher/releases/latest
+
+Most useful feedback:
+- provider compatibility
+- profile isolation workflow
+- Windows / multi-account demand
+```
+
+Short version:
+
+```text
+If you use Codex Desktop with multiple API keys, Base URLs, or Responses-compatible providers, I built a small macOS utility for that.
+
+It creates isolated Codex profiles, each with its own API key / Base URL / model and a double-clickable launcher.
+
+Early MVP, looking for feedback:
+https://github.com/JqyModi/codex-multi-launcher
+```
+
 ## 微信公众号发布稿
 
 标题：
