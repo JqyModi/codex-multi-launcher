@@ -112,6 +112,97 @@ https://github.com/JqyModi/codex-multi-launcher/releases/latest
 https://github.com/JqyModi/codex-multi-launcher/issues
 ```
 
+## 知乎纯文本版
+
+用于知乎编辑器直接粘贴，避免预览里残留 Markdown 语法。
+
+```text
+最近做了一个 macOS 小工具：Codex 多开助手。
+
+第一版发出去后，我发现大家真正关心的不是“能不能多开”，而是几个更具体的工作流问题：
+
+Windows 能不能支持？
+能不能隔离不同 Codex 账号登录？
+第三方 Responses 兼容接口到底能不能稳定用？
+多个项目、多个 API Key、多个 Base URL 会不会串配置？
+
+这说明这个需求不是单纯的“多开”，而是 Codex 重度用户在真实工作里遇到的配置隔离问题。
+
+一、我为什么做这个工具
+
+我自己用 Codex App 时，经常会遇到这些情况：
+
+个人项目和工作项目用不同 API Key。
+有些项目走官方 OpenAI，有些项目走自建代理或第三方 Base URL。
+想测试第三方 Responses 兼容接口。
+希望同时开多个 Codex 窗口处理不同 repo。
+
+这些问题理论上都能用命令行参数、环境变量或手动改配置解决，但长期使用很容易串配置，也不适合不熟悉命令行的用户。
+
+所以我把它做成了图形化流程：创建 Profile、填写 Provider、测试接口、生成启动器，然后双击打开对应的 Codex 窗口。
+
+演示视频：
+https://github.com/JqyModi/codex-multi-launcher/raw/main/marketing-assets/codex-workflow-demo.mp4
+
+二、当前版本已经能做什么
+
+现在的 macOS MVP 主要支持：
+
+创建多个隔离的 Codex Profile。
+每个 Profile 独立保存 API Key。
+每个 Profile 独立配置 Base URL 和模型。
+为每个 Profile 生成可双击打开的启动器 App。
+支持第三方 Responses 兼容接口的基础测试。
+尝试读取 /models 列表，读取不到时允许手动填写模型。
+API Key 本地保存，诊断报告不包含密钥。
+
+如果你的主要需求是让不同项目使用不同 API Key / Base URL，这个版本已经可以试。
+
+三、当前边界
+
+这个版本还是 MVP，所以边界也要说清楚：
+
+当前主要面向 macOS。
+App 还没有签名和 notarization，首次打开可能需要手动解除限制。
+Windows 需要单独验证 Codex 配置路径、启动参数和安装方式。
+多账号登录隔离需要进一步确认登录态是否完整跟 user-data-dir 分离。
+第三方 Provider 只能按 Responses 兼容接口做验证，不承诺全部兼容。
+
+四、接下来优先验证什么
+
+我准备把后续迭代分成三条线：
+
+1. Windows 可行性验证
+先确认 Codex 在 Windows 下的配置目录和启动参数，再验证能否生成类似的独立启动器。
+
+2. 多账号登录隔离验证
+当前重点是 API Key、Base URL 和模型隔离。后续会验证不同 Codex 登录账号能否稳定隔离。
+
+3. Provider 兼容列表
+记录哪些第三方 Responses 兼容接口可用。如果 /models 可获取模型列表，就直接提供选择；如果获取不到，保留手动填写模型 ID。
+
+五、我现在最需要的反馈
+
+如果你愿意帮忙测试，最有价值的不是“能不能打开”，而是这些信息：
+
+你的系统：macOS / Windows。
+Codex App 版本。
+你使用官方 OpenAI、自建代理，还是第三方兼容接口。
+Base URL 是否以 /v1 结尾。
+是否成功创建并打开独立 Profile。
+你更需要 API Key 隔离，还是不同 Codex 账号登录隔离。
+哪一步让你困惑或失败。
+
+项目地址：
+https://github.com/JqyModi/codex-multi-launcher
+
+下载：
+https://github.com/JqyModi/codex-multi-launcher/releases/latest
+
+反馈入口：
+https://github.com/JqyModi/codex-multi-launcher/issues
+```
+
 ## 配图
 
 建议插入：
@@ -122,11 +213,9 @@ https://github.com/JqyModi/codex-multi-launcher/issues
 ## 标签建议
 
 ```text
-Codex
-OpenAI
-AI 编程
+CODEX
+人工智能
 开发工具
-效率工具
 ```
 
 ## 发布前检查
@@ -135,4 +224,4 @@ AI 编程
 - GitHub、Release、Issues 链接是否可点击。
 - 图片是否没有隐私路径、真实 API Key 或无关项目名。
 - 末尾是否明确要求具体反馈。
-
+- 如果知乎预览保留 Markdown 源码，改用“知乎纯文本版”重新填入正文。
