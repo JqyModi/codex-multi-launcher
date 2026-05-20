@@ -204,6 +204,10 @@
           <p>不保证。MVP 只支持 Responses 兼容接口，服务商需要真正支持 Codex 使用的 Responses API。</p>
         </details>
         <details>
+          <summary>能接入智谱、DeepSeek、通义或 Kimi 吗？</summary>
+          <p>可以先测试，但前提是服务商提供 OpenAI/Responses 兼容入口。只支持原生 API 或只支持 Chat Completions 的接口不一定可用。配置时重点确认 Base URL 是否通常以 `/v1` 结尾、API Key 是否支持兼容接口、模型 ID 是否是接口实际接受的名称。</p>
+        </details>
+        <details>
           <summary>反馈问题时需要提供什么？</summary>
           <p>请提供 macOS 版本、Codex App 版本、服务商名称、Base URL 是否以 `/v1` 结尾、Provider 测试错误信息，以及 App 内复制的诊断报告。</p>
         </details>
