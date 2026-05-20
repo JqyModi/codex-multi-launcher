@@ -27,6 +27,12 @@ This repository is used for:
 - Stores API keys in a local encrypted file.
 - Excludes API keys from diagnostics reports.
 
+Provider compatibility note:
+
+- The MVP expects an OpenAI/Responses-compatible endpoint, usually with a Base URL ending in `/v1`.
+- Providers that only expose native APIs or Chat Completions-only routes may not work reliably with Codex Desktop.
+- Zhipu, DeepSeek, Qwen/Tongyi, Kimi, OpenRouter, and self-hosted relays should be tested with their OpenAI-compatible endpoint and exact model ID.
+
 ## Current Test Scope
 
 The current MVP mainly targets macOS Apple Silicon.
