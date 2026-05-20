@@ -73,6 +73,7 @@ npm run package:mac
 - [PRD](docs/PRD.md)：产品范围、用户故事、成功指标和风险。
 - [技术规格](docs/TECH_SPEC.md)：Codex Profile 隔离、启动器生成、Provider 配置、密钥和诊断。
 - [配置结构](docs/CONFIG_SCHEMA.md)：Profile registry、加密密钥和生成的 Codex 配置。
+- [Provider 兼容说明](docs/PROVIDER_COMPATIBILITY.md)：如何判断第三方 Responses 兼容 Provider 是否可用，以及如何收集兼容反馈。
 - [用户流程](docs/USER_FLOW.md)：创建向导、Provider 测试、主界面、编辑和删除流程。
 - [设计系统](docs/DESIGN_SYSTEM.md)：macOS 工具型应用的视觉方向、布局、色彩、字体和组件。
 - [用户手册](docs/USER_MANUAL.md)：带截图的安装、创建 Profile、配置 Provider 和排障说明。
@@ -97,4 +98,3 @@ npm run package:mac
 ## 致谢
 
 感谢 [LinuxDo](https://linux.do/) 社区的支持。
-

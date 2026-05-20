@@ -28,12 +28,13 @@
 - X 曝光过低，不能作为产品需求强弱判断依据。
 - 知乎评论出现明确兼容诉求：“能接入智谱吗”，说明用户关心的是第三方 provider 兼容面，而不是工具本身。
 - Reddit broad subreddit 疑似被审核/机器人拦截，后续不应继续硬发独立推广帖。
+- 已将第三方 Provider 兼容边界沉淀到 `docs/PROVIDER_COMPATIBILITY.md`，后续评论和 Issues 统一引用该口径。
 
 待转化问题：
 
 1. Windows 版是否进入近期路线图？
 2. 多账号登录隔离和 API Key 隔离的优先级如何排序？
-3. 第三方 Responses provider 的兼容结果是否需要做公开列表？
+3. 第三方 Responses provider 的兼容结果是否需要做公开列表？当前已有初版文档，仍需要真实用户补充测试结果。
 4. Provider 预设是否能降低小白用户配置成本？
 5. 是否需要把“OpenAI 格式 / Responses 兼容 / OpenAI-compatible API”解释成小白能理解的表单提示？
 
@@ -43,7 +44,7 @@
 - [x] 发布 Reddit 英文 text post。
 - [ ] 发布 Threads 英文短帖。
 - [ ] 把新增反馈整理成 GitHub Issues 或 Roadmap。
-- [ ] 根据用户问题更新 FAQ。
+- [x] 根据用户问题更新 FAQ。
 - [ ] 在相关知乎问题下回答，不直接硬广，优先建立问题解决可信度。
 
 ## 反馈记录模板

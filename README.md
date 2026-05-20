@@ -73,6 +73,7 @@ Artifacts are written to `dist-app/`.
 - [PRD](docs/PRD.md): product scope, user stories, success criteria, and risks.
 - [Technical Specification](docs/TECH_SPEC.md): Codex profile isolation, launcher generation, provider config, secrets, diagnostics.
 - [Configuration Schema](docs/CONFIG_SCHEMA.md): profile registry, encrypted secrets, and generated Codex config.
+- [Provider Compatibility Guide](docs/PROVIDER_COMPATIBILITY.md): how to judge third-party Responses-compatible providers and collect compatibility feedback.
 - [User Flow](docs/USER_FLOW.md): setup wizard, provider test, dashboard, edit/delete flows.
 - [Design System](docs/DESIGN_SYSTEM.md): macOS utility visual direction, layout, colors, typography, and components.
 - [User Manual](docs/USER_MANUAL.md): screenshot-based guide for installing, creating profiles, configuring providers, and troubleshooting.
@@ -97,4 +98,3 @@ Helpful feedback includes:
 ## Thanks
 
 Thank you to the [LinuxDo](https://linux.do/) community for your support.
-
