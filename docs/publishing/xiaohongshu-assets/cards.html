@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1080, initial-scale=1" />
+    <title>Codex 多开助手小红书卡片</title>
+    <style>
+      :root {
+        --ink: #111827;
+        --muted: #5d6b82;
+        --soft: #eef5ff;
+        --blue: #2563eb;
+        --blue-soft: #dceaff;
+        --amber: #f59e0b;
+        --amber-soft: #fff2cd;
+        --green: #10b981;
+        --line: rgba(89, 111, 147, 0.2);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        width: 1080px;
+        height: 1440px;
+        background: #f7fbff;
+        color: var(--ink);
+        overflow: hidden;
+      }
+
+      .card {
+        position: relative;
+        width: 1080px;
+        height: 1440px;
+        padding: 78px 76px 70px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 16% 10%, rgba(37, 99, 235, 0.13), transparent 32%),
+          radial-gradient(circle at 92% 8%, rgba(16, 185, 129, 0.13), transparent 30%),
+          linear-gradient(135deg, #f7fbff 0%, #ffffff 48%, #edf8f4 100%);
+      }
+
+      .card::after {
+        content: "";
+        position: absolute;
+        inset: 30px;
+        border: 1px solid rgba(42, 73, 120, 0.11);
+        border-radius: 54px;
+        pointer-events: none;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        color: #26344d;
+        font-size: 28px;
+        font-weight: 760;
+      }
+
+      .brand img {
+        width: 66px;
+        height: 66px;
+        border-radius: 18px;
+        box-shadow: 0 14px 32px rgba(42, 81, 151, 0.16);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 64px;
+        padding: 12px 18px;
+        border-radius: 999px;
+        color: var(--blue);
+        background: rgba(37, 99, 235, 0.08);
+        font-size: 26px;
+        font-weight: 760;
+      }
+
+      h1 {
+        max-width: 900px;
+        margin: 28px 0 0;
+        font-size: 90px;
+        line-height: 1.08;
+        letter-spacing: 0;
+        font-weight: 860;
+      }
+
+      .cover-only h1 {
+        max-width: 940px;
+        font-size: 88px;
+      }
+
+      h2 {
+        margin: 26px 0 0;
+        font-size: 82px;
+        line-height: 1.1;
+        letter-spacing: 0;
+        font-weight: 840;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .lede {
+        max-width: 820px;
+        margin-top: 32px;
+        color: var(--muted);
+        font-size: 37px;
+        line-height: 1.46;
+        font-weight: 520;
+      }
+
+      .stage {
+        position: relative;
+        margin-top: 58px;
+        min-height: 450px;
+      }
+
+      .config-stack {
+        position: absolute;
+        right: 0;
+        top: 18px;
+        width: 520px;
+        height: 380px;
+      }
+
+      .panel {
+        position: absolute;
+        width: 435px;
+        min-height: 176px;
+        padding: 28px;
+        border-radius: 34px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(95, 116, 148, 0.18);
+        box-shadow: 0 22px 60px rgba(42, 73, 120, 0.13);
+      }
+
+      .panel.one {
+        left: 8px;
+        top: 0;
+        transform: rotate(-5deg);
+      }
+
+      .panel.two {
+        right: 0;
+        top: 102px;
+        transform: rotate(4deg);
+      }
+
+      .panel.three {
+        left: 58px;
+        top: 212px;
+        transform: rotate(-2deg);
+      }
+
+      .panel strong {
+        display: block;
+        color: var(--ink);
+        font-size: 31px;
+        line-height: 1.2;
+      }
+
+      .panel span {
+        display: block;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 24px;
+        line-height: 1.35;
+      }
+
+      .warning {
+        position: absolute;
+        left: 0;
+        top: 48px;
+        width: 340px;
+        padding: 32px;
+        border-radius: 34px;
+        background: var(--amber-soft);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        box-shadow: 0 24px 60px rgba(163, 101, 0, 0.1);
+      }
+
+      .warning .big {
+        color: var(--amber);
+        font-size: 86px;
+        font-weight: 880;
+        line-height: 0.95;
+      }
+
+      .warning .small {
+        margin-top: 18px;
+        color: #785a15;
+        font-size: 31px;
+        line-height: 1.28;
+        font-weight: 760;
+      }
+
+      .footer {
+        position: absolute;
+        left: 76px;
+        right: 76px;
+        bottom: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #62708a;
+        font-size: 25px;
+        font-weight: 650;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin-top: 38px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 56px;
+        padding: 0 24px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid rgba(91, 115, 150, 0.18);
+        color: #2a3952;
+        font-size: 25px;
+        font-weight: 720;
+        box-shadow: 0 12px 28px rgba(42, 73, 120, 0.08);
+      }
+
+      .symptom-list,
+      .feature-grid,
+      .check-panel {
+        margin-top: 54px;
+      }
+
+      .symptom {
+        display: grid;
+        grid-template-columns: 84px 1fr;
+        gap: 24px;
+        align-items: start;
+        margin-bottom: 24px;
+        padding: 30px;
+        border-radius: 34px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(91, 115, 150, 0.16);
+        box-shadow: 0 18px 44px rgba(42, 73, 120, 0.08);
+      }
+
+      .num {
+        display: flex;
+        width: 70px;
+        height: 70px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 24px;
+        color: #fff;
+        background: var(--blue);
+        font-size: 29px;
+        font-weight: 820;
+      }
+
+      .symptom strong,
+      .feature strong,
+      .check-item strong {
+        display: block;
+        font-size: 35px;
+        line-height: 1.24;
+      }
+
+      .symptom span,
+      .feature span,
+      .check-item span {
+        display: block;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 27px;
+        line-height: 1.38;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
+
+      .feature {
+        min-height: 206px;
+        padding: 30px;
+        border-radius: 34px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(91, 115, 150, 0.16);
+        box-shadow: 0 18px 44px rgba(42, 73, 120, 0.08);
+      }
+
+      .feature .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 66px;
+        height: 66px;
+        margin-bottom: 24px;
+        border-radius: 22px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 32px;
+        font-weight: 850;
+      }
+
+      .device {
+        position: relative;
+        margin-top: 46px;
+        height: 520px;
+        border-radius: 42px;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(91, 115, 150, 0.16);
+        box-shadow: 0 30px 80px rgba(42, 73, 120, 0.18);
+      }
+
+      .device img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+        border-radius: 28px;
+      }
+
+      .callout {
+        position: absolute;
+        right: 54px;
+        bottom: 190px;
+        width: 360px;
+        padding: 26px;
+        border-radius: 30px;
+        background: #ffffff;
+        border: 1px solid rgba(37, 99, 235, 0.18);
+        box-shadow: 0 26px 70px rgba(28, 75, 160, 0.17);
+      }
+
+      .callout strong {
+        display: block;
+        color: var(--blue);
+        font-size: 32px;
+      }
+
+      .callout span {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 25px;
+        line-height: 1.35;
+      }
+
+      .check-panel {
+        padding: 34px;
+        border-radius: 42px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(91, 115, 150, 0.16);
+        box-shadow: 0 24px 60px rgba(42, 73, 120, 0.1);
+      }
+
+      .check-item {
+        display: grid;
+        grid-template-columns: 58px 1fr;
+        gap: 18px;
+        padding: 24px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .check-item:last-child {
+        border-bottom: 0;
+      }
+
+      .dot {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 46px;
+        margin-top: 3px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--green);
+        font-size: 26px;
+        font-weight: 850;
+      }
+
+      .cta-box {
+        margin-top: 54px;
+        padding: 42px;
+        border-radius: 44px;
+        background: #111827;
+        color: #fff;
+        box-shadow: 0 30px 90px rgba(17, 24, 39, 0.2);
+      }
+
+      .cta-box strong {
+        display: block;
+        font-size: 47px;
+        line-height: 1.18;
+      }
+
+      .cta-box span {
+        display: block;
+        margin-top: 20px;
+        color: rgba(255, 255, 255, 0.74);
+        font-size: 30px;
+        line-height: 1.38;
+      }
+
+      .mini-code {
+        margin-top: 28px;
+        padding: 24px 28px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 28px;
+        font-family: "SF Mono", Menlo, Consolas, monospace;
+      }
+
+      .page {
+        padding: 8px 16px;
+        border-radius: 999px;
+        color: var(--blue);
+        background: rgba(37, 99, 235, 0.08);
+      }
+
+      body:not([data-card="cover"]) .cover-only,
+      body:not([data-card="symptoms"]) .symptoms-only,
+      body:not([data-card="solution"]) .solution-only,
+      body:not([data-card="compat"]) .compat-only,
+      body:not([data-card="action"]) .action-only {
+        display: none;
+      }
+    </style>
+  </head>
+  <body data-card="cover">
+    <section class="card cover-only">
+      <div class="brand">
+        <img src="../../landing/assets/app-icon.png" alt="" />
+        <span>Codex 多开助手</span>
+      </div>
+      <div class="eyebrow">不是模型不行，是配置又串了</div>
+      <h1>Codex 最崩溃的瞬间</h1>
+      <p class="lede">多个 API Key、多个 Base URL、多个项目一起用，最后你先开始怀疑自己到底开的是哪套配置。</p>
+      <div class="stage">
+        <div class="warning">
+          <div class="big">!</div>
+          <div class="small">一个窗口不够用，配置还会互相影响</div>
+        </div>
+        <div class="config-stack">
+          <div class="panel one">
+            <strong>项目 A</strong>
+            <span>官方 OpenAI · gpt-5.2</span>
+          </div>
+          <div class="panel two">
+            <strong>项目 B</strong>
+            <span>第三方 Responses · Base URL</span>
+          </div>
+          <div class="panel three">
+            <strong>项目 C</strong>
+            <span>另一个 API Key · 另一个模型</span>
+          </div>
+        </div>
+      </div>
+      <div class="pill-row">
+        <span class="pill">独立 API Key</span>
+        <span class="pill">独立 Base URL</span>
+        <span class="pill">双击启动</span>
+      </div>
+      <div class="footer">
+        <span>GitHub 搜 codex-multi-launcher</span>
+        <span class="page">Cover</span>
+      </div>
+    </section>
+
+    <section class="card symptoms-only">
+      <div class="brand">
+        <img src="../../landing/assets/app-icon.png" alt="" />
+        <span>真实痛点</span>
+      </div>
+      <div class="eyebrow">每天重复几次，就会变成摩擦</div>
+      <h2>不是不会配置，是不想每次都重来。</h2>
+      <div class="symptom-list">
+        <div class="symptom">
+          <div class="num">01</div>
+          <div>
+            <strong>打开前先确认是哪套配置</strong>
+            <span>官方 API、第三方中转、自建代理混在一起，很容易开错。</span>
+          </div>
+        </div>
+        <div class="symptom">
+          <div class="num">02</div>
+          <div>
+            <strong>切项目之前先备份 config.toml</strong>
+            <span>不是怕麻烦，是怕改完以后另一个窗口也被影响。</span>
+          </div>
+        </div>
+        <div class="symptom">
+          <div class="num">03</div>
+          <div>
+            <strong>换 API Key 后担心串配置</strong>
+            <span>多个项目并行时，最怕请求走到错误的 Base URL。</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>小问题重复出现，就是工作流成本</span>
+        <span class="page">01</span>
+      </div>
+    </section>
+
+    <section class="card solution-only">
+      <div class="brand">
+        <img src="../../landing/assets/app-icon.png" alt="" />
+        <span>解决方式</span>
+      </div>
+      <div class="eyebrow">让每个 Codex 窗口都有自己的配置</div>
+      <h2>一个 Profile，就是一套独立工作区。</h2>
+      <div class="device">
+        <img src="../../user-manual-assets/01-dashboard.png" alt="" />
+      </div>
+      <div class="callout">
+        <strong>双击打开</strong>
+        <span>每个 Profile 都生成自己的启动器 App，像普通应用一样打开。</span>
+      </div>
+      <div class="footer">
+        <span>不修改原 Codex App</span>
+        <span class="page">02</span>
+      </div>
+    </section>
+
+    <section class="card compat-only">
+      <div class="brand">
+        <img src="../../landing/assets/app-icon.png" alt="" />
+        <span>当前能力</span>
+      </div>
+      <div class="eyebrow">不是全能适配器，先说清边界</div>
+      <h2>能跑通的关键，是 Responses 兼容。</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <div class="icon">Key</div>
+          <strong>API Key 本地加密</strong>
+          <span>不写进 config.toml，也不进入诊断报告。</span>
+        </div>
+        <div class="feature">
+          <div class="icon">URL</div>
+          <strong>独立 Base URL</strong>
+          <span>每个 Profile 可以指向不同服务商。</span>
+        </div>
+        <div class="feature">
+          <div class="icon">ID</div>
+          <strong>模型可手动填写</strong>
+          <span>/models 获取不到，也能继续手动输入。</span>
+        </div>
+        <div class="feature">
+          <div class="icon">API</div>
+          <strong>只承诺兼容测试</strong>
+          <span>原生 API 或 Chat Completions-only 不一定可用。</span>
+        </div>
+      </div>
+      <div class="footer">
+        <span>智谱 / DeepSeek / 通义 / Kimi 需看兼容入口</span>
+        <span class="page">03</span>
+      </div>
+    </section>
+
+    <section class="card action-only">
+      <div class="brand">
+        <img src="../../landing/assets/app-icon.png" alt="" />
+        <span>欢迎帮测</span>
+      </div>
+      <div class="eyebrow">我现在最需要真实反馈</div>
+      <h2>别只告诉我好不好用，告诉我哪里跑不通。</h2>
+      <div class="check-panel">
+        <div class="check-item">
+          <div class="dot">✓</div>
+          <div>
+            <strong>你的第三方接口能不能跑通</strong>
+            <span>服务商、Base URL 是否以 /v1 结尾、模型 ID。</span>
+          </div>
+        </div>
+        <div class="check-item">
+          <div class="dot">✓</div>
+          <div>
+            <strong>Windows 是否是刚需</strong>
+            <span>当前主要是 macOS MVP，Windows 还在验证。</span>
+          </div>
+        </div>
+        <div class="check-item">
+          <div class="dot">✓</div>
+          <div>
+            <strong>你更需要哪种隔离</strong>
+            <span>API Key 隔离，还是 Codex 账号登录隔离。</span>
+          </div>
+        </div>
+      </div>
+      <div class="cta-box">
+        <strong>项目名：Codex 多开助手</strong>
+        <span>如果平台限制外链，直接去 GitHub 搜：</span>
+        <div class="mini-code">codex-multi-launcher</div>
+      </div>
+      <div class="footer">
+        <span>不要在评论里发送 API Key</span>
+        <span class="page">04</span>
+      </div>
+    </section>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const card = params.get("card") || "cover";
+      document.body.dataset.card = card;
+    </script>
+  </body>
+</html>

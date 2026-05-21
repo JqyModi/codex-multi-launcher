@@ -58,6 +58,20 @@ Codex 怎么优雅多开？
   3. Provider 配置截图：展示 Base URL、模型、API Key
   4. 演示视频：创建 Profile 到打开 Codex 的流程
 
+## 已生成小红书配图
+
+输出目录：`docs/publishing/xiaohongshu-assets/`
+
+建议发布顺序：
+
+1. `cover.png`：封面，主打“不是模型不行，是配置又串了”。
+2. `symptoms.png`：痛点卡，解释为什么多 API Key / 多 Base URL 会变成日常摩擦。
+3. `solution.png`：方案卡，展示一个 Profile 就是一套独立工作区。
+4. `compat.png`：边界卡，说清 Responses 兼容、API Key 本地加密和模型填写逻辑。
+5. `action.png`：反馈卡，引导用户提供服务商、Base URL、模型 ID 和 Windows / 多账号隔离需求。
+
+设计主题：`apple-product-narrative`。封面和内容卡均为 `1080x1440`，适合小红书竖图发布。
+
 ## 正文版本 A：强共鸣版
 
 ```text
