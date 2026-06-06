@@ -144,7 +144,16 @@ code {
 
 .profile-list {
   display: grid;
+  flex: 1;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: none;
+}
+
+.profile-list::-webkit-scrollbar {
+  display: none;
 }
 
 .profile-group-separator {
@@ -167,7 +176,8 @@ code {
 .sidebar-footer {
   display: flex;
   margin-top: auto;
-  padding-top: 18px;
+  border-top: 1px solid rgb(225 228 234 / 72%);
+  padding-top: 14px;
 }
 
 .profile-row {
