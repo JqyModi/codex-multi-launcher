@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
-import { codexExecutablePath } from "./paths.js";
 import { listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
 import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
@@ -140,14 +139,10 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
   if (apiKey) {
     await writeCodexAuth(profile, apiKey);
   }
-  const child = spawn(codexExecutablePath(profile.paths.codexAppPath), [`--user-data-dir=${profile.paths.userDataDir}`], {
+  await generateLauncher(profile);
+  const child = spawn("/usr/bin/open", [profile.paths.launcherPath], {
     detached: true,
-    stdio: "ignore",
-    env: {
-      ...process.env,
-      CODEX_HOME: profile.paths.codexHome,
-      ...(apiKey ? { [profile.provider.envKeyName]: apiKey } : {})
-    }
+    stdio: "ignore"
   });
 
   child.unref();

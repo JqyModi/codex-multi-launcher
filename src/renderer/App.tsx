@@ -32,6 +32,8 @@ type WizardStep = "profile" | "provider" | "test" | "launcher" | "generate";
 type Language = "zh" | "en";
 
 const WIZARD_STEPS: WizardStep[] = ["profile", "provider", "test", "launcher", "generate"];
+const DEFAULT_PROFILE_COLOR = "#34C759";
+const PROFILE_COLOR_OPTIONS = ["#34C759", "#007AFF", "#5856D6", "#AF52DE", "#FF2D55", "#FF9500", "#FFCC00", "#30B0C7"];
 
 const TEXT: Record<Language, Record<string, string>> = {
   zh: {
@@ -72,6 +74,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     next: "下一步",
     generating: "生成中",
     profileName: "Profile 名称",
+    profileColor: "图标颜色",
+    profileColorNote: "用于生成启动器图标，并在侧边栏显示同色身份标识。",
+    profileColorReview: "图标颜色",
     inheritConfig: "继承默认 Codex 配置",
     inheritConfigDesc: "保留已有插件、MCP 服务、可信项目和功能开关。",
     profileNameNote: "该名称会用于侧边栏列表和生成的启动器 App。",
@@ -108,6 +113,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     recentBackups: "最近配置备份",
     noBackups: "暂无快照。每次配置变更前会自动创建快照。",
     editProvider: "编辑 Provider",
+    appearance: "外观标识",
     newApiKey: "新的 API Key",
     keepCurrentKey: "留空则保留当前 Key",
     saveProvider: "保存 Provider",
@@ -159,6 +165,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     next: "Next",
     generating: "Generating...",
     profileName: "Profile name",
+    profileColor: "Icon color",
+    profileColorNote: "Used for the generated launcher icon and matching sidebar identity mark.",
+    profileColorReview: "Icon color",
     inheritConfig: "Inherit my default Codex config",
     inheritConfigDesc: "Keep existing plugins, MCP servers, trusted projects, and feature flags.",
     profileNameNote: "This name is used for the dashboard row and generated launcher app.",
@@ -195,6 +204,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     recentBackups: "Recent Config Backups",
     noBackups: "No snapshots yet. A snapshot is created before config changes.",
     editProvider: "Edit Provider",
+    appearance: "Appearance",
     newApiKey: "New API key",
     keepCurrentKey: "Leave empty to keep current key",
     saveProvider: "Save Provider",
@@ -218,6 +228,7 @@ const DEFAULT_FORM = {
   model: "gpt-5.2",
   apiKey: "",
   inheritDefaultConfig: true,
+  iconBackgroundColor: DEFAULT_PROFILE_COLOR,
   launcherDirectory: ""
 };
 
@@ -249,7 +260,8 @@ export function App() {
     providerName: "",
     baseUrl: "",
     model: "",
-    apiKey: ""
+    apiKey: "",
+    iconBackgroundColor: DEFAULT_PROFILE_COLOR
   });
   const [message, setMessage] = useState<string | null>(null);
 
@@ -306,7 +318,8 @@ export function App() {
       providerName: selectedProfile.provider.displayName,
       baseUrl: selectedProfile.provider.baseUrl ?? "",
       model: selectedProfile.provider.model,
-      apiKey: ""
+      apiKey: "",
+      iconBackgroundColor: getProfileColor(selectedProfile)
     });
     setEditProviderTest(null);
     setEditProviderModels(null);
@@ -332,6 +345,9 @@ export function App() {
         name: form.name,
         inheritDefaultConfig: form.inheritDefaultConfig,
         launcherDirectory: form.launcherDirectory || undefined,
+        appearance: {
+          iconBackgroundColor: sanitizeProfileColor(form.iconBackgroundColor)
+        },
         provider: {
           type: form.providerType,
           displayName: form.providerName,
@@ -505,6 +521,9 @@ export function App() {
     try {
       const result = await window.codexProfileManager.updateProfile({
         profileId: selectedProfile.id,
+        appearance: {
+          iconBackgroundColor: sanitizeProfileColor(editForm.iconBackgroundColor)
+        },
         provider: {
           displayName: editForm.providerName,
           baseUrl: editForm.baseUrl,
@@ -514,7 +533,7 @@ export function App() {
       });
       await refresh();
       setSelectedProfileId(result.profile.id);
-      setEditForm((current) => ({ ...current, apiKey: "" }));
+      setEditForm((current) => ({ ...current, apiKey: "", iconBackgroundColor: getProfileColor(result.profile) }));
       setMessage(`Updated ${result.profile.name}. Config and launcher were regenerated.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to update profile.");
@@ -644,7 +663,10 @@ export function App() {
 
         <section className="panel detail-panel">
           <div className="panel-heading">
-            <h3>{t.selectedProfile}</h3>
+            <div className="detail-title">
+              {selectedProfile ? <ProfileColorMark color={getProfileColor(selectedProfile)} size="large" /> : null}
+              <h3>{t.selectedProfile}</h3>
+            </div>
             {selectedProfile?.status === "deleted" ? (
               <div className="detail-actions">
                 <button className="button secondary" onClick={() => void revealPath(selectedProfile.paths.codexHome)} type="button">
@@ -704,6 +726,15 @@ export function App() {
                     </div>
                   ))
                 )}
+              </div>
+              <div className="edit-box">
+                <h4>{t.appearance}</h4>
+                <ColorPicker
+                  label={t.profileColor}
+                  note={t.profileColorNote}
+                  value={editForm.iconBackgroundColor}
+                  onChange={(iconBackgroundColor) => setEditForm({ ...editForm, iconBackgroundColor })}
+                />
               </div>
               <div className="edit-box">
                 <h4>{t.editProvider}</h4>
@@ -894,6 +925,12 @@ function WizardBody({
           {t.profileName}
           <input value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} />
         </label>
+        <ColorPicker
+          label={t.profileColor}
+          note={t.profileColorNote}
+          value={form.iconBackgroundColor}
+          onChange={(iconBackgroundColor) => onChange({ ...form, iconBackgroundColor })}
+        />
         <label className="toggle-card">
           <input checked={form.inheritDefaultConfig} onChange={(event) => onChange({ ...form, inheritDefaultConfig: event.target.checked })} type="checkbox" />
           <span className="toggle-copy">
@@ -988,6 +1025,7 @@ function WizardBody({
   return (
     <div className="review-box">
       <PathRow label={t.profile} value={form.name || t.missing} />
+      <ColorReviewRow color={sanitizeProfileColor(form.iconBackgroundColor)} label={t.profileColorReview} />
       <PathRow label={t.provider} value={form.providerName || t.missing} />
       <PathRow label={t.providerTypeReview} value={form.providerType === "official_openai" ? t.officialOpenAI : t.thirdPartyResponses} />
       <PathRow label={t.baseUrl} value={form.providerType === "third_party_responses" ? form.baseUrl || t.missing : "https://api.openai.com/v1"} />
@@ -1060,18 +1098,85 @@ function RuntimeBadge({ runtime }: { runtime?: ProfileRuntimeInfo }) {
   return <span className={`runtime-badge ${status}`}>{label}</span>;
 }
 
+function ProfileColorMark({ color, size = "regular" }: { color: string; size?: "regular" | "large" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`profile-color-mark ${size}`}
+      style={{ "--profile-color": color } as React.CSSProperties}
+    />
+  );
+}
+
 function ProfileRow({ onSelect, profile, runtime, selected }: { onSelect: () => void; profile: ManagedProfile; runtime?: ProfileRuntimeInfo; selected: boolean }) {
+  const profileColor = getProfileColor(profile);
+
   return (
     <button
       className={`profile-row ${selected ? "selected" : ""}`}
       onClick={onSelect}
       type="button"
     >
-      <span className="profile-name">{profile.name}</span>
+      <span className="profile-row-heading">
+        <ProfileColorMark color={profileColor} />
+        <span className="profile-name">{profile.name}</span>
+      </span>
       <span className="profile-meta">{profile.provider.displayName} / {profile.provider.model}</span>
       {profile.status === "deleted" ? <span className="runtime-badge deleted">Removed</span> : null}
       <RuntimeBadge runtime={runtime} />
     </button>
+  );
+}
+
+function ColorPicker({ label, note, onChange, value }: { label: string; note: string; onChange: (value: string) => void; value: string }) {
+  const normalizedValue = sanitizeProfileColor(value);
+
+  return (
+    <div className="color-field">
+      <div className="color-field-heading">
+        <span>{label}</span>
+        <code>{normalizedValue}</code>
+      </div>
+      <div className="color-control">
+        <div className="profile-icon-preview" style={{ "--profile-color": normalizedValue } as React.CSSProperties}>
+          <Rocket size={18} />
+        </div>
+        <div className="color-options" role="list">
+          {PROFILE_COLOR_OPTIONS.map((color) => (
+            <button
+              aria-label={color}
+              aria-pressed={normalizedValue === color}
+              className={`color-swatch ${normalizedValue === color ? "selected" : ""}`}
+              key={color}
+              onClick={() => onChange(color)}
+              style={{ "--profile-color": color } as React.CSSProperties}
+              type="button"
+            />
+          ))}
+        </div>
+        <input
+          aria-label={label}
+          className="color-input"
+          maxLength={7}
+          value={value}
+          onBlur={() => onChange(normalizedValue)}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </div>
+      <p className="field-note">{note}</p>
+    </div>
+  );
+}
+
+function ColorReviewRow({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="path-row">
+      <span className="path-label">{label}</span>
+      <div className="color-review">
+        <ProfileColorMark color={color} />
+        <code>{color}</code>
+      </div>
+    </div>
   );
 }
 
@@ -1124,6 +1229,25 @@ function PathRow({ icon, label, onReveal, value }: { icon?: React.ReactNode; lab
       </div>
     </div>
   );
+}
+
+function getProfileColor(profile: ManagedProfile): string {
+  return sanitizeProfileColor(profile.appearance?.iconBackgroundColor);
+}
+
+function sanitizeProfileColor(value: string | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  const shortHexMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+  if (shortHexMatch) {
+    return `#${shortHexMatch[1].split("").map((character) => `${character}${character}`).join("").toUpperCase()}`;
+  }
+
+  const longHexMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+  if (longHexMatch) {
+    return `#${longHexMatch[1].toUpperCase()}`;
+  }
+
+  return DEFAULT_PROFILE_COLOR;
 }
 
 function isCurrentStepValid(step: WizardStep, form: typeof DEFAULT_FORM): boolean {

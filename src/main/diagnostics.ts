@@ -22,6 +22,7 @@ export async function getDiagnosticsReport(): Promise<DiagnosticsReport> {
       envKeyName: profile.provider.envKeyName
     },
     paths: profile.paths,
+    appearance: profile.appearance,
     runtime: runtimeStatuses.find((runtime) => runtime.profileId === profile.id),
     backupCount: (await listConfigBackups(profile)).length
   })));

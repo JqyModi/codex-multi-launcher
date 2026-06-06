@@ -3,6 +3,8 @@ import { ensureDir, readJsonFile, writeJsonFile } from "./fs-utils.js";
 import { DEFAULT_CODEX_APP_PATH, getAppPaths, slugifyProfileName } from "./paths.js";
 import type { CreateProfileInput, ManagedProfile, ProfileRegistry, UpdateProfileInput } from "../shared/types.js";
 
+export const DEFAULT_PROFILE_ICON_BACKGROUND_COLOR = "#34C759";
+
 const EMPTY_REGISTRY: ProfileRegistry = {
   schemaVersion: 1,
   profiles: []
@@ -20,12 +22,14 @@ export async function saveRegistry(registry: ProfileRegistry): Promise<void> {
 
 export async function listProfiles(includeDeleted = false): Promise<ManagedProfile[]> {
   const registry = await loadRegistry();
+  registry.profiles = registry.profiles.map(normalizeProfileAppearance);
   return includeDeleted ? registry.profiles : registry.profiles.filter((profile) => profile.status !== "deleted");
 }
 
 export async function findProfile(profileId: string): Promise<ManagedProfile | null> {
   const registry = await loadRegistry();
-  return registry.profiles.find((profile) => profile.id === profileId) ?? null;
+  const profile = registry.profiles.find((item) => item.id === profileId);
+  return profile ? normalizeProfileAppearance(profile) : null;
 }
 
 export async function createProfileRecord(input: CreateProfileInput): Promise<ManagedProfile> {
@@ -69,6 +73,9 @@ export async function createProfileRecord(input: CreateProfileInput): Promise<Ma
       envKeyName,
       model: input.provider.model,
       reasoningEffort: input.provider.reasoningEffort ?? "medium"
+    },
+    appearance: {
+      iconBackgroundColor: normalizeHexColor(input.appearance?.iconBackgroundColor)
     },
     launch: {
       lastLaunchedAt: null,
@@ -136,6 +143,10 @@ export async function updateProfileRecord(input: UpdateProfileInput): Promise<Ma
   profile.provider.baseUrl = input.provider.baseUrl;
   profile.provider.model = input.provider.model;
   profile.provider.reasoningEffort = input.provider.reasoningEffort ?? profile.provider.reasoningEffort;
+  profile.appearance = {
+    ...normalizeProfileAppearance(profile).appearance,
+    ...(input.appearance?.iconBackgroundColor ? { iconBackgroundColor: normalizeHexColor(input.appearance.iconBackgroundColor) } : {})
+  };
   profile.timestamps.updatedAt = new Date().toISOString();
   await saveRegistry(registry);
   return profile;
@@ -153,4 +164,30 @@ export async function updateProfileLaunchMetadata(profileId: string, pid: number
   profile.launch.lastKnownUserDataDir = profile.paths.userDataDir;
   profile.timestamps.updatedAt = new Date().toISOString();
   await saveRegistry(registry);
+}
+
+function normalizeProfileAppearance(profile: ManagedProfile): ManagedProfile {
+  profile.appearance = {
+    iconBackgroundColor: normalizeHexColor(profile.appearance?.iconBackgroundColor)
+  };
+  return profile;
+}
+
+function normalizeHexColor(value: string | undefined): string {
+  if (!value) {
+    return DEFAULT_PROFILE_ICON_BACKGROUND_COLOR;
+  }
+
+  const trimmed = value.trim();
+  const shortHexMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+  if (shortHexMatch) {
+    return `#${shortHexMatch[1].split("").map((character) => `${character}${character}`).join("").toUpperCase()}`;
+  }
+
+  const longHexMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+  if (longHexMatch) {
+    return `#${longHexMatch[1].toUpperCase()}`;
+  }
+
+  return DEFAULT_PROFILE_ICON_BACKGROUND_COLOR;
 }

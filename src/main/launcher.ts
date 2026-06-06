@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ensureDir } from "./fs-utils.js";
+import { generateProfileIcon } from "./icon-generator.js";
 import { codexExecutablePath, getAppPaths } from "./paths.js";
 import type { LauncherResult, ManagedProfile } from "../shared/types.js";
 
@@ -14,6 +15,8 @@ function plist(profile: ManagedProfile): string {
   <string>${profile.name}</string>
   <key>CFBundleExecutable</key>
   <string>launcher</string>
+  <key>CFBundleIconFile</key>
+  <string>profile-icon</string>
   <key>CFBundleIdentifier</key>
   <string>local.codexprofilemanager.${profile.id}</string>
   <key>CFBundleInfoDictionaryVersion</key>
@@ -91,10 +94,12 @@ export async function generateLauncher(profile: ManagedProfile): Promise<Launche
   const macosDir = path.join(contentsDir, "MacOS");
   const resourcesDir = path.join(contentsDir, "Resources");
   const executablePath = path.join(macosDir, "launcher");
+  const iconPath = path.join(resourcesDir, "profile-icon.icns");
 
   await Promise.all([ensureDir(macosDir), ensureDir(resourcesDir)]);
   await fs.writeFile(path.join(contentsDir, "Info.plist"), plist(profile), { mode: 0o644 });
   await fs.writeFile(executablePath, await launcherScript(profile), { mode: 0o700 });
+  await generateProfileIcon(iconPath, profile.appearance.iconBackgroundColor);
 
   return {
     launcherPath: profile.paths.launcherPath,

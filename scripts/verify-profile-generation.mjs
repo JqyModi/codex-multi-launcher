@@ -77,9 +77,10 @@ const launcherContents = path.join(result.profile.paths.launcherPath, "Contents"
 const launcherInfoPlist = path.join(launcherContents, "Info.plist");
 const launcherMacosDir = path.join(launcherContents, "MacOS");
 const launcherResourcesDir = path.join(launcherContents, "Resources");
+const launcherIconPath = path.join(launcherResourcesDir, "profile-icon.icns");
 const launcherScript = path.join(result.profile.paths.launcherPath, "Contents", "MacOS", "launcher");
 
-const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat] = await Promise.all([
+const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat] = await Promise.all([
   fs.readFile(appPaths.profilesFile, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8"),
   fs.readFile(configPath, "utf8"),
@@ -89,10 +90,13 @@ const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRa
   fs.stat(launcherScript),
   fs.stat(launcherContents),
   fs.stat(launcherMacosDir),
-  fs.stat(launcherResourcesDir)
+  fs.stat(launcherResourcesDir),
+  fs.stat(launcherIconPath)
 ]);
 
 assert(registryRaw.includes("E2E Sandbox"), "registry should contain profile name");
+assert(result.profile.appearance.iconBackgroundColor === "#34C759", "profile should default to the standard identity color");
+assert(registryRaw.includes('"iconBackgroundColor": "#34C759"'), "registry should persist profile appearance color");
 assert(configRaw.includes('model_provider = "proxy"'), "config should select proxy provider");
 assert(configRaw.includes('wire_api = "responses"'), "config should use responses API");
 assert(configRaw.includes('requires_openai_auth = true'), "config should satisfy desktop auth gating");
@@ -114,11 +118,14 @@ assert(launcherRaw.includes("--user-data-dir="), "launcher should pass user-data
 assert(launcherContentsStat.isDirectory(), "launcher bundle should contain Contents directory");
 assert(launcherMacosStat.isDirectory(), "launcher bundle should contain Contents/MacOS directory");
 assert(launcherResourcesStat.isDirectory(), "launcher bundle should contain Contents/Resources directory");
+assert(launcherIconStat.isFile(), "launcher bundle should contain generated profile icon");
 assert((launcherStat.mode & 0o111) !== 0, "launcher script should be executable");
 assert(launcherPlistRaw.includes("<key>CFBundleDisplayName</key>"), "Info.plist should define display name");
 assert(launcherPlistRaw.includes("<string>E2E Sandbox</string>"), "Info.plist should contain profile name");
 assert(launcherPlistRaw.includes("<key>CFBundleExecutable</key>"), "Info.plist should define executable");
 assert(launcherPlistRaw.includes("<string>launcher</string>"), "Info.plist should use launcher executable");
+assert(launcherPlistRaw.includes("<key>CFBundleIconFile</key>"), "Info.plist should define profile icon");
+assert(launcherPlistRaw.includes("<string>profile-icon</string>"), "Info.plist should use generated profile icon");
 assert(launcherPlistRaw.includes("local.codexprofilemanager.e2e-sandbox"), "Info.plist should use profile bundle id");
 assert(launcherRaw.startsWith("#!/bin/zsh"), "launcher should be a zsh script");
 assert(launcherRaw.includes("set -euo pipefail"), "launcher should use strict shell mode");
@@ -129,6 +136,9 @@ await execFileAsync("zsh", ["-n", launcherScript]);
 const updatedKey = "sk-test-verify-profile-update";
 await updateProfile({
   profileId: result.profile.id,
+  appearance: {
+    iconBackgroundColor: "#007AFF"
+  },
   provider: {
     displayName: "Updated Proxy",
     baseUrl: "https://updated.example.com/v1",
@@ -138,15 +148,18 @@ await updateProfile({
   }
 });
 
-const [updatedConfigRaw, updatedAuthRaw, updatedLauncherRaw, updatedSecretsRaw] = await Promise.all([
+const [updatedConfigRaw, updatedAuthRaw, updatedLauncherRaw, updatedSecretsRaw, updatedProfiles] = await Promise.all([
   fs.readFile(configPath, "utf8"),
   fs.readFile(authPath, "utf8"),
   fs.readFile(launcherScript, "utf8"),
-  fs.readFile(appPaths.secretsFile, "utf8")
+  fs.readFile(appPaths.secretsFile, "utf8"),
+  listProfiles(true)
 ]);
 const updatedStoredKey = await getApiKey(result.profile.id, result.profile.provider.id);
 const backups = await listConfigBackups(result.profile.id);
+const updatedProfile = updatedProfiles.find((profile) => profile.id === result.profile.id);
 
+assert(updatedProfile?.appearance.iconBackgroundColor === "#007AFF", "profile update should persist appearance color");
 assert(updatedConfigRaw.includes('name = "Updated Proxy"'), "updated config should contain new provider name");
 assert(updatedConfigRaw.includes('base_url = "https://updated.example.com/v1"'), "updated config should contain new base URL");
 assert(updatedConfigRaw.includes('model = "gpt-5.4"'), "updated config should contain new model");

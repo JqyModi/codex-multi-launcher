@@ -48,6 +48,9 @@ Schema versioned JSON:
         "model": "gpt-5.2",
         "reasoningEffort": "medium"
       },
+      "appearance": {
+        "iconBackgroundColor": "#34C759"
+      },
       "launch": {
         "lastLaunchedAt": null,
         "lastKnownPid": null,
@@ -93,6 +96,16 @@ Allowed values:
 - `deleted`
 
 MVP can hard delete profiles only after creating a backup. Soft delete is preferred.
+
+### appearance.iconBackgroundColor
+
+Per-profile identity color used by the generated launcher icon and the manager sidebar marker.
+
+Rules:
+
+- Stored as uppercase `#RRGGBB`.
+- Defaults to `#34C759`.
+- The running status badge remains state-colored; this field is only an identity color.
 
 ## 4. Provider Types
 
@@ -177,6 +190,13 @@ CFBundleDisplayName = <Profile Name>
 CFBundleName = <Profile Name>
 CFBundleIdentifier = local.codexprofilemanager.<profile-id>
 CFBundleExecutable = launcher
+CFBundleIconFile = profile-icon
+```
+
+Launcher resources should include:
+
+```text
+Contents/Resources/profile-icon.icns
 ```
 
 Generated launcher script must know:

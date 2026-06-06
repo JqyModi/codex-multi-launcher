@@ -58,12 +58,17 @@ export interface LaunchMetadata {
   lastKnownUserDataDir: string;
 }
 
+export interface ProfileAppearance {
+  iconBackgroundColor: string;
+}
+
 export interface ManagedProfile {
   id: string;
   name: string;
   status: ProfileStatus;
   paths: ProfilePaths;
   provider: ProviderConfig;
+  appearance: ProfileAppearance;
   launch: LaunchMetadata;
   timestamps: {
     createdAt: string;
@@ -100,6 +105,7 @@ export interface DiagnosticsReport {
       envKeyName: string;
     };
     paths: ProfilePaths;
+    appearance: ProfileAppearance;
     runtime?: ProfileRuntimeInfo;
     backupCount: number;
   }>;
@@ -115,6 +121,7 @@ export interface CreateProfileInput {
   codexAppPath?: string;
   inheritDefaultConfig?: boolean;
   launcherDirectory?: string;
+  appearance?: Partial<ProfileAppearance>;
   provider: {
     type: ProviderType;
     displayName: string;
@@ -133,6 +140,7 @@ export interface CreateProfileResult {
 
 export interface UpdateProfileInput {
   profileId: string;
+  appearance?: Partial<ProfileAppearance>;
   provider: {
     displayName: string;
     baseUrl?: string;
