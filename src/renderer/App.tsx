@@ -253,12 +253,20 @@ export function App() {
   });
   const [message, setMessage] = useState<string | null>(null);
 
-  const selectedProfile = useMemo(
-    () => profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0] ?? null,
-    [profiles, selectedProfileId]
+  const runtimeByProfileId = useMemo(
+    () => new Map(runtimeStatuses.map((runtime) => [runtime.profileId, runtime])),
+    [runtimeStatuses]
   );
-  const activeProfiles = useMemo(() => profiles.filter((profile) => profile.status !== "deleted"), [profiles]);
+  const activeProfiles = useMemo(
+    () => sortProfilesByRuntime(profiles.filter((profile) => profile.status !== "deleted"), runtimeByProfileId),
+    [profiles, runtimeByProfileId]
+  );
   const deletedProfiles = useMemo(() => profiles.filter((profile) => profile.status === "deleted"), [profiles]);
+  const visibleProfiles = useMemo(() => [...activeProfiles, ...deletedProfiles], [activeProfiles, deletedProfiles]);
+  const selectedProfile = useMemo(
+    () => visibleProfiles.find((profile) => profile.id === selectedProfileId) ?? visibleProfiles[0] ?? null,
+    [selectedProfileId, visibleProfiles]
+  );
 
   const currentStepIndex = WIZARD_STEPS.findIndex((step) => step === wizardStep);
   const canGoBack = currentStepIndex > 0;
@@ -274,10 +282,15 @@ export function App() {
         window.codexProfileManager.listProfiles(showDeletedProfiles)
       ]);
       const runtime = await window.codexProfileManager.getRuntimeStatus();
+      const runtimeMap = new Map(runtime.map((item) => [item.profileId, item]));
+      const firstVisibleProfile = sortProfilesByRuntime(
+        profileList.filter((profile) => profile.status !== "deleted"),
+        runtimeMap
+      )[0] ?? profileList[0] ?? null;
       setEnvironment(environmentReport);
       setProfiles(profileList);
       setRuntimeStatuses(runtime);
-      setSelectedProfileId((current) => current ?? profileList[0]?.id ?? null);
+      setSelectedProfileId((current) => profileList.some((profile) => profile.id === current) ? current : firstVisibleProfile?.id ?? null);
     } finally {
       setIsRefreshing(false);
     }
@@ -571,7 +584,7 @@ export function App() {
           ) : (
             <>
               {activeProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeStatuses.find((item) => item.profileId === profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
               ))}
               {deletedProfiles.length > 0 ? (
                 <div className="profile-group-separator">
@@ -579,7 +592,7 @@ export function App() {
                 </div>
               ) : null}
               {deletedProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeStatuses.find((item) => item.profileId === profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
               ))}
             </>
           )}
@@ -1079,6 +1092,22 @@ function summarizeEnvironment(environment: EnvironmentReport | null, t: Record<s
   }
 
   return { label: t.environmentOk, shortLabel: "OK", status: "pass" };
+}
+
+function sortProfilesByRuntime(profiles: ManagedProfile[], runtimeByProfileId: Map<string, ProfileRuntimeInfo>): ManagedProfile[] {
+  return profiles
+    .map((profile, index) => ({ profile, index }))
+    .sort((left, right) => {
+      const leftRunning = runtimeByProfileId.get(left.profile.id)?.status === "running";
+      const rightRunning = runtimeByProfileId.get(right.profile.id)?.status === "running";
+
+      if (leftRunning === rightRunning) {
+        return left.index - right.index;
+      }
+
+      return leftRunning ? -1 : 1;
+    })
+    .map((item) => item.profile);
 }
 
 function PathRow({ icon, label, onReveal, value }: { icon?: React.ReactNode; label: string; onReveal?: () => void; value: string }) {
