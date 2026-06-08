@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { DEFAULT_CODEX_APP_PATH, codexExecutablePath, getAppPaths } from "./paths.js";
+import { codexExecutablePath, getAppPaths, getDefaultCodexAppPath, getRuntimePlatform } from "./paths.js";
 import { isWritableDirectory, pathExists } from "./fs-utils.js";
 import type { EnvironmentCheck, EnvironmentReport } from "../shared/types.js";
 
@@ -8,8 +8,9 @@ const execFileAsync = promisify(execFile);
 
 async function findExecutable(command: string, versionArgs: string[] = ["--version"]): Promise<{ path: string | null; version: string | null }> {
   try {
-    const whichResult = await execFileAsync("which", [command]);
-    const executablePath = whichResult.stdout.trim();
+    const lookupCommand = getRuntimePlatform() === "win32" ? "where.exe" : "which";
+    const lookupResult = await execFileAsync(lookupCommand, [command]);
+    const executablePath = lookupResult.stdout.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
     if (!executablePath) {
       return { path: null, version: null };
     }
@@ -30,7 +31,7 @@ function checkStatus(condition: boolean, failDetail: string, passDetail: string)
     : { status: "fail", detail: failDetail };
 }
 
-export async function getEnvironmentReport(codexAppPath = DEFAULT_CODEX_APP_PATH): Promise<EnvironmentReport> {
+export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath()): Promise<EnvironmentReport> {
   const appPaths = getAppPaths();
   const executablePath = codexExecutablePath(codexAppPath);
   const [codexAppExists, codexExecutableExists, cli, nodeRuntime, launcherWritable, profileRootWritable, appDataWritable] =
@@ -46,12 +47,12 @@ export async function getEnvironmentReport(codexAppPath = DEFAULT_CODEX_APP_PATH
 
   const appCheck = checkStatus(
     codexAppExists,
-    "Codex.app was not found. Select the Codex app manually before creating profiles.",
-    "Codex.app was found."
+    getRuntimePlatform() === "win32" ? "Codex for Windows was not found. Select Codex.exe manually before creating profiles." : "Codex.app was not found. Select the Codex app manually before creating profiles.",
+    getRuntimePlatform() === "win32" ? "Codex for Windows was found." : "Codex.app was found."
   );
   const executableCheck = checkStatus(
     codexExecutableExists,
-    "Codex executable was not found inside the app bundle.",
+    getRuntimePlatform() === "win32" ? "Codex.exe was not found." : "Codex executable was not found inside the app bundle.",
     "Codex executable was found."
   );
 

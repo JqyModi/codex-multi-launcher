@@ -14,8 +14,12 @@
     "package:mac": "npm run build:icon && npm run build && electron-builder --mac zip dir --arm64 --config electron-builder.yml",
     "package:mac:dir": "npm run build:icon && npm run build && electron-builder --mac dir --arm64 --config electron-builder.yml",
     "package:mac:dmg": "npm run build:icon && npm run build && electron-builder --mac dmg --arm64 --config electron-builder.yml",
+    "package:win": "npm run build && electron-builder --win portable --x64 --config electron-builder.yml",
+    "package:win:dir": "npm run build && electron-builder --win dir --x64 --config electron-builder.yml",
     "start": "npm run build && electron .",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "verify:paths": "npm run build:main && node scripts/verify-path-provider.mjs",
+    "verify:win-launcher": "npm run build:main && node scripts/verify-windows-launcher.mjs",
     "verify:e2e": "npm run build && node scripts/verify-profile-generation.mjs"
   },
   "dependencies": {

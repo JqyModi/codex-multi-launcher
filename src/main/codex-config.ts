@@ -24,7 +24,7 @@ function renderConfig(profile: ManagedProfile): string {
       `env_key = ${tomlString(profile.provider.envKeyName)}`,
       `temp_env_key = ${tomlString(profile.provider.envKeyName)}`,
       `wire_api = "responses"`,
-      `requires_openai_auth = true`,
+      `requires_openai_auth = false`,
       ""
     );
   }
@@ -53,7 +53,7 @@ function renderProviderConfig(profile: ManagedProfile): string {
     `env_key = ${tomlString(profile.provider.envKeyName)}`,
     `temp_env_key = ${tomlString(profile.provider.envKeyName)}`,
     `wire_api = "responses"`,
-    `requires_openai_auth = true`
+    `requires_openai_auth = false`
   ].join("\n");
 }
 
@@ -110,8 +110,18 @@ function removeInheritedRootOverrides(config: string): string {
     .trimEnd();
 }
 
+function removeProviderOverride(config: string, providerId: string): string {
+  const escapedProviderId = providerId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return config
+    .replace(
+      new RegExp(`\\n?\\[model_providers\\.${escapedProviderId}\\]\\n[\\s\\S]*?(?=\\n\\s*\\[[^\\]]+\\]|$)`, "g"),
+      "\n"
+    )
+    .trimEnd();
+}
+
 function mergeManagedConfig(config: string, profile: ManagedProfile): string {
-  const cleanedConfig = removeInheritedRootOverrides(stripManagedConfig(config));
+  const cleanedConfig = removeProviderOverride(removeInheritedRootOverrides(stripManagedConfig(config)), profile.provider.id);
   const firstTableIndex = cleanedConfig.search(/^\s*\[[^\]]+\]/m);
 
   if (firstTableIndex === -1) {
@@ -120,7 +130,7 @@ function mergeManagedConfig(config: string, profile: ManagedProfile): string {
 
   const rootConfig = cleanedConfig.slice(0, firstTableIndex).trimEnd();
   const tableConfig = cleanedConfig.slice(firstTableIndex).trimStart();
-  return `${rootConfig}${renderManagedConfig(profile)}${tableConfig}\n`;
+  return `${rootConfig}${renderManagedConfig(profile)}${tableConfig ? `${tableConfig}\n` : ""}`;
 }
 
 export async function backupCodexConfig(profile: ManagedProfile, reason: string): Promise<string | null> {

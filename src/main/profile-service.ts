@@ -1,14 +1,22 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import { listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
-import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
+import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, repairProfileCodexAppPath, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
+import { codexExecutablePath, getRuntimePlatform, isWindowsCodexGuiExecutable } from "./paths.js";
+import { pathExists } from "./fs-utils.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
 import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderModelsInput, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderModelsResult, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
 export { listProfiles };
+
+interface LaunchCommand {
+  command: string;
+  args: string[];
+  env?: NodeJS.ProcessEnv;
+}
 
 export async function getRuntimeStatus(): Promise<ProfileRuntimeInfo[]> {
   return inspectRuntimeStatus(await listProfiles());
@@ -133,21 +141,56 @@ export async function restoreProfile(profileId: string): Promise<{ ok: true }> {
 }
 
 export async function openProfile(profileId: string): Promise<{ pid: number | null }> {
-  const profile = await mustFindProfile(profileId);
+  const profile = await repairProfileCodexAppPath(await mustFindProfile(profileId));
   const apiKey = await getApiKey(profile.id, profile.provider.id);
   await writeCodexConfig(profile, { preserveExistingConfig: true });
   if (apiKey) {
     await writeCodexAuth(profile, apiKey);
   }
+  const codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
+  if (!(await pathExists(codexExecutable)) || !isWindowsCodexGuiExecutable(codexExecutable)) {
+    throw new Error(`Codex desktop executable was not found: ${codexExecutable}. Install Codex for Windows or update this profile with the correct Codex.exe path.`);
+  }
   await generateLauncher(profile);
-  const child = spawn("/usr/bin/open", [profile.paths.launcherPath], {
+  const launchCommand = getRuntimePlatform() === "win32"
+    ? profileLaunchCommand(profile, codexExecutable, apiKey)
+    : launcherOpenCommand(profile.paths.launcherPath);
+  const child = spawn(launchCommand.command, launchCommand.args, {
     detached: true,
-    stdio: "ignore"
+    stdio: "ignore",
+    ...(launchCommand.env ? { env: launchCommand.env } : {})
   });
 
   child.unref();
   await updateProfileLaunchMetadata(profile.id, child.pid ?? null);
   return { pid: child.pid ?? null };
+}
+
+function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, apiKey: string | null): LaunchCommand {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    CODEX_HOME: profile.paths.codexHome
+  };
+  if (apiKey) {
+    env[profile.provider.envKeyName] = apiKey;
+    if (profile.provider.type === "official_openai") {
+      env.OPENAI_API_KEY = apiKey;
+    }
+  }
+
+  return {
+    command: codexExecutable,
+    args: [`--user-data-dir=${profile.paths.userDataDir}`],
+    env
+  };
+}
+
+function launcherOpenCommand(launcherPath: string): LaunchCommand {
+  if (getRuntimePlatform() === "win32") {
+    return { command: "cmd.exe", args: ["/c", launcherPath] };
+  }
+
+  return { command: "/usr/bin/open", args: [launcherPath] };
 }
 
 async function mustFindProfile(profileId: string): Promise<ManagedProfile> {

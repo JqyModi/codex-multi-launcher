@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getEnvironmentReport } from "./environment.js";
 import { getDiagnosticsReport } from "./diagnostics.js";
+import { configurePathProvider } from "./paths.js";
 import {
   createProfile,
   deleteProfile,
@@ -23,6 +24,12 @@ import type { CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTes
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+if (process.platform === "win32") {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch("disable-gpu");
+  app.commandLine.appendSwitch("disable-gpu-compositing");
+}
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -79,6 +86,11 @@ function registerIpc(): void {
 }
 
 void app.whenReady().then(() => {
+  configurePathProvider({
+    home: () => app.getPath("home"),
+    appData: () => app.getPath("appData"),
+    userData: () => app.getPath("userData")
+  });
   registerIpc();
   createWindow();
 

@@ -144,6 +144,8 @@ code {
 
 .profile-list {
   display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
   flex: 1;
   gap: 8px;
   min-height: 0;
@@ -183,7 +185,9 @@ code {
 .profile-row {
   align-items: flex-start;
   flex-direction: column;
+  flex: 0 0 auto;
   width: 100%;
+  min-height: 0;
   padding: 12px;
   text-align: left;
   box-shadow: 0 8px 22px rgb(15 23 42 / 4%);

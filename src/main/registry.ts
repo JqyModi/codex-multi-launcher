@@ -1,6 +1,7 @@
 import path from "node:path";
 import { ensureDir, readJsonFile, writeJsonFile } from "./fs-utils.js";
-import { DEFAULT_CODEX_APP_PATH, getAppPaths, slugifyProfileName } from "./paths.js";
+import { codexExecutablePath, getAppPaths, getDefaultCodexAppPath, isWindowsCodexGuiExecutable, launcherFileName, slugifyProfileName } from "./paths.js";
+import { pathExists } from "./fs-utils.js";
 import type { CreateProfileInput, ManagedProfile, ProfileRegistry, UpdateProfileInput } from "../shared/types.js";
 
 export const DEFAULT_PROFILE_ICON_BACKGROUND_COLOR = "#34C759";
@@ -49,7 +50,7 @@ export async function createProfileRecord(input: CreateProfileInput): Promise<Ma
   const codexHome = path.join(appPaths.defaultProfileRoot, id, "codex-home");
   const userDataDir = path.join(appPaths.defaultUserDataRoot, id, "user-data");
   const launcherDirectory = input.launcherDirectory ?? appPaths.defaultLauncherRoot;
-  const launcherPath = path.join(launcherDirectory, `${input.name}.app`);
+  const launcherPath = path.join(launcherDirectory, launcherFileName(input.name));
   const providerId = input.provider.type === "official_openai" ? "openai" : "proxy";
   const envKeyName = input.provider.type === "official_openai"
     ? "OPENAI_API_KEY"
@@ -59,7 +60,7 @@ export async function createProfileRecord(input: CreateProfileInput): Promise<Ma
     name: input.name,
     status: "active",
     paths: {
-      codexAppPath: input.codexAppPath ?? DEFAULT_CODEX_APP_PATH,
+      codexAppPath: input.codexAppPath ?? getDefaultCodexAppPath(),
       codexHome,
       userDataDir,
       launcherPath
@@ -149,6 +150,34 @@ export async function updateProfileRecord(input: UpdateProfileInput): Promise<Ma
   };
   profile.timestamps.updatedAt = new Date().toISOString();
   await saveRegistry(registry);
+  return profile;
+}
+
+export async function updateProfileCodexAppPath(profileId: string, codexAppPath: string): Promise<ManagedProfile> {
+  const registry = await loadRegistry();
+  const profile = registry.profiles.find((item) => item.id === profileId);
+  if (!profile) {
+    throw new Error(`Profile not found: ${profileId}`);
+  }
+
+  profile.paths.codexAppPath = codexAppPath;
+  profile.timestamps.updatedAt = new Date().toISOString();
+  await saveRegistry(registry);
+  return profile;
+}
+
+export async function repairProfileCodexAppPath(profile: ManagedProfile): Promise<ManagedProfile> {
+  const currentExecutable = codexExecutablePath(profile.paths.codexAppPath);
+  if (await pathExists(currentExecutable) && isWindowsCodexGuiExecutable(currentExecutable)) {
+    return profile;
+  }
+
+  const defaultCodexAppPath = getDefaultCodexAppPath();
+  const defaultExecutable = codexExecutablePath(defaultCodexAppPath);
+  if (defaultCodexAppPath !== profile.paths.codexAppPath && await pathExists(defaultExecutable) && isWindowsCodexGuiExecutable(defaultExecutable)) {
+    return updateProfileCodexAppPath(profile.id, defaultCodexAppPath);
+  }
+
   return profile;
 }
 

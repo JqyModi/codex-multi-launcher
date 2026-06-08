@@ -479,9 +479,13 @@ export function App() {
 
   async function openSelectedProfile() {
     if (!selectedProfile) return;
-    const result = await window.codexProfileManager.openProfile(selectedProfile.id);
-    setMessage(result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`);
-    window.setTimeout(() => void refresh(), 1200);
+    try {
+      const result = await window.codexProfileManager.openProfile(selectedProfile.id);
+      setMessage(result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`);
+      window.setTimeout(() => void refresh(), 1200);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to open profile.");
+    }
   }
 
   async function deleteSelectedProfile() {

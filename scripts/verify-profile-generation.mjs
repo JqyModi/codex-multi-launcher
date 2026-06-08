@@ -99,9 +99,10 @@ assert(result.profile.appearance.iconBackgroundColor === "#34C759", "profile sho
 assert(registryRaw.includes('"iconBackgroundColor": "#34C759"'), "registry should persist profile appearance color");
 assert(configRaw.includes('model_provider = "proxy"'), "config should select proxy provider");
 assert(configRaw.includes('wire_api = "responses"'), "config should use responses API");
-assert(configRaw.includes('requires_openai_auth = true'), "config should satisfy desktop auth gating");
+assert(configRaw.includes('requires_openai_auth = false'), "third-party provider should not require OpenAI auth");
 assert(configRaw.includes("CODEX_PROFILE_E2E_SANDBOX_API_KEY"), "config should reference generated env key");
 assert(configRaw.includes('temp_env_key = "CODEX_PROFILE_E2E_SANDBOX_API_KEY"'), "config should include Codex temp env key");
+assert((configRaw.match(/\[model_providers\.proxy\]/g) ?? []).length === 1, "config should contain one proxy provider table");
 assert(configRaw.includes("[mcp_servers.example]"), "config should inherit default MCP server settings");
 assert(configRaw.includes("[features]"), "config should inherit default feature settings");
 assert(configRaw.includes("Codex Profile Manager managed settings"), "config should mark appended managed settings");
