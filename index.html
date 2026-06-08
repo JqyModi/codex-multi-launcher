@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Codex 多开助手是一款 macOS 小工具，用于创建多个独立 Codex 桌面窗口，并为每个窗口配置不同 API Key、Base URL 和模型。" />
+    <meta name="description" content="Codex 多开助手是一款跨平台小工具，用于创建多个独立 Codex 桌面窗口，并为每个窗口配置不同 API Key、Base URL 和模型。" />
     <meta property="og:title" content="Codex 多开助手" />
     <meta property="og:description" content="一键创建多个独立 Codex 桌面窗口，为每个窗口配置不同 API Key / Base URL。" />
     <meta property="og:image" content="assets/app-icon.png" />
@@ -29,19 +29,19 @@
     <main id="top">
       <section class="hero section">
         <div class="hero-copy">
-          <p class="eyebrow">macOS · Codex 多开 · 第三方 Responses API</p>
+          <p class="eyebrow">macOS · Windows · Codex 多开 · 第三方 Responses API</p>
           <h1>让每个 Codex 窗口都有自己的 API 配置。</h1>
           <p class="hero-lede">
             Codex 多开助手可以创建多个隔离的 Codex 桌面窗口，并为每个窗口配置独立的 API Key、Base URL、模型和启动器。
           </p>
           <div class="hero-actions">
-            <a class="button primary" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">下载 macOS 测试版</a>
+            <a class="button primary" href="#download">下载多平台测试版</a>
             <a class="button secondary" href="manual.html">查看用户手册</a>
           </div>
           <div class="trust-row" aria-label="产品特性">
             <span>API Key 本地加密</span>
             <span>不修改原 Codex App</span>
-            <span>支持第三方 Responses 兼容接口</span>
+            <span>支持 Mac Intel / Apple Silicon / Windows x64</span>
           </div>
         </div>
         <div class="hero-art" aria-label="Codex 多开助手界面预览">
@@ -168,14 +168,14 @@
       <section class="section roadmap" id="roadmap">
         <div class="section-heading centered">
           <p class="eyebrow">来自早期用户反馈</p>
-          <h2>下一步优先验证 Windows 和多账号隔离。</h2>
-          <p>Linux.do 社区已经反馈了两个高频方向：希望支持 Windows，也希望确认不同 Codex 账号能否真正隔离运行。</p>
+          <h2>Windows 和 Mac Intel 已进入测试版。</h2>
+          <p>根据 Linux.do 社区反馈，当前版本已补齐 Windows x64、macOS Intel 和 macOS Apple Silicon 三类安装包。</p>
         </div>
         <div class="roadmap-grid">
           <article>
-            <span>Roadmap 01</span>
-            <h3>Windows support</h3>
-            <p>适配 Windows 下的 Codex 检测、Profile 路径、启动器生成和第三方 Provider 配置。</p>
+            <span>Done 01</span>
+            <h3>Windows x64 support</h3>
+            <p>已适配 Windows 下的 Codex 检测、Profile 路径、启动器生成和第三方 Provider 配置，欢迎继续反馈真实环境问题。</p>
             <a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/issues/2">查看 issue #2</a>
           </article>
           <article>
@@ -189,14 +189,16 @@
 
       <section class="section download" id="download">
         <div>
-          <p class="eyebrow">MVP 测试版</p>
-          <h2>欢迎小范围试用并提交反馈。</h2>
+          <p class="eyebrow">v0.1.1 多平台测试版</p>
+          <h2>按系统和芯片架构选择下载。</h2>
           <p>
-            当前版本主要面向 macOS Apple Silicon，支持官方 OpenAI API Key 和第三方 Responses 兼容接口。未签名版本可能需要手动解除 macOS quarantine。
+            当前版本提供 macOS Apple Silicon、macOS Intel 和 Windows x64 三种安装包，支持官方 OpenAI API Key 和第三方 Responses 兼容接口。macOS 未签名版本可能需要手动解除 quarantine。
           </p>
         </div>
         <div class="download-card">
-          <a class="button primary full" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">前往 GitHub Releases 下载</a>
+          <a class="button primary full" href="https://github.com/JqyModi/codex-multi-launcher/releases/download/v0.1.1/Codex-Multi-Launcher-0.1.1-arm64-mac.zip">Mac Apple Silicon / M 系列</a>
+          <a class="button secondary full" href="https://github.com/JqyModi/codex-multi-launcher/releases/download/v0.1.1/Codex-Multi-Launcher-0.1.1-x64-mac.zip">Mac Intel</a>
+          <a class="button secondary full" href="https://github.com/JqyModi/codex-multi-launcher/releases/download/v0.1.1/Codex-Multi-Launcher-0.1.1-x64-windows.zip">Windows x64</a>
           <a class="button secondary full" href="https://github.com/JqyModi/codex-multi-launcher/issues">在 GitHub Issues 反馈</a>
           <div class="wechat-card" aria-label="微信公众号二维码">
             <div>
@@ -220,7 +222,11 @@
         </details>
         <details>
           <summary>是否支持 Windows？</summary>
-          <p>界面技术栈是 Electron，可跨平台；但当前启动器生成、路径检查和 Codex App 检测都按 macOS 实现，Windows 需要单独适配。进展会记录在 <a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/issues/2">issue #2</a>。</p>
+          <p>v0.1.1 已提供 Windows x64 测试包，包含 Windows 下的 Codex 检测、Profile 路径、启动和 Provider 配置适配。问题进展会记录在 <a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/issues/2">issue #2</a>。</p>
+        </details>
+        <details>
+          <summary>Mac Intel 芯片应该下载哪个包？</summary>
+          <p>Intel 芯片 Mac 下载 `Codex-Multi-Launcher-0.1.1-x64-mac.zip`，M 系列 Mac 下载 `Codex-Multi-Launcher-0.1.1-arm64-mac.zip`。</p>
         </details>
         <details>
           <summary>是否支持不同 Codex 账号同时登录？</summary>

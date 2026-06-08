@@ -57,12 +57,13 @@
         <section id="install" class="manual-section">
           <h2>1. 安装与打开</h2>
           <ol>
-            <li>解压 `Codex 多开助手-版本号-arm64-mac.zip`。</li>
-            <li>将 `Codex 多开助手.app` 拖到 `Applications`，或直接双击打开。</li>
+            <li>按设备下载对应安装包：M 系列 Mac 选择 `arm64-mac`，Intel Mac 选择 `x64-mac`，Windows 选择 `x64-windows`。</li>
+            <li>macOS 解压 zip 后，将 `Codex 多开助手.app` 拖到 `Applications`，或直接双击打开。</li>
+            <li>Windows 解压 zip 后，运行 `Codex Profile Manager.exe`。</li>
             <li>如果 macOS 提示无法打开，说明这是未签名测试版，可以在终端执行下面的命令。</li>
           </ol>
           <pre><code>xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"</code></pre>
-          <p>当前测试版主要面向 macOS Apple Silicon。正式公开分发前需要签名和 notarization。</p>
+          <p>当前 v0.1.1 测试版支持 macOS Apple Silicon、macOS Intel 和 Windows x64。正式公开分发前，macOS 版本仍需要签名和 notarization。</p>
         </section>
 
         <section id="dashboard" class="manual-section">

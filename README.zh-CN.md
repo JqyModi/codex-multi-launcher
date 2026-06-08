@@ -2,13 +2,13 @@
 
 # Codex 多开助手
 
-Codex 多开助手是一个面向 macOS 的小工具，用来创建多个彼此隔离的 Codex 桌面窗口，并为每个窗口配置独立的 API Key、Base URL、模型和启动器。
+Codex 多开助手是一个跨平台小工具，用来创建多个彼此隔离的 Codex 桌面窗口，并为每个窗口配置独立的 API Key、Base URL、模型和启动器。
 
 这个仓库用于：
 
 - 发布产品落地页和用户手册；
 - 通过 GitHub Issues 收集早期试用反馈；
-- 通过 GitHub Releases 分发 macOS 测试版安装包。
+- 通过 GitHub Releases 分发 macOS 和 Windows 测试版安装包。
 
 ## 在线访问
 
@@ -35,7 +35,11 @@ Provider 兼容说明：
 
 ## 试用边界
 
-当前版本主要面向 macOS Apple Silicon。
+当前 v0.1.1 测试版提供三种安装包：
+
+- macOS Apple Silicon：`Codex-Multi-Launcher-0.1.1-arm64-mac.zip`
+- macOS Intel：`Codex-Multi-Launcher-0.1.1-x64-mac.zip`
+- Windows x64：`Codex-Multi-Launcher-0.1.1-x64-windows.zip`
 
 App 暂未签名和 notarization，首次打开可能需要手动解除 quarantine：
 
@@ -43,13 +47,13 @@ App 暂未签名和 notarization，首次打开可能需要手动解除 quaranti
 xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
 ```
 
-Windows 版本在技术上可适配，但当前启动器生成、路径检测和 Codex App 探测仍以 macOS 为主。
+Windows x64 已进入测试版。如果遇到真实环境兼容问题，请通过 GitHub Issues 提供复现步骤和诊断信息。
 
 ## Roadmap
 
 早期用户反馈里已经出现两个明确方向：
 
-- [Windows support](https://github.com/JqyModi/codex-multi-launcher/issues/2)：适配 Windows 下的 Codex 检测、Profile 路径和启动器生成。
+- [Windows support](https://github.com/JqyModi/codex-multi-launcher/issues/2)：v0.1.1 已包含 Windows x64 测试支持，后续兼容问题仍在这里跟进。
 - [多账号隔离验证](https://github.com/JqyModi/codex-multi-launcher/issues/1)：确认不同 Profile 是否可以保持独立 Codex 登录状态。
 
 ## 反馈建议
@@ -60,7 +64,7 @@ Windows 版本在技术上可适配，但当前启动器生成、路径检测和
 
 建议反馈时包含：
 
-- macOS 版本和芯片架构；
+- 系统版本和芯片架构；
 - Codex App 版本；
 - 使用官方 API Key 还是第三方 Responses 兼容接口；
 - Base URL 是否以 `/v1` 结尾；

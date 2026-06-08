@@ -478,6 +478,10 @@ p {
   padding: 18px;
 }
 
+.download-card .button {
+  justify-content: center;
+}
+
 .wechat-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 104px;

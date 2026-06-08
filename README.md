@@ -2,13 +2,13 @@ English | [中文](README.zh-CN.md)
 
 # Codex Multi Launcher
 
-Codex Multi Launcher is the public landing-page repository for **Codex 多开助手**, a macOS utility that creates isolated Codex desktop profiles. Each profile can use its own API key, Base URL, model, and launcher app.
+Codex Multi Launcher is the public landing-page repository for **Codex 多开助手**, a cross-platform utility that creates isolated Codex desktop profiles. Each profile can use its own API key, Base URL, model, and launcher app.
 
 This repository is used for:
 
 - publishing the product landing page and user manual;
 - collecting early user feedback through GitHub Issues;
-- distributing macOS test builds through GitHub Releases.
+- distributing macOS and Windows test builds through GitHub Releases.
 
 ## Live Links
 
@@ -35,7 +35,11 @@ Provider compatibility note:
 
 ## Current Test Scope
 
-The current MVP mainly targets macOS Apple Silicon.
+The current v0.1.1 test release provides:
+
+- macOS Apple Silicon: `Codex-Multi-Launcher-0.1.1-arm64-mac.zip`
+- macOS Intel: `Codex-Multi-Launcher-0.1.1-x64-mac.zip`
+- Windows x64: `Codex-Multi-Launcher-0.1.1-x64-windows.zip`
 
 The app is not signed or notarized yet, so macOS may block it on first launch. If that happens, remove quarantine manually:
 
@@ -43,13 +47,13 @@ The app is not signed or notarized yet, so macOS may block it on first launch. I
 xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
 ```
 
-Windows support is technically possible, but the current launcher generation, path checks, and Codex App detection are still macOS-first.
+Windows x64 support is in test. Please report real-machine issues through GitHub Issues with reproduction steps and diagnostics.
 
 ## Roadmap
 
 Early feedback has already surfaced two clear directions:
 
-- [Windows support](https://github.com/JqyModi/codex-multi-launcher/issues/2): adapt Codex detection, profile paths, and launcher generation for Windows.
+- [Windows support](https://github.com/JqyModi/codex-multi-launcher/issues/2): v0.1.1 includes Windows x64 test support. Follow-up compatibility issues are still tracked here.
 - [Multi-account profile isolation](https://github.com/JqyModi/codex-multi-launcher/issues/1): verify whether separate profiles can keep independent Codex account sessions.
 
 ## Feedback
@@ -60,7 +64,7 @@ Please open a GitHub Issue if you test the app:
 
 Helpful reports include:
 
-- macOS version and chip architecture;
+- OS version and chip architecture;
 - Codex App version;
 - whether you use official OpenAI API or a third-party Responses-compatible API;
 - whether the Base URL ends with `/v1`;
