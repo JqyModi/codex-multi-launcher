@@ -24,6 +24,7 @@ import type { CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTes
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+let mainWindow: BrowserWindow | null = null;
 
 if (process.platform === "win32") {
   app.disableHardwareAcceleration();
@@ -32,7 +33,7 @@ if (process.platform === "win32") {
 }
 
 function createWindow(): void {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1180,
     height: 760,
     minWidth: 1040,
@@ -45,12 +46,15 @@ function createWindow(): void {
       nodeIntegration: false
     }
   });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
-    void window.loadURL(devServerUrl);
+    void mainWindow.loadURL(devServerUrl);
   } else {
-    void window.loadFile(path.join(__dirname, "../../dist/index.html"));
+    void mainWindow.loadFile(path.join(__dirname, "../../dist/index.html"));
   }
 }
 

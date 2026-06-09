@@ -3,7 +3,7 @@ import path from "node:path";
 import { ensureDir } from "./fs-utils.js";
 import { generateProfileIcon } from "./icon-generator.js";
 import { codexExecutablePath, getAppPaths, getRuntimePlatform } from "./paths.js";
-import { defaultExecutablePathEnv } from "./executable-lookup.js";
+import { defaultExecutablePathEnv, findExecutable } from "./executable-lookup.js";
 import type { LauncherResult, ManagedProfile } from "../shared/types.js";
 
 function plist(profile: ManagedProfile): string {
@@ -49,8 +49,7 @@ function cmdQuote(value: string): string {
 
 function decryptSnippet(profile: ManagedProfile): string {
   const appPaths = getAppPaths();
-  return `/usr/bin/env node <<'NODE'
-const crypto = require('node:crypto');
+  return `const crypto = require('node:crypto');
 const fs = require('node:fs');
 
 const masterKeyFile = ${JSON.stringify(appPaths.masterKeyFile)};
@@ -70,7 +69,7 @@ const secrets = JSON.parse(plaintext).secrets;
 const secret = secrets.find((item) => item.profileId === profileId && item.providerId === providerId);
 if (!secret) process.exit(2);
 process.stdout.write(secret.value);
-NODE`;
+`;
 }
 
 function windowsDecryptScript(profile: ManagedProfile): string {
@@ -95,6 +94,8 @@ function windowsDecryptScript(profile: ManagedProfile): string {
 }
 
 async function launcherScript(profile: ManagedProfile): Promise<string> {
+  const nodeRuntime = await findExecutable("node");
+  const nodeCommand = nodeRuntime.path ? shellQuote(nodeRuntime.path) : "/usr/bin/env node";
   const envLines = [
     `export PATH=${shellQuote(defaultExecutablePathEnv())}`,
     `export CODEX_HOME=${shellQuote(profile.paths.codexHome)}`
@@ -105,7 +106,9 @@ set -euo pipefail
 
 ${envLines.join("\n")}
 USER_DATA_DIR=${shellQuote(profile.paths.userDataDir)}
-API_KEY=$(${decryptSnippet(profile)}
+API_KEY=$(${nodeCommand} <<'NODE'
+${decryptSnippet(profile)}
+NODE
 )
 export ${profile.provider.envKeyName}="$API_KEY"
 
