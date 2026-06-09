@@ -4,6 +4,15 @@ import { ensureDir, pathExists } from "./fs-utils.js";
 import { getDefaultCodexHome } from "./paths.js";
 import type { ConfigBackupInfo, ManagedProfile, RestoreConfigBackupResult } from "../shared/types.js";
 
+const INHERITED_CODEX_HOME_ENTRIES = [
+  "AGENTS.md",
+  "instructions.md",
+  "config.json",
+  "mcp.json",
+  "skills",
+  "plugins"
+];
+
 function tomlString(value: string): string {
   return JSON.stringify(value);
 }
@@ -66,6 +75,18 @@ export async function writeCodexAuth(profile: ManagedProfile, apiKey: string): P
     { mode: 0o600 }
   );
   return authPath;
+}
+
+export async function inheritDefaultCodexHomeResources(profile: ManagedProfile): Promise<void> {
+  const defaultCodexHome = path.resolve(getDefaultCodexHome());
+  const profileCodexHome = path.resolve(profile.paths.codexHome);
+
+  if (defaultCodexHome === profileCodexHome || !(await pathExists(defaultCodexHome))) {
+    return;
+  }
+
+  await ensureDir(profile.paths.codexHome);
+  await Promise.all(INHERITED_CODEX_HOME_ENTRIES.map((entry) => copyIfExists(path.join(defaultCodexHome, entry), path.join(profileCodexHome, entry))));
 }
 
 function renderManagedConfig(profile: ManagedProfile): string {
@@ -206,6 +227,24 @@ export async function writeCodexConfig(profile: ManagedProfile, options: { inher
 
   await fs.writeFile(configPath, renderConfig(profile), { mode: 0o600 });
   return configPath;
+}
+
+async function copyIfExists(sourcePath: string, destinationPath: string): Promise<void> {
+  if (!(await pathExists(sourcePath)) || await pathExists(destinationPath)) {
+    return;
+  }
+
+  await fs.cp(sourcePath, destinationPath, {
+    recursive: true,
+    force: false,
+    errorOnExist: false,
+    filter: (source) => !shouldSkipInheritedPath(source)
+  });
+}
+
+function shouldSkipInheritedPath(sourcePath: string): boolean {
+  const basename = path.basename(sourcePath);
+  return basename === ".DS_Store" || basename === "node_modules";
 }
 
 export async function restoreConfigBackup(profile: ManagedProfile, backupPath: string): Promise<RestoreConfigBackupResult> {

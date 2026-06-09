@@ -3,6 +3,7 @@ import path from "node:path";
 import { ensureDir } from "./fs-utils.js";
 import { generateProfileIcon } from "./icon-generator.js";
 import { codexExecutablePath, getAppPaths, getRuntimePlatform } from "./paths.js";
+import { defaultExecutablePathEnv } from "./executable-lookup.js";
 import type { LauncherResult, ManagedProfile } from "../shared/types.js";
 
 function plist(profile: ManagedProfile): string {
@@ -95,6 +96,7 @@ function windowsDecryptScript(profile: ManagedProfile): string {
 
 async function launcherScript(profile: ManagedProfile): Promise<string> {
   const envLines = [
+    `export PATH=${shellQuote(defaultExecutablePathEnv())}`,
     `export CODEX_HOME=${shellQuote(profile.paths.codexHome)}`
   ];
 

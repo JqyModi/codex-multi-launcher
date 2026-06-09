@@ -5,6 +5,7 @@ directories:
 files:
   - dist/**/*
   - dist-electron/**/*
+  - assets/**/*
   - package.json
 mac:
   icon: build/icon.icns

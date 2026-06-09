@@ -2,13 +2,10 @@ import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { ensureDir } from "./fs-utils.js";
 
 const execFileAsync = promisify(execFile);
-const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SOURCE_LOGO_PATH = path.join(PROJECT_ROOT, "assets", "codex-logo.svg");
 
 const ICONSET_SIZES: Array<[number, string]> = [
   [16, "icon_16x16.png"],
@@ -45,8 +42,27 @@ export async function generateProfileIcon(iconPath: string, backgroundColor: str
 }
 
 async function readLogoDataUrl(): Promise<string> {
-  const logoSvg = await fs.readFile(SOURCE_LOGO_PATH, "utf8");
+  const logoSvg = await fs.readFile(await resolveLogoPath(), "utf8");
   return `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString("base64")}`;
+}
+
+async function resolveLogoPath(): Promise<string> {
+  const candidates = [
+    path.join(process.resourcesPath ?? "", "app.asar", "assets", "codex-logo.svg"),
+    path.join(process.resourcesPath ?? "", "app", "assets", "codex-logo.svg"),
+    path.resolve(process.cwd(), "assets", "codex-logo.svg")
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // Try the next known app layout.
+    }
+  }
+
+  throw new Error(`assets/codex-logo.svg not found. Checked: ${candidates.join(", ")}`);
 }
 
 function renderCompositedIconSvg(backgroundColor: string, logoDataUrl: string): string {

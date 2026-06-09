@@ -24,6 +24,11 @@ await fs.writeFile(
   ].join("\n"),
   { mode: 0o600 }
 );
+await fs.mkdir(path.join(testRoot, ".codex", "skills", "sample-skill"), { recursive: true });
+await fs.writeFile(path.join(testRoot, ".codex", "skills", "sample-skill", "SKILL.md"), "# Sample skill\n", { mode: 0o600 });
+await fs.mkdir(path.join(testRoot, ".codex", "plugins", "sample-plugin", ".codex-plugin"), { recursive: true });
+await fs.writeFile(path.join(testRoot, ".codex", "plugins", "sample-plugin", ".codex-plugin", "plugin.json"), "{\"name\":\"sample-plugin\"}\n", { mode: 0o600 });
+await fs.writeFile(path.join(testRoot, ".codex", "AGENTS.md"), "Default instructions\n", { mode: 0o600 });
 
 const { createProfile, deleteProfile, listConfigBackups, listProfiles, permanentlyDeleteProfile, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
@@ -79,8 +84,11 @@ const launcherMacosDir = path.join(launcherContents, "MacOS");
 const launcherResourcesDir = path.join(launcherContents, "Resources");
 const launcherIconPath = path.join(launcherResourcesDir, "profile-icon.icns");
 const launcherScript = path.join(result.profile.paths.launcherPath, "Contents", "MacOS", "launcher");
+const inheritedSkillPath = path.join(result.profile.paths.codexHome, "skills", "sample-skill", "SKILL.md");
+const inheritedPluginManifestPath = path.join(result.profile.paths.codexHome, "plugins", "sample-plugin", ".codex-plugin", "plugin.json");
+const inheritedAgentsPath = path.join(result.profile.paths.codexHome, "AGENTS.md");
 
-const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat] = await Promise.all([
+const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat, inheritedSkillRaw, inheritedPluginRaw, inheritedAgentsRaw] = await Promise.all([
   fs.readFile(appPaths.profilesFile, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8"),
   fs.readFile(configPath, "utf8"),
@@ -91,7 +99,10 @@ const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRa
   fs.stat(launcherContents),
   fs.stat(launcherMacosDir),
   fs.stat(launcherResourcesDir),
-  fs.stat(launcherIconPath)
+  fs.stat(launcherIconPath),
+  fs.readFile(inheritedSkillPath, "utf8"),
+  fs.readFile(inheritedPluginManifestPath, "utf8"),
+  fs.readFile(inheritedAgentsPath, "utf8")
 ]);
 
 assert(registryRaw.includes("E2E Sandbox"), "registry should contain profile name");
@@ -105,6 +116,9 @@ assert(configRaw.includes('temp_env_key = "CODEX_PROFILE_E2E_SANDBOX_API_KEY"'),
 assert((configRaw.match(/\[model_providers\.proxy\]/g) ?? []).length === 1, "config should contain one proxy provider table");
 assert(configRaw.includes("[mcp_servers.example]"), "config should inherit default MCP server settings");
 assert(configRaw.includes("[features]"), "config should inherit default feature settings");
+assert(inheritedSkillRaw.includes("Sample skill"), "profile should inherit default CODEX_HOME skills");
+assert(inheritedPluginRaw.includes("sample-plugin"), "profile should inherit default CODEX_HOME plugins");
+assert(inheritedAgentsRaw.includes("Default instructions"), "profile should inherit default CODEX_HOME instructions");
 assert(configRaw.includes("Codex Profile Manager managed settings"), "config should mark appended managed settings");
 assert(!configRaw.includes('model = "gpt-5.5"'), "profile config should remove inherited root model to avoid duplicate TOML keys");
 assert(configRaw.indexOf('model_provider = "proxy"') < configRaw.indexOf("[mcp_servers.example]"), "profile provider selector should be written before inherited tables");

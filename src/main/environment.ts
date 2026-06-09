@@ -1,29 +1,7 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { codexExecutablePath, getAppPaths, getDefaultCodexAppPath, getRuntimePlatform } from "./paths.js";
 import { isWritableDirectory, pathExists } from "./fs-utils.js";
+import { findExecutable } from "./executable-lookup.js";
 import type { EnvironmentCheck, EnvironmentReport } from "../shared/types.js";
-
-const execFileAsync = promisify(execFile);
-
-async function findExecutable(command: string, versionArgs: string[] = ["--version"]): Promise<{ path: string | null; version: string | null }> {
-  try {
-    const lookupCommand = getRuntimePlatform() === "win32" ? "where.exe" : "which";
-    const lookupResult = await execFileAsync(lookupCommand, [command]);
-    const executablePath = lookupResult.stdout.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
-    if (!executablePath) {
-      return { path: null, version: null };
-    }
-
-    const versionResult = await execFileAsync(executablePath, versionArgs);
-    return {
-      path: executablePath,
-      version: versionResult.stdout.trim() || null
-    };
-  } catch {
-    return { path: null, version: null };
-  }
-}
 
 function checkStatus(condition: boolean, failDetail: string, passDetail: string): Pick<EnvironmentCheck, "status" | "detail"> {
   return condition
