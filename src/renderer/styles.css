@@ -1017,13 +1017,14 @@ code {
 
 .toast {
   position: fixed;
-  top: 64px;
-  right: 30px;
+  left: calc(260px + (100vw - 260px) / 2);
+  bottom: 28px;
+  transform: translateX(-50%);
   z-index: 40;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: min(460px, calc(100vw - 320px));
+  max-width: min(520px, calc(100vw - 320px));
   border: 1px solid #bfdbfe;
   border-radius: 14px;
   padding: 10px 12px;
