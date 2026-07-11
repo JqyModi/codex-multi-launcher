@@ -17,6 +17,16 @@ This repository is used for:
 - Feedback: <https://github.com/JqyModi/codex-multi-launcher/issues>
 - Latest release: <https://github.com/JqyModi/codex-multi-launcher/releases/latest>
 
+## App Preview
+
+The dashboard keeps shared notices, environment warnings, running instances, and update prompts in one place:
+
+![Codex Multi Launcher dashboard](user-manual-assets/01-dashboard.png)
+
+Create each profile with its own app path, launcher directory, provider, Base URL, model, and encrypted API key:
+
+![Create an isolated Codex profile](user-manual-assets/02-create-profile.png)
+
 ## What It Does
 
 - Creates isolated `CODEX_HOME` and `user-data-dir` paths.
