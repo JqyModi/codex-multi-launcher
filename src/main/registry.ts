@@ -1,6 +1,6 @@
 import path from "node:path";
 import { ensureDir, readJsonFile, writeJsonFile } from "./fs-utils.js";
-import { codexExecutablePath, getAppPaths, getDefaultCodexAppPath, isWindowsCodexGuiExecutable, launcherFileName, slugifyProfileName } from "./paths.js";
+import { getAppPaths, isWindowsCodexGuiExecutable, launcherFileName, resolveCodexDesktopApp, slugifyProfileName } from "./paths.js";
 import { pathExists } from "./fs-utils.js";
 import type { CreateProfileInput, ManagedProfile, ProfileRegistry, UpdateProfileInput } from "../shared/types.js";
 
@@ -51,6 +51,7 @@ export async function createProfileRecord(input: CreateProfileInput): Promise<Ma
   const userDataDir = path.join(appPaths.defaultUserDataRoot, id, "user-data");
   const launcherDirectory = input.launcherDirectory ?? appPaths.defaultLauncherRoot;
   const launcherPath = path.join(launcherDirectory, launcherFileName(input.name));
+  const desktopApp = resolveCodexDesktopApp(input.codexAppPath);
   const providerId = input.provider.type === "official_openai" ? "openai" : "proxy";
   const envKeyName = input.provider.type === "official_openai"
     ? "OPENAI_API_KEY"
@@ -60,7 +61,7 @@ export async function createProfileRecord(input: CreateProfileInput): Promise<Ma
     name: input.name,
     status: "active",
     paths: {
-      codexAppPath: input.codexAppPath ?? getDefaultCodexAppPath(),
+      codexAppPath: desktopApp.appPath,
       codexHome,
       userDataDir,
       launcherPath
@@ -167,15 +168,13 @@ export async function updateProfileCodexAppPath(profileId: string, codexAppPath:
 }
 
 export async function repairProfileCodexAppPath(profile: ManagedProfile): Promise<ManagedProfile> {
-  const currentExecutable = codexExecutablePath(profile.paths.codexAppPath);
-  if (await pathExists(currentExecutable) && isWindowsCodexGuiExecutable(currentExecutable)) {
+  const resolvedDesktopApp = resolveCodexDesktopApp(profile.paths.codexAppPath);
+  if (resolvedDesktopApp.source === "preferred" && await pathExists(resolvedDesktopApp.executablePath) && isWindowsCodexGuiExecutable(resolvedDesktopApp.executablePath)) {
     return profile;
   }
 
-  const defaultCodexAppPath = getDefaultCodexAppPath();
-  const defaultExecutable = codexExecutablePath(defaultCodexAppPath);
-  if (defaultCodexAppPath !== profile.paths.codexAppPath && await pathExists(defaultExecutable) && isWindowsCodexGuiExecutable(defaultExecutable)) {
-    return updateProfileCodexAppPath(profile.id, defaultCodexAppPath);
+  if (resolvedDesktopApp.source === "auto-detected" && resolvedDesktopApp.appPath !== profile.paths.codexAppPath && await pathExists(resolvedDesktopApp.executablePath) && isWindowsCodexGuiExecutable(resolvedDesktopApp.executablePath)) {
+    return updateProfileCodexAppPath(profile.id, resolvedDesktopApp.appPath);
   }
 
   return profile;

@@ -15,7 +15,7 @@ const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const fakeKey = "sk-test-windows-launcher";
 const result = await createProfile({
   name: "Windows Sandbox",
-  codexAppPath: "C:\\Users\\Tester\\AppData\\Local\\Programs\\Codex\\Codex.exe",
+  codexAppPath: "C:\\Users\\Tester\\AppData\\Local\\Programs\\ChatGPT\\ChatGPT.exe",
   inheritDefaultConfig: true,
   provider: {
     type: "third_party_responses",
@@ -44,13 +44,30 @@ assert(launcherRaw.includes("set \"USER_DATA_DIR="), "Windows launcher should se
 assert(launcherRaw.includes("node -e "), "Windows launcher should use Node to decrypt the saved API key");
 assert(launcherRaw.includes("CODEX_PROFILE_WINDOWS_SANDBOX_API_KEY"), "Windows launcher should export the provider env key");
 assert(launcherRaw.includes("--user-data-dir=\"%USER_DATA_DIR%\""), "Windows launcher should pass user-data-dir");
-assert(launcherRaw.includes("Codex.exe"), "Windows launcher should reference Codex.exe");
+assert(launcherRaw.includes("ChatGPT.exe"), "Windows launcher should reference ChatGPT.exe");
 assert(!launcherRaw.includes(fakeKey), "Windows launcher must not contain plaintext API key");
 assert(!configRaw.includes(fakeKey), "Windows profile config must not contain plaintext API key");
 assert(!secretsRaw.includes(fakeKey), "encrypted secrets must not contain plaintext API key");
 assert(configRaw.includes("requires_openai_auth = false"), "Third-party provider should not require OpenAI auth");
 
 await permanentlyDeleteProfile(result.profile.id);
+
+const legacyResult = await createProfile({
+  name: "Windows Legacy",
+  codexAppPath: "C:\\Users\\Tester\\AppData\\Local\\Programs\\Codex\\Codex.exe",
+  inheritDefaultConfig: false,
+  provider: {
+    type: "third_party_responses",
+    displayName: "Windows Proxy",
+    baseUrl: "https://proxy.example.com/v1",
+    model: "gpt-5.2",
+    apiKey: fakeKey,
+    reasoningEffort: "medium"
+  }
+});
+const legacyLauncherRaw = await fs.readFile(legacyResult.profile.paths.launcherPath, "utf8");
+assert(legacyLauncherRaw.includes("Codex.exe"), "Windows launcher should still support legacy Codex.exe paths");
+await permanentlyDeleteProfile(legacyResult.profile.id);
 await fs.rm(testRoot, { force: true, recursive: true });
 
 console.log("Windows launcher verification passed.");

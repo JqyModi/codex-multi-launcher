@@ -1,4 +1,4 @@
-import { codexExecutablePath, getAppPaths, getDefaultCodexAppPath, getRuntimePlatform } from "./paths.js";
+import { getAppPaths, getDefaultCodexAppPath, getRuntimePlatform, resolveCodexDesktopApp } from "./paths.js";
 import { isWritableDirectory, pathExists } from "./fs-utils.js";
 import { findExecutable } from "./executable-lookup.js";
 import type { EnvironmentCheck, EnvironmentReport } from "../shared/types.js";
@@ -11,10 +11,11 @@ function checkStatus(condition: boolean, failDetail: string, passDetail: string)
 
 export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath()): Promise<EnvironmentReport> {
   const appPaths = getAppPaths();
-  const executablePath = codexExecutablePath(codexAppPath);
+  const desktopApp = resolveCodexDesktopApp(codexAppPath);
+  const executablePath = desktopApp.executablePath;
   const [codexAppExists, codexExecutableExists, cli, nodeRuntime, launcherWritable, profileRootWritable, appDataWritable] =
     await Promise.all([
-      pathExists(codexAppPath),
+      pathExists(desktopApp.appPath),
       pathExists(executablePath),
       findExecutable("codex"),
       findExecutable("node"),
@@ -25,20 +26,20 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
 
   const appCheck = checkStatus(
     codexAppExists,
-    getRuntimePlatform() === "win32" ? "Codex for Windows was not found. Select Codex.exe manually before creating profiles." : "Codex.app was not found. Select the Codex app manually before creating profiles.",
-    getRuntimePlatform() === "win32" ? "Codex for Windows was found." : "Codex.app was found."
+    getRuntimePlatform() === "win32" ? "ChatGPT/Codex desktop app was not found. Select the app executable manually before creating profiles." : "ChatGPT/Codex desktop app was not found. Select the app manually before creating profiles.",
+    `${desktopApp.productName} desktop app was found.`
   );
   const executableCheck = checkStatus(
     codexExecutableExists,
-    getRuntimePlatform() === "win32" ? "Codex.exe was not found." : "Codex executable was not found inside the app bundle.",
-    "Codex executable was found."
+    getRuntimePlatform() === "win32" ? "Desktop app executable was not found." : "Desktop app executable was not found inside the app bundle.",
+    `${desktopApp.productName} executable was found.`
   );
 
   const checks: EnvironmentCheck[] = [
     {
       id: "codex-app",
       label: "Codex App",
-      path: codexAppPath,
+      path: desktopApp.appPath,
       ...appCheck
     },
     {
@@ -87,7 +88,7 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
   ];
 
   return {
-    codexAppPath,
+    codexAppPath: desktopApp.appPath,
     codexExecutablePath: executablePath,
     codexAppExists,
     codexExecutableExists,

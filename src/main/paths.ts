@@ -5,9 +5,20 @@ import fs from "node:fs";
 import type { AppPaths } from "../shared/types.js";
 
 export const APP_NAME = "Codex Profile Manager";
-export const DEFAULT_CODEX_APP_PATH = "/Applications/Codex.app";
-export const DEFAULT_WINDOWS_CODEX_APP_PATH = "Codex.exe";
+export const DEFAULT_CODEX_APP_PATH = "/Applications/ChatGPT.app";
+export const DEFAULT_WINDOWS_CODEX_APP_PATH = "ChatGPT.exe";
+const LEGACY_CODEX_APP_PATH = "/Applications/Codex.app";
+const DESKTOP_EXECUTABLE_NAMES = ["ChatGPT", "Codex"] as const;
+const WINDOWS_DESKTOP_EXECUTABLE_NAMES = ["ChatGPT.exe", "Codex.exe"] as const;
 export type SupportedPlatform = "darwin" | "win32" | "linux";
+export type DesktopAppSource = "preferred" | "auto-detected" | "missing";
+
+export interface ResolvedDesktopApp {
+  appPath: string;
+  executablePath: string;
+  productName: "ChatGPT" | "Codex";
+  source: DesktopAppSource;
+}
 
 export interface PathProvider {
   home(): string;
@@ -73,19 +84,133 @@ export function getDefaultCodexHome(): string {
 }
 
 export function getDefaultCodexAppPath(): string {
-  if (getRuntimePlatform() === "win32") {
-    return findWindowsCodexAppExecutable() ?? DEFAULT_WINDOWS_CODEX_APP_PATH;
-  }
-
-  return DEFAULT_CODEX_APP_PATH;
+  return resolveCodexDesktopApp().appPath;
 }
 
 export function codexExecutablePath(codexAppPath: string): string {
-  if (getRuntimePlatform() === "win32") {
-    return path.extname(codexAppPath).toLowerCase() === ".exe" ? codexAppPath : path.join(codexAppPath, "Codex.exe");
+  return resolveCodexDesktopApp(codexAppPath).executablePath;
+}
+
+export function resolveCodexDesktopApp(preferredPath?: string | null): ResolvedDesktopApp {
+  const normalizedPreferredPath = preferredPath?.trim();
+  if (normalizedPreferredPath) {
+    const preferred = resolveDesktopAppCandidate(normalizedPreferredPath, "preferred");
+    if (preferred) {
+      return preferred;
+    }
   }
 
-  return path.join(codexAppPath, "Contents", "MacOS", "Codex");
+  for (const candidate of defaultDesktopAppCandidates()) {
+    const resolved = resolveDesktopAppCandidate(candidate, "auto-detected");
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  const fallbackPath = normalizedPreferredPath || platformDefaultDesktopAppPath();
+  return {
+    appPath: fallbackPath,
+    executablePath: expectedDesktopExecutablePath(fallbackPath),
+    productName: productNameForPath(fallbackPath),
+    source: "missing"
+  };
+}
+
+function resolveDesktopAppCandidate(candidatePath: string, source: Exclude<DesktopAppSource, "missing">): ResolvedDesktopApp | null {
+  if (getRuntimePlatform() === "win32") {
+    if (path.extname(candidatePath).toLowerCase() === ".exe") {
+      return fileExists(candidatePath) && isWindowsCodexGuiExecutable(candidatePath)
+        ? {
+            appPath: candidatePath,
+            executablePath: candidatePath,
+            productName: productNameForPath(candidatePath),
+            source
+          }
+        : null;
+    }
+
+    for (const executableName of WINDOWS_DESKTOP_EXECUTABLE_NAMES) {
+      const executablePath = path.join(candidatePath, executableName);
+      if (fileExists(executablePath) && isWindowsCodexGuiExecutable(executablePath)) {
+        return {
+          appPath: candidatePath,
+          executablePath,
+          productName: productNameForPath(executablePath),
+          source
+        };
+      }
+    }
+
+    return null;
+  }
+
+  if (path.extname(candidatePath).toLowerCase() !== ".app" && fileExists(candidatePath)) {
+    return {
+      appPath: candidatePath,
+      executablePath: candidatePath,
+      productName: productNameForPath(candidatePath),
+      source
+    };
+  }
+
+  for (const executableName of macosExecutableCandidates(candidatePath)) {
+    const executablePath = path.join(candidatePath, "Contents", "MacOS", executableName);
+    if (fileExists(executablePath)) {
+      return {
+        appPath: candidatePath,
+        executablePath,
+        productName: productNameForPath(executablePath),
+        source
+      };
+    }
+  }
+
+  return null;
+}
+
+function expectedDesktopExecutablePath(appPath: string): string {
+  if (getRuntimePlatform() === "win32") {
+    return path.extname(appPath).toLowerCase() === ".exe" ? appPath : path.join(appPath, WINDOWS_DESKTOP_EXECUTABLE_NAMES[0]);
+  }
+
+  return path.extname(appPath).toLowerCase() === ".app"
+    ? path.join(appPath, "Contents", "MacOS", productNameForPath(appPath))
+    : appPath;
+}
+
+function defaultDesktopAppCandidates(): string[] {
+  if (getRuntimePlatform() === "win32") {
+    return findWindowsCodexAppExecutables();
+  }
+
+  return [DEFAULT_CODEX_APP_PATH, LEGACY_CODEX_APP_PATH];
+}
+
+function platformDefaultDesktopAppPath(): string {
+  return getRuntimePlatform() === "win32" ? DEFAULT_WINDOWS_CODEX_APP_PATH : DEFAULT_CODEX_APP_PATH;
+}
+
+function macosExecutableCandidates(appPath: string): string[] {
+  return uniquePathEntries([
+    readMacosBundleExecutable(appPath),
+    productNameForPath(appPath),
+    ...DESKTOP_EXECUTABLE_NAMES
+  ].filter((value): value is string => Boolean(value)));
+}
+
+function readMacosBundleExecutable(appPath: string): string | null {
+  try {
+    const plistPath = path.join(appPath, "Contents", "Info.plist");
+    const plist = fs.readFileSync(plistPath, "utf8");
+    const match = plist.match(/<key>CFBundleExecutable<\/key>\s*<string>([^<]+)<\/string>/);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function productNameForPath(targetPath: string): "ChatGPT" | "Codex" {
+  return targetPath.toLowerCase().includes("chatgpt") ? "ChatGPT" : "Codex";
 }
 
 export function isWindowsCodexGuiExecutable(candidatePath: string): boolean {
@@ -93,14 +218,16 @@ export function isWindowsCodexGuiExecutable(candidatePath: string): boolean {
     return true;
   }
 
-  if (path.basename(candidatePath) !== "Codex.exe") {
+  const basename = path.basename(candidatePath).toLowerCase();
+  if (!WINDOWS_DESKTOP_EXECUTABLE_NAMES.some((name) => name.toLowerCase() === basename)) {
     return false;
   }
 
   const normalized = candidatePath.replace(/\\/g, "/").toLowerCase();
   return !normalized.includes("/resources/")
     && !normalized.includes("/bin/")
-    && !normalized.endsWith("/resources/codex.exe");
+    && !normalized.endsWith("/resources/codex.exe")
+    && !normalized.endsWith("/resources/chatgpt.exe");
 }
 
 function defaultLauncherRoot(home: string): string {
@@ -128,33 +255,42 @@ export function getRuntimePlatform(): SupportedPlatform {
   return "darwin";
 }
 
-function findWindowsCodexAppExecutable(): string | null {
+function findWindowsCodexAppExecutables(): string[] {
   const candidates = [
+    findCommandOnPath("ChatGPT.exe"),
     findCommandOnPath("Codex.exe"),
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Microsoft", "WindowsApps", "ChatGPT.exe") : null,
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Microsoft", "WindowsApps", "Codex.exe") : null,
     findRunningWindowsCodexAppExecutable(),
     findWindowsCodexAppxExecutable(),
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Programs", "ChatGPT", "ChatGPT.exe") : null,
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Programs", "Codex", "Codex.exe") : null,
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "ChatGPT", "ChatGPT.exe") : null,
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Codex", "Codex.exe") : null,
+    process.env.PROGRAMFILES ? path.join(process.env.PROGRAMFILES, "ChatGPT", "ChatGPT.exe") : null,
     process.env.PROGRAMFILES ? path.join(process.env.PROGRAMFILES, "Codex", "Codex.exe") : null,
+    process.env["PROGRAMFILES(X86)"] ? path.join(process.env["PROGRAMFILES(X86)"], "ChatGPT", "ChatGPT.exe") : null,
     process.env["PROGRAMFILES(X86)"] ? path.join(process.env["PROGRAMFILES(X86)"], "Codex", "Codex.exe") : null
   ];
+  const found: string[] = [];
 
   for (const candidate of candidates) {
     if (candidate && fileExists(candidate) && isWindowsCodexGuiExecutable(candidate)) {
-      return candidate;
+      found.push(candidate);
     }
   }
 
   const roots = [process.env.LOCALAPPDATA, process.env.PROGRAMFILES, process.env["PROGRAMFILES(X86)"]].filter((value): value is string => Boolean(value));
   for (const root of roots) {
-    const found = findFileShallow(root, "Codex.exe", 6, isWindowsCodexGuiExecutable);
-    if (found && isWindowsCodexGuiExecutable(found)) {
-      return found;
+    for (const executableName of WINDOWS_DESKTOP_EXECUTABLE_NAMES) {
+      const executablePath = findFileShallow(root, executableName, 6, isWindowsCodexGuiExecutable);
+      if (executablePath && isWindowsCodexGuiExecutable(executablePath)) {
+        found.push(executablePath);
+      }
     }
   }
 
-  return null;
+  return uniquePathEntries(found);
 }
 
 function findRunningWindowsCodexAppExecutable(): string | null {
@@ -162,7 +298,7 @@ function findRunningWindowsCodexAppExecutable(): string | null {
     const output = execFileSync("powershell.exe", [
       "-NoProfile",
       "-Command",
-      "(Get-Process -Name Codex -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*\\\\app\\\\Codex.exe' } | Select-Object -First 1 -ExpandProperty Path)"
+      "(Get-Process -Name ChatGPT,Codex -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -match '(?i)\\\\(ChatGPT|Codex)\\.exe$' -and $_.Path -notmatch '(?i)\\\\(resources|bin)\\\\' } | Select-Object -First 1 -ExpandProperty Path)"
     ], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     return output.trim() || null;
   } catch {
@@ -175,7 +311,7 @@ function findWindowsCodexAppxExecutable(): string | null {
     const output = execFileSync("powershell.exe", [
       "-NoProfile",
       "-Command",
-      "$pkg = Get-AppxPackage OpenAI.Codex -ErrorAction SilentlyContinue | Select-Object -First 1; if ($pkg) { Join-Path $pkg.InstallLocation 'app\\Codex.exe' }"
+      "$pkg = Get-AppxPackage OpenAI.Codex,OpenAI.ChatGPT,*OpenAI*Codex*,*OpenAI*ChatGPT* -ErrorAction SilentlyContinue | Select-Object -First 1; if ($pkg) { foreach ($name in 'ChatGPT.exe','Codex.exe','app\\ChatGPT.exe','app\\Codex.exe') { $candidate = Join-Path $pkg.InstallLocation $name; if (Test-Path $candidate) { $candidate; break } } }"
     ], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     return output.trim() || null;
   } catch {
@@ -231,6 +367,17 @@ function fileExists(targetPath: string): boolean {
   } catch {
     return false;
   }
+}
+
+function uniquePathEntries(entries: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const entry of entries.map((item) => item.trim()).filter(Boolean)) {
+    if (seen.has(entry)) continue;
+    seen.add(entry);
+    result.push(entry);
+  }
+  return result;
 }
 
 export function slugifyProfileName(name: string): string {
