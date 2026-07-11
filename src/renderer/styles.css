@@ -135,7 +135,7 @@ code {
   justify-content: center;
   width: 100%;
   height: 38px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   box-shadow: 0 10px 26px rgb(15 23 42 / 5%);
 }
 
@@ -193,6 +193,10 @@ code {
   margin-top: auto;
   border-top: 1px solid rgb(225 228 234 / 72%);
   padding-top: 14px;
+}
+
+.sidebar-home-button {
+  margin-bottom: 12px;
 }
 
 .profile-row {
@@ -1137,8 +1141,72 @@ code {
   color: #667085;
 }
 
-.detail-panel {
-  margin-top: 16px;
+.detail-panel,
+.dashboard-panel {
+  margin-top: 0;
+}
+
+.dashboard-panel {
+  min-height: 280px;
+}
+
+.dashboard-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-profile-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  color: #475569;
+  text-align: left;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 4%);
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.dashboard-profile-card:hover {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+  box-shadow: 0 14px 30px rgb(15 23 42 / 7%);
+  transform: translateY(-1px);
+}
+
+.dashboard-profile-card > span {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-profile-card .runtime-badge {
+  justify-self: start;
+}
+
+.dashboard-profile-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: #172033;
+}
+
+.dashboard-profile-title strong {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-empty {
+  min-height: 188px;
 }
 
 .about-page {

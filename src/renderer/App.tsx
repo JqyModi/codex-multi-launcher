@@ -10,6 +10,7 @@ import {
   FolderOpen,
   Github,
   Heart,
+  Home,
   Info,
   Languages,
   MessageSquare,
@@ -43,7 +44,7 @@ import type {
 
 type WizardStep = "profile" | "provider" | "test" | "launcher" | "generate";
 type Language = "zh" | "en";
-type ActiveView = "profiles" | "settings";
+type ActiveView = "dashboard" | "profile" | "settings";
 type SettingsTab = "general" | "about";
 
 const WIZARD_STEPS: WizardStep[] = ["profile", "provider", "test", "launcher", "generate"];
@@ -56,8 +57,15 @@ const TEXT: Record<Language, Record<string, string>> = {
   zh: {
     appTitle: "Codex 多开助手",
     appSubtitle: "本地多开配置管理",
+    home: "首页",
     pageTitle: "Profile Manager",
     pageSubtitle: "创建隔离的 Codex 桌面窗口，并为每个窗口使用独立配置。",
+    dashboardTitle: "工作台",
+    dashboardSubtitle: "公共公告、运行状态和 Profile 总览。",
+    profileDetailTitle: "Profile 详情",
+    pickProfile: "从左侧选择一个 Profile 查看详情。",
+    recentProfiles: "Profile 总览",
+    noRecentProfiles: "创建 Profile 后会在这里显示运行状态。",
     createProfile: "创建 Profile",
     showRemoved: "显示已移除",
     noProfiles: "暂无 Profile",
@@ -198,8 +206,15 @@ const TEXT: Record<Language, Record<string, string>> = {
   en: {
     appTitle: "Codex Launcher",
     appSubtitle: "Local multi-instance manager",
+    home: "Home",
     pageTitle: "Profile Manager",
     pageSubtitle: "Create isolated Codex desktop windows with separate provider configuration.",
+    dashboardTitle: "Dashboard",
+    dashboardSubtitle: "Shared announcements, runtime status, and profile overview.",
+    profileDetailTitle: "Profile Detail",
+    pickProfile: "Choose a profile from the sidebar to view details.",
+    recentProfiles: "Profile Overview",
+    noRecentProfiles: "Profile runtime status will appear here after you create one.",
     createProfile: "Create Profile",
     showRemoved: "Show removed",
     noProfiles: "No profiles yet.",
@@ -353,7 +368,7 @@ const DEFAULT_FORM = {
 };
 
 export function App() {
-  const [activeView, setActiveView] = useState<ActiveView>("profiles");
+  const [activeView, setActiveView] = useState<ActiveView>("dashboard");
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("about");
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [announcement, setAnnouncement] = useState<AnnouncementItem | null>(null);
@@ -506,6 +521,7 @@ export function App() {
       const result = await window.codexProfileManager.createProfile(input);
       await refresh();
       setSelectedProfileId(result.profile.id);
+      setActiveView("profile");
       setMessage(`Created ${result.profile.name}. Launcher: ${result.launcherPath}`);
       setForm({ ...DEFAULT_FORM, name: `${form.name} 2` });
       setProviderTest(null);
@@ -641,6 +657,7 @@ export function App() {
 
     await window.codexProfileManager.deleteProfile(selectedProfile.id);
     setSelectedProfileId(null);
+    setActiveView("dashboard");
     setMessage(`Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`);
     await refresh();
   }
@@ -659,6 +676,7 @@ export function App() {
 
     await window.codexProfileManager.permanentlyDeleteProfile(selectedProfile.id);
     setSelectedProfileId(null);
+    setActiveView("dashboard");
     setMessage(t.permanentDeleteDone);
     await refresh();
   }
@@ -806,6 +824,11 @@ export function App() {
           </div>
         </div>
 
+        <button className={`sidebar-nav-button sidebar-home-button ${activeView === "dashboard" ? "selected" : ""}`} onClick={() => setActiveView("dashboard")} type="button">
+          <Home size={15} />
+          <span>{t.home}</span>
+        </button>
+
         <button className="sidebar-action" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
           <Plus size={16} />
           {t.createProfile}
@@ -821,7 +844,7 @@ export function App() {
           ) : (
             <>
               {activeProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profiles" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profiles"); setSelectedProfileId(profile.id); }} />
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profile" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} />
               ))}
               {deletedProfiles.length > 0 ? (
                 <div className="profile-group-separator">
@@ -829,7 +852,7 @@ export function App() {
                 </div>
               ) : null}
               {deletedProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profiles" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profiles"); setSelectedProfileId(profile.id); }} />
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profile" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} />
               ))}
             </>
           )}
@@ -843,28 +866,32 @@ export function App() {
       </aside>
 
       <section className={`content ${activeView === "settings" ? "settings-content" : ""}`}>
-        {activeView === "profiles" ? (
+        {activeView !== "settings" ? (
           <header className="toolbar">
             <div>
-              <h2>{t.pageTitle}</h2>
-              <p>{t.pageSubtitle}</p>
+              <h2>{activeView === "dashboard" ? t.dashboardTitle : selectedProfile?.name ?? t.profileDetailTitle}</h2>
+              <p>{activeView === "dashboard" ? t.dashboardSubtitle : t.pickProfile}</p>
             </div>
-            <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
-              {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
-              {environmentSummary.label}
-            </button>
-            <button className="button secondary" disabled={isRefreshing} onClick={() => void refresh()} type="button">
-              <RefreshCcw size={15} />
-              {isRefreshing ? t.refreshing : t.refresh}
-            </button>
-            <button className="button secondary" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
-              <Copy size={15} />
-              {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
-            </button>
+            {activeView === "dashboard" ? (
+              <>
+                <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
+                  {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
+                  {environmentSummary.label}
+                </button>
+                <button className="button secondary" disabled={isRefreshing} onClick={() => void refresh()} type="button">
+                  <RefreshCcw size={15} />
+                  {isRefreshing ? t.refreshing : t.refresh}
+                </button>
+                <button className="button secondary" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
+                  <Copy size={15} />
+                  {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
+                </button>
+              </>
+            ) : null}
           </header>
         ) : null}
 
-        {message && activeView === "profiles" ? <div className="notice">{message}</div> : null}
+        {message && activeView !== "settings" ? <div className="notice">{message}</div> : null}
 
         {activeView === "settings" ? (
           <SettingsPage
@@ -882,31 +909,64 @@ export function App() {
             onSetSettingsTab={setSettingsTab}
             onSimulateUpdate={simulateUpdateAvailable}
           />
-        ) : (
+        ) : activeView === "dashboard" ? (
           <>
-        {announcement ? (
-          <AnnouncementBanner
-            item={announcement}
-            onDismiss={() => void dismissAnnouncement(announcement.id)}
-            onOpen={(url) => void openExternalUrl(url)}
-          />
-        ) : null}
-        <section className="status-strip">
-          <div>
-            <span className="status-kicker">{t.profiles}</span>
-            <strong>{profiles.filter((profile) => profile.status !== "deleted").length}</strong>
-          </div>
-          <div>
-            <span className="status-kicker">{t.running}</span>
-            <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
-          </div>
-          <div>
-            <span className="status-kicker">{t.environment}</span>
-            <strong>{environmentSummary.shortLabel}</strong>
-          </div>
-        </section>
-
-        <section className="panel detail-panel">
+            {announcement ? (
+              <AnnouncementBanner
+                item={announcement}
+                onDismiss={() => void dismissAnnouncement(announcement.id)}
+                onOpen={(url) => void openExternalUrl(url)}
+              />
+            ) : null}
+            <section className="status-strip">
+              <div>
+                <span className="status-kicker">{t.profiles}</span>
+                <strong>{profiles.filter((profile) => profile.status !== "deleted").length}</strong>
+              </div>
+              <div>
+                <span className="status-kicker">{t.running}</span>
+                <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
+              </div>
+              <div>
+                <span className="status-kicker">{t.environment}</span>
+                <strong>{environmentSummary.shortLabel}</strong>
+              </div>
+            </section>
+            <section className="panel dashboard-panel">
+              <div className="panel-heading">
+                <div>
+                  <h3>{t.recentProfiles}</h3>
+                  <p>{t.pickProfile}</p>
+                </div>
+                <button className="button primary" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
+                  <Plus size={15} />
+                  {t.createProfile}
+                </button>
+              </div>
+              {activeProfiles.length > 0 ? (
+                <div className="dashboard-profile-grid">
+                  {activeProfiles.slice(0, 6).map((profile) => (
+                    <button className="dashboard-profile-card" key={profile.id} onClick={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} type="button">
+                      <span className="dashboard-profile-title">
+                        <ProfileColorMark color={getProfileColor(profile)} />
+                        <strong>{profile.name}</strong>
+                      </span>
+                      <span>{profile.provider.displayName} / {profile.provider.model}</span>
+                      <RuntimeBadge runtime={runtimeByProfileId.get(profile.id)} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state compact-empty">
+                  <div className="empty-mark"><Rocket size={22} /></div>
+                  <h3>{t.noProfilesTitle}</h3>
+                  <p>{t.noRecentProfiles}</p>
+                </div>
+              )}
+            </section>
+          </>
+        ) : (
+          <section className="panel detail-panel">
           <div className="panel-heading">
             <div className="detail-title">
               {selectedProfile ? <ProfileColorMark color={getProfileColor(selectedProfile)} size="large" /> : null}
@@ -1026,8 +1086,8 @@ export function App() {
           ) : (
             <div className="empty-state">
               <div className="empty-mark"><Rocket size={24} /></div>
-              <h3>{t.noProfilesTitle}</h3>
-              <p>{t.noProfilesBody}</p>
+              <h3>{t.profileDetailTitle}</h3>
+              <p>{t.pickProfile}</p>
               <button className="button primary" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
                 <Plus size={15} />
                 {t.createProfile}
@@ -1035,7 +1095,6 @@ export function App() {
             </div>
           )}
         </section>
-          </>
         )}
       </section>
       {isCreateProfileOpen ? (
