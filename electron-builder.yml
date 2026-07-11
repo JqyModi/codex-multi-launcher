@@ -18,12 +18,15 @@ mac:
     - zip
     - dir
   category: public.app-category.developer-tools
-  hardenedRuntime: false
+  hardenedRuntime: true
   gatekeeperAssess: false
-  identity: null
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: true
 win:
   icon: docs/landing/assets/app-icon.png
   executableName: Codex Profile Manager
+  signAndEditExecutable: false
   target:
     - nsis
     - portable
