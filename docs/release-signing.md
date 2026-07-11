@@ -8,20 +8,22 @@ Before running the package command, provide:
 
 - Apple Developer Program membership.
 - A `Developer ID Application` certificate installed in the macOS Keychain.
-- Apple ID email in `APPLE_ID`.
-- App-specific password in `APPLE_APP_SPECIFIC_PASSWORD`.
-- Apple Team ID in `APPLE_TEAM_ID`.
+- App Store Connect API key path in `APPLE_API_KEY`.
+- App Store Connect API key ID in `APPLE_API_KEY_ID`.
+- App Store Connect issuer ID in `APPLE_API_ISSUER`.
 - Optional `CSC_NAME` when more than one Developer ID certificate is installed.
 
 Example:
 
 ```sh
-export APPLE_ID="name@example.com"
-export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
-export APPLE_TEAM_ID="ABCDE12345"
+export APPLE_API_KEY="/absolute/path/to/AuthKey_XXXXXXXXXX.p8"
+export APPLE_API_KEY_ID="XXXXXXXXXX"
+export APPLE_API_ISSUER="00000000-0000-0000-0000-000000000000"
 export CSC_NAME="Developer ID Application: Your Name (ABCDE12345)"
 npm run package:mac:arm64
 ```
+
+The App Store Connect API key is enough for notarization, but it does not replace the `Developer ID Application` signing certificate. If no `Developer ID Application` identity appears in `security find-identity -v -p codesigning`, create one from the Apple Developer Certificates page with the Account Holder account and install it into the macOS Keychain.
 
 The release upload needs the generated macOS zip and `latest-mac.yml` from `dist-app/`.
 
