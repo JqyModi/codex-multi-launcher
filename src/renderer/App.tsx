@@ -57,32 +57,35 @@ const TEXT: Record<Language, Record<string, string>> = {
     appTitle: "Codex 多开助手",
     appSubtitle: "本地多开配置管理",
     home: "首页",
-    profilesSection: "Profiles",
-    pageTitle: "Profile Manager",
-    pageSubtitle: "创建隔离的 Codex 桌面窗口，并为每个窗口使用独立配置。",
+    profilesSection: "配置列表",
+    pageTitle: "配置管理",
+    pageSubtitle: "创建隔离的 Codex 桌面窗口，并为每个窗口使用独立设置。",
     dashboardTitle: "工作台",
     dashboardSubtitle: "公共公告与运行概览。",
     overviewTitle: "概览",
-    profileDetailTitle: "Profile 详情",
-    profileDetailSubtitle: "独立配置、启动器和 Provider 设置。",
-    pickProfile: "从左侧选择一个 Profile 查看详情。",
-    dashboardHint: "运行中的实例会集中显示在这里，Profile 详情从左侧进入。",
+    profileDetailTitle: "配置详情",
+    profileDetailSubtitle: "独立设置、启动器和模型服务。",
+    pickProfile: "从左侧选择一个配置查看详情。",
+    dashboardHint: "运行中的窗口会集中显示在这里，配置详情从左侧进入。",
     runningProfiles: "正在运行",
-    noRunningProfiles: "暂无运行中的 Profile。",
+    noRunningProfiles: "暂无运行中的窗口。",
     environmentIssues: "环境提示",
-    createProfile: "创建 Profile",
+    createProfile: "创建配置",
     showRemoved: "显示已移除",
-    noProfiles: "暂无 Profile",
+    noProfiles: "暂无配置",
     refresh: "刷新",
     refreshing: "刷新中",
     copyDiagnostics: "复制诊断",
     copied: "已复制",
-    profiles: "Profiles",
+    profiles: "配置",
     running: "运行中",
+    runtimeRunning: "运行中",
+    runtimeNotRunning: "未运行",
+    runtimeUnknown: "未知",
     environment: "环境",
     environmentOk: "环境正常",
     checking: "检查中",
-    selectedProfile: "选中的 Profile",
+    selectedProfile: "当前配置",
     revealFiles: "显示文件",
     restore: "恢复",
     deletePermanently: "彻底删除",
@@ -94,78 +97,78 @@ const TEXT: Record<Language, Record<string, string>> = {
     language: "语言",
     chinese: "中文",
     english: "English",
-    noProfilesTitle: "还没有 Profile",
-    noProfilesBody: "创建一个拥有独立 API Key、Provider、配置和启动器的 Codex Profile。",
-    createProfileTitle: "创建 Profile",
-    createProfileSubtitle: "生成一个隔离的 Codex App 工作配置。",
-    apiKeyEncrypted: "API Key 本地加密保存",
-    environmentSubtitle: "生成 Profile 时依赖的本地环境检查。",
-    profile: "Profile",
-    provider: "Provider",
+    noProfilesTitle: "还没有配置",
+    noProfilesBody: "创建一套独立保存密钥、模型服务和启动器的 Codex 配置。",
+    createProfileTitle: "创建配置",
+    createProfileSubtitle: "生成一套独立的 Codex App 工作设置。",
+    apiKeyEncrypted: "密钥会加密保存在本机",
+    environmentSubtitle: "创建配置前会检查本机环境。",
+    profile: "配置",
+    provider: "模型服务",
     test: "测试",
     launcher: "启动器",
     generate: "生成",
     back: "上一步",
     next: "下一步",
     generating: "生成中",
-    profileName: "Profile 名称",
+    profileName: "配置名称",
     profileColor: "图标颜色",
-    profileColorNote: "用于生成启动器图标，并在侧边栏显示同色身份标识。",
+    profileColorNote: "用于生成启动器图标，并在左侧列表显示同色标记。",
     profileColorReview: "图标颜色",
-    inheritConfig: "继承默认 Codex 配置",
-    inheritConfigDesc: "保留已有插件、MCP 服务、可信项目和功能开关。",
-    profileNameNote: "该名称会用于侧边栏列表和生成的启动器 App。",
-    providerType: "Provider 类型",
-    thirdPartyResponses: "第三方 Responses 兼容接口",
-    officialOpenAI: "官方 OpenAI API Key",
-    providerName: "Provider 名称",
-    baseUrl: "Base URL",
-    model: "模型",
-    fetchModels: "获取模型",
+    inheritConfig: "沿用当前 Codex 设置",
+    inheritConfigDesc: "保留已有插件、服务、可信项目和功能开关。",
+    profileNameNote: "这个名称会显示在左侧列表和生成的启动器 App 上。",
+    providerType: "服务接口类型",
+    thirdPartyResponses: "第三方兼容接口",
+    officialOpenAI: "官方 OpenAI 密钥",
+    providerName: "服务名称",
+    baseUrl: "接口地址",
+    model: "使用模型",
+    fetchModels: "获取模型列表",
     fetchingModels: "获取中",
-    modelsFound: "可用模型",
+    modelsFound: "可选模型",
     modelsUnavailable: "未获取到模型列表，可继续手动输入。",
     chooseModel: "选择",
-    apiKey: "API Key",
-    testProvider: "测试 Provider",
+    apiKey: "密钥（API Key）",
+    testProvider: "测试连接",
     testing: "测试中",
-    testNote: "生成前建议测试 Provider。即使测试失败也可以继续，但 Provider 需要支持 Responses API 后启动器才能正常工作。",
-    codexAppPath: "桌面 App 路径",
+    testNote: "生成前建议先测试连接。即使测试失败也可以继续，但接口需要兼容 Codex 使用的对话接口后才能正常使用。",
+    codexAppPath: "Codex/ChatGPT App 位置",
     codexAppPlaceholder: "自动探测 ChatGPT/Codex App",
     codexAppNote: "留空会自动查找新版 ChatGPT App，并兼容旧版 Codex App。",
     launcherDirectory: "启动器目录",
     launcherPlaceholder: "默认：~/Applications/Codex Profiles/",
-    launcherNote: "留空会使用默认启动器目录，也可以选择自定义文件夹。",
-    providerTypeReview: "Provider 类型",
-    inheritConfigReview: "继承配置",
-    providerTestReview: "Provider 测试",
+    launcherNote: "留空会使用默认保存位置，也可以选择自定义文件夹。",
+    providerTypeReview: "服务接口类型",
+    inheritConfigReview: "沿用设置",
+    providerTestReview: "连接测试",
     missing: "缺失",
     yes: "是",
     no: "否",
     notTested: "未测试",
-    noProviderTest: "还未运行 Provider 测试。",
-    models: "models",
-    responses: "responses",
-    tested: "tested",
-    notTestedShort: "not tested",
-    recentBackups: "最近配置备份",
-    noBackups: "暂无快照。每次配置变更前会自动创建快照。",
-    editProvider: "编辑 Provider",
+    noProviderTest: "还没有测试连接。",
+    models: "模型列表",
+    responses: "对话接口",
+    tested: "已测试",
+    notTestedShort: "未测试",
+    recentBackups: "最近备份",
+    noBackups: "暂无备份。每次修改配置前会自动备份。",
+    editProvider: "编辑模型服务",
     appearance: "外观标识",
     advancedInfo: "高级信息",
-    advancedInfoDesc: "路径、运行状态和配置备份。",
-    newApiKey: "新的 API Key",
-    keepCurrentKey: "留空则保留当前 Key",
-    saveProvider: "保存 Provider",
+    advancedInfoDesc: "文件位置、运行状态和最近备份。",
+    newApiKey: "新的密钥",
+    keepCurrentKey: "留空则保留当前密钥",
+    saveProvider: "保存服务设置",
     saving: "保存中",
     notChecked: "未检查",
     never: "从未启动",
-    diagnosticsCopied: "诊断报告已复制，不包含 API Key。",
+    diagnosticsCopied: "诊断信息已复制，不包含密钥。",
     loadingChecks: "正在加载检查项...",
-    activeProfiles: "可用 Profile",
-    removedProfiles: "已移除 Profile",
-    permanentDeleteConfirm: "彻底删除后无法恢复。将同时删除该 Profile 的 CODEX_HOME、user-data-dir、启动器和本地密钥。确定继续吗？",
-    permanentDeleteDone: "Profile 及附属文件已彻底删除。",
+    activeProfiles: "可用配置",
+    removedProfiles: "已移除配置",
+    permanentDeleteConfirm: "彻底删除后无法恢复。将同时删除该配置的 CODEX_HOME、user-data-dir、启动器和本地密钥。确定继续吗？",
+    permanentDeleteDone: "配置及附属文件已彻底删除。",
     aboutTitle: "关于",
     settingsTitle: "应用设置",
     settingsSubtitle: "偏好设置、版本更新和项目支持。",
@@ -181,12 +184,12 @@ const TEXT: Record<Language, Record<string, string>> = {
     updateCheckFailed: "检查更新失败",
     notCheckedYet: "尚未检查",
     author: "作者",
-    repository: "开源仓库",
+    repository: "项目源码",
     sponsor: "赞助支持",
     feedback: "意见反馈",
     productPage: "产品主页",
     authorNote: "Modi",
-    repositoryNote: "查看源码和 Release",
+    repositoryNote: "查看源码和发布版本",
     sponsorNote: "支持项目继续开发",
     feedbackNote: "报告问题或提交建议",
     productPageNote: "查看介绍和使用手册",
@@ -235,6 +238,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     copied: "Copied",
     profiles: "Profiles",
     running: "Running",
+    runtimeRunning: "Running",
+    runtimeNotRunning: "Not running",
+    runtimeUnknown: "Unknown",
     environment: "Environment",
     environmentOk: "Environment OK",
     checking: "Checking",
@@ -581,8 +587,8 @@ export function App() {
       setProviderTest({
         status: "unknown_error",
         ok: false,
-        summary: "Provider test failed",
-        details: error instanceof Error ? error.message : "Unknown provider test error.",
+        summary: language === "zh" ? "连接测试失败" : "Provider test failed",
+        details: error instanceof Error ? error.message : language === "zh" ? "未知连接测试错误。" : "Unknown provider test error.",
         testedModelsEndpoint: false,
         testedResponsesEndpoint: false
       });
@@ -606,8 +612,8 @@ export function App() {
       setProviderModels({
         status: "unknown_error",
         ok: false,
-        summary: "Model list failed",
-        details: error instanceof Error ? error.message : "Unknown model list error.",
+        summary: language === "zh" ? "获取模型列表失败" : "Model list failed",
+        details: error instanceof Error ? error.message : language === "zh" ? "未知模型列表错误。" : "Unknown model list error.",
         models: []
       });
     } finally {
@@ -633,8 +639,8 @@ export function App() {
       setEditProviderTest({
         status: "unknown_error",
         ok: false,
-        summary: "Provider test failed",
-        details: error instanceof Error ? error.message : "Unknown provider test error.",
+        summary: language === "zh" ? "连接测试失败" : "Provider test failed",
+        details: error instanceof Error ? error.message : language === "zh" ? "未知连接测试错误。" : "Unknown provider test error.",
         testedModelsEndpoint: false,
         testedResponsesEndpoint: false
       });
@@ -660,8 +666,8 @@ export function App() {
       setEditProviderModels({
         status: "unknown_error",
         ok: false,
-        summary: "Model list failed",
-        details: error instanceof Error ? error.message : "Unknown model list error.",
+        summary: language === "zh" ? "获取模型列表失败" : "Model list failed",
+        details: error instanceof Error ? error.message : language === "zh" ? "未知模型列表错误。" : "Unknown model list error.",
         models: []
       });
     } finally {
@@ -673,29 +679,33 @@ export function App() {
     if (!selectedProfile) return;
     try {
       const result = await window.codexProfileManager.openProfile(selectedProfile.id);
-      showToast(result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`);
+      showToast(language === "zh"
+        ? result.pid ? `已打开 ${selectedProfile.name}，进程号 ${result.pid}。` : `已打开 ${selectedProfile.name}。`
+        : result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`);
       window.setTimeout(() => void refresh(), 1200);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Failed to open profile.");
+      showToast(error instanceof Error ? error.message : language === "zh" ? "打开失败。" : "Failed to open profile.");
     }
   }
 
   async function deleteSelectedProfile() {
     if (!selectedProfile) return;
-    const confirmed = window.confirm(`Remove "${selectedProfile.name}" from the dashboard? Profile files will be kept on disk.`);
+    const confirmed = window.confirm(language === "zh"
+      ? `要从列表中移除“${selectedProfile.name}”吗？本地文件会保留。`
+      : `Remove "${selectedProfile.name}" from the dashboard? Profile files will be kept on disk.`);
     if (!confirmed) return;
 
     await window.codexProfileManager.deleteProfile(selectedProfile.id);
     setSelectedProfileId(null);
     setActiveView("dashboard");
-    showToast(`Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`);
+    showToast(language === "zh" ? `已从列表中移除 ${selectedProfile.name}，本地文件已保留。` : `Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`);
     await refresh();
   }
 
   async function restoreSelectedProfile() {
     if (!selectedProfile) return;
     await window.codexProfileManager.restoreProfile(selectedProfile.id);
-    showToast(`Restored ${selectedProfile.name}.`);
+    showToast(language === "zh" ? `已恢复 ${selectedProfile.name}。` : `Restored ${selectedProfile.name}.`);
     await refresh();
   }
 
@@ -732,9 +742,9 @@ export function App() {
       await refresh();
       setSelectedProfileId(result.profile.id);
       setEditForm((current) => ({ ...current, apiKey: "", iconBackgroundColor: getProfileColor(result.profile) }));
-      showToast(`Updated ${result.profile.name}. Config and launcher were regenerated.`);
+      showToast(language === "zh" ? `已保存 ${result.profile.name}，配置和启动器已更新。` : `Updated ${result.profile.name}. Config and launcher were regenerated.`);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Failed to update profile.");
+      showToast(error instanceof Error ? error.message : language === "zh" ? "保存失败。" : "Failed to update profile.");
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -997,7 +1007,7 @@ export function App() {
                               <ProfileColorMark color={getProfileColor(profile)} />
                               <strong>{profile.name}</strong>
                             </span>
-                            <RuntimeBadge runtime={runtimeByProfileId.get(profile.id)} />
+                            <RuntimeBadge runtime={runtimeByProfileId.get(profile.id)} t={t} />
                           </button>
                         ))}
                       </div>
@@ -1827,9 +1837,9 @@ function ProviderTestBox({ providerTest, t }: { providerTest: ProviderTestResult
   );
 }
 
-function RuntimeBadge({ runtime }: { runtime?: ProfileRuntimeInfo }) {
+function RuntimeBadge({ runtime, t }: { runtime?: ProfileRuntimeInfo; t: Record<string, string> }) {
   const status = runtime?.status ?? "unknown";
-  const label = status === "running" ? `Running${runtime?.pid ? ` : ${runtime.pid}` : ""}` : status === "not_running" ? "Not running" : "Unknown";
+  const label = status === "running" ? `${t.runtimeRunning}${runtime?.pid ? `：${runtime.pid}` : ""}` : status === "not_running" ? t.runtimeNotRunning : t.runtimeUnknown;
   return <span className={`runtime-badge ${status}`}>{label}</span>;
 }
 
