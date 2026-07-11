@@ -58,14 +58,20 @@ const TEXT: Record<Language, Record<string, string>> = {
     appTitle: "Codex 多开助手",
     appSubtitle: "本地多开配置管理",
     home: "首页",
+    profilesSection: "Profiles",
     pageTitle: "Profile Manager",
     pageSubtitle: "创建隔离的 Codex 桌面窗口，并为每个窗口使用独立配置。",
     dashboardTitle: "工作台",
-    dashboardSubtitle: "公共公告、运行状态和 Profile 总览。",
+    dashboardSubtitle: "公共公告、运行状态和常用操作。",
+    overviewTitle: "概览",
     profileDetailTitle: "Profile 详情",
+    profileDetailSubtitle: "独立配置、启动器和 Provider 设置。",
     pickProfile: "从左侧选择一个 Profile 查看详情。",
-    recentProfiles: "Profile 总览",
-    noRecentProfiles: "创建 Profile 后会在这里显示运行状态。",
+    dashboardHint: "公共状态、运行概览与环境检查。",
+    runningProfiles: "正在运行",
+    noRunningProfiles: "暂无运行中的 Profile。",
+    environmentIssues: "环境问题",
+    noEnvironmentIssues: "环境检查未发现问题。",
     createProfile: "创建 Profile",
     showRemoved: "显示已移除",
     noProfiles: "暂无 Profile",
@@ -207,14 +213,20 @@ const TEXT: Record<Language, Record<string, string>> = {
     appTitle: "Codex Launcher",
     appSubtitle: "Local multi-instance manager",
     home: "Home",
+    profilesSection: "Profiles",
     pageTitle: "Profile Manager",
     pageSubtitle: "Create isolated Codex desktop windows with separate provider configuration.",
     dashboardTitle: "Dashboard",
-    dashboardSubtitle: "Shared announcements, runtime status, and profile overview.",
+    dashboardSubtitle: "Shared announcements, runtime status, and quick actions.",
+    overviewTitle: "Overview",
     profileDetailTitle: "Profile Detail",
+    profileDetailSubtitle: "Isolated config, launcher, and provider settings.",
     pickProfile: "Choose a profile from the sidebar to view details.",
-    recentProfiles: "Profile Overview",
-    noRecentProfiles: "Profile runtime status will appear here after you create one.",
+    dashboardHint: "Shared status, runtime overview, and environment checks.",
+    runningProfiles: "Running",
+    noRunningProfiles: "No profiles are currently running.",
+    environmentIssues: "Environment Issues",
+    noEnvironmentIssues: "No environment issues found.",
     createProfile: "Create Profile",
     showRemoved: "Show removed",
     noProfiles: "No profiles yet.",
@@ -428,6 +440,14 @@ export function App() {
   const canGoNext = currentStepIndex < WIZARD_STEPS.length - 1 && isCurrentStepValid(wizardStep, form);
   const t = TEXT[language];
   const environmentSummary = useMemo(() => summarizeEnvironment(environment, t), [environment, t]);
+  const runningProfiles = useMemo(
+    () => activeProfiles.filter((profile) => runtimeByProfileId.get(profile.id)?.status === "running"),
+    [activeProfiles, runtimeByProfileId]
+  );
+  const environmentIssues = useMemo(
+    () => environment?.checks.filter((check) => check.status !== "pass") ?? [],
+    [environment]
+  );
 
   async function refresh() {
     setIsRefreshing(true);
@@ -829,10 +849,15 @@ export function App() {
           <span>{t.home}</span>
         </button>
 
-        <button className="sidebar-action" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
-          <Plus size={16} />
-          {t.createProfile}
-        </button>
+        <div className="sidebar-section-header">
+          <div className="sidebar-section-title">
+            <span>{t.profilesSection}</span>
+            <strong>{visibleProfiles.length}</strong>
+          </div>
+          <button aria-label={t.createProfile} className="icon-button compact sidebar-add-button" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} title={t.createProfile} type="button">
+            <Plus size={14} />
+          </button>
+        </div>
         <label className="sidebar-toggle">
           <input checked={showDeletedProfiles} onChange={(event) => setShowDeletedProfiles(event.target.checked)} type="checkbox" />
           {t.showRemoved}
@@ -870,7 +895,7 @@ export function App() {
           <header className="toolbar">
             <div>
               <h2>{activeView === "dashboard" ? t.dashboardTitle : selectedProfile?.name ?? t.profileDetailTitle}</h2>
-              <p>{activeView === "dashboard" ? t.dashboardSubtitle : t.pickProfile}</p>
+              <p>{activeView === "dashboard" ? t.dashboardSubtitle : selectedProfile ? t.profileDetailSubtitle : t.pickProfile}</p>
             </div>
             {activeView === "dashboard" ? (
               <>
@@ -918,49 +943,81 @@ export function App() {
                 onOpen={(url) => void openExternalUrl(url)}
               />
             ) : null}
-            <section className="status-strip">
-              <div>
-                <span className="status-kicker">{t.profiles}</span>
-                <strong>{profiles.filter((profile) => profile.status !== "deleted").length}</strong>
-              </div>
-              <div>
-                <span className="status-kicker">{t.running}</span>
-                <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
-              </div>
-              <div>
-                <span className="status-kicker">{t.environment}</span>
-                <strong>{environmentSummary.shortLabel}</strong>
-              </div>
-            </section>
             <section className="panel dashboard-panel">
               <div className="panel-heading">
                 <div>
-                  <h3>{t.recentProfiles}</h3>
-                  <p>{t.pickProfile}</p>
+                  <h3>{t.overviewTitle}</h3>
+                  <p>{t.dashboardHint}</p>
                 </div>
-                <button className="button primary" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
-                  <Plus size={15} />
-                  {t.createProfile}
-                </button>
               </div>
-              {activeProfiles.length > 0 ? (
-                <div className="dashboard-profile-grid">
-                  {activeProfiles.slice(0, 6).map((profile) => (
-                    <button className="dashboard-profile-card" key={profile.id} onClick={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} type="button">
-                      <span className="dashboard-profile-title">
-                        <ProfileColorMark color={getProfileColor(profile)} />
-                        <strong>{profile.name}</strong>
-                      </span>
-                      <span>{profile.provider.displayName} / {profile.provider.model}</span>
-                      <RuntimeBadge runtime={runtimeByProfileId.get(profile.id)} />
-                    </button>
-                  ))}
+              <div className="dashboard-summary-grid">
+                <div className="dashboard-summary-card">
+                  <span className="status-kicker">{t.activeProfiles}</span>
+                  <strong>{activeProfiles.length}</strong>
                 </div>
-              ) : (
+                <div className="dashboard-summary-card">
+                  <span className="status-kicker">{t.running}</span>
+                  <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
+                </div>
+                <div className="dashboard-summary-card">
+                  <span className="status-kicker">{t.environment}</span>
+                  <strong>{environmentSummary.shortLabel}</strong>
+                </div>
+              </div>
+              {activeProfiles.length === 0 ? (
                 <div className="empty-state compact-empty">
                   <div className="empty-mark"><Rocket size={22} /></div>
                   <h3>{t.noProfilesTitle}</h3>
-                  <p>{t.noRecentProfiles}</p>
+                  <p>{t.noProfilesBody}</p>
+                  <button className="button primary" onClick={() => { setWizardStep("profile"); setIsCreateProfileOpen(true); }} type="button">
+                    <Plus size={15} />
+                    {t.createProfile}
+                  </button>
+                </div>
+              ) : (
+                <div className="dashboard-lower-grid">
+                  <section className="dashboard-subpanel">
+                    <div className="dashboard-subpanel-heading">
+                      <h4>{t.runningProfiles}</h4>
+                      <span>{runningProfiles.length}</span>
+                    </div>
+                    {runningProfiles.length > 0 ? (
+                      <div className="dashboard-compact-list">
+                        {runningProfiles.slice(0, 3).map((profile) => (
+                          <button className="dashboard-compact-row" key={profile.id} onClick={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} type="button">
+                            <span>
+                              <ProfileColorMark color={getProfileColor(profile)} />
+                              <strong>{profile.name}</strong>
+                            </span>
+                            <RuntimeBadge runtime={runtimeByProfileId.get(profile.id)} />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="dashboard-empty-copy">{t.noRunningProfiles}</p>
+                    )}
+                  </section>
+                  <section className="dashboard-subpanel">
+                    <div className="dashboard-subpanel-heading">
+                      <h4>{t.environmentIssues}</h4>
+                      <span>{environmentIssues.length}</span>
+                    </div>
+                    {environmentIssues.length > 0 ? (
+                      <div className="dashboard-compact-list">
+                        {environmentIssues.slice(0, 3).map((issue) => (
+                          <button className="dashboard-compact-row issue" key={issue.id} onClick={() => setIsEnvironmentOpen(true)} type="button">
+                            <span>
+                              <TriangleAlert size={14} />
+                              <strong>{issue.label}</strong>
+                            </span>
+                            <small>{issue.status}</small>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="dashboard-empty-copy">{t.noEnvironmentIssues}</p>
+                    )}
+                  </section>
                 </div>
               )}
             </section>
