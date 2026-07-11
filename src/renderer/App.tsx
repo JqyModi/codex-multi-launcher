@@ -415,7 +415,7 @@ export function App() {
     apiKey: "",
     iconBackgroundColor: DEFAULT_PROFILE_COLOR
   });
-  const [message, setMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const runtimeByProfileId = useMemo(
     () => new Map(runtimeStatuses.map((runtime) => [runtime.profileId, runtime])),
@@ -489,6 +489,12 @@ export function App() {
   }), []);
 
   useEffect(() => {
+    if (!toastMessage) return undefined;
+    const timer = window.setTimeout(() => setToastMessage(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
+  useEffect(() => {
     if (!selectedProfile) return;
     setEditForm({
       providerName: selectedProfile.provider.displayName,
@@ -502,6 +508,10 @@ export function App() {
     void window.codexProfileManager.listConfigBackups(selectedProfile.id).then(setConfigBackups);
   }, [selectedProfile]);
 
+  function showToast(nextMessage: string) {
+    setToastMessage(nextMessage);
+  }
+
   function nextStep() {
     if (!canGoNext) return;
     setWizardStep(WIZARD_STEPS[currentStepIndex + 1]);
@@ -514,7 +524,7 @@ export function App() {
 
   async function createProfile() {
     setIsCreating(true);
-    setMessage(null);
+    setToastMessage(null);
 
     try {
       const input: CreateProfileInput = {
@@ -538,14 +548,14 @@ export function App() {
       await refresh();
       setSelectedProfileId(result.profile.id);
       setActiveView("profile");
-      setMessage(`Created ${result.profile.name}. Launcher: ${result.launcherPath}`);
+      showToast(`Created ${result.profile.name}. Launcher: ${result.launcherPath}`);
       setForm({ ...DEFAULT_FORM, name: `${form.name} 2` });
       setProviderTest(null);
       setProviderModels(null);
       setWizardStep("profile");
       setIsCreateProfileOpen(false);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to create profile.");
+      showToast(error instanceof Error ? error.message : "Failed to create profile.");
     } finally {
       setIsCreating(false);
     }
@@ -554,7 +564,7 @@ export function App() {
   async function testProvider() {
     setIsTestingProvider(true);
     setProviderTest(null);
-    setMessage(null);
+    setToastMessage(null);
 
     try {
       const result = await window.codexProfileManager.testProvider({
@@ -580,7 +590,7 @@ export function App() {
   async function fetchProviderModels() {
     setIsFetchingProviderModels(true);
     setProviderModels(null);
-    setMessage(null);
+    setToastMessage(null);
 
     try {
       const result = await window.codexProfileManager.listProviderModels({
@@ -659,10 +669,10 @@ export function App() {
     if (!selectedProfile) return;
     try {
       const result = await window.codexProfileManager.openProfile(selectedProfile.id);
-      setMessage(result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`);
+      showToast(result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`);
       window.setTimeout(() => void refresh(), 1200);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to open profile.");
+      showToast(error instanceof Error ? error.message : "Failed to open profile.");
     }
   }
 
@@ -674,14 +684,14 @@ export function App() {
     await window.codexProfileManager.deleteProfile(selectedProfile.id);
     setSelectedProfileId(null);
     setActiveView("dashboard");
-    setMessage(`Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`);
+    showToast(`Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`);
     await refresh();
   }
 
   async function restoreSelectedProfile() {
     if (!selectedProfile) return;
     await window.codexProfileManager.restoreProfile(selectedProfile.id);
-    setMessage(`Restored ${selectedProfile.name}.`);
+    showToast(`Restored ${selectedProfile.name}.`);
     await refresh();
   }
 
@@ -693,14 +703,14 @@ export function App() {
     await window.codexProfileManager.permanentlyDeleteProfile(selectedProfile.id);
     setSelectedProfileId(null);
     setActiveView("dashboard");
-    setMessage(t.permanentDeleteDone);
+    showToast(t.permanentDeleteDone);
     await refresh();
   }
 
   async function saveSelectedProfile() {
     if (!selectedProfile) return;
     setIsUpdatingProfile(true);
-    setMessage(null);
+    setToastMessage(null);
 
     try {
       const result = await window.codexProfileManager.updateProfile({
@@ -718,9 +728,9 @@ export function App() {
       await refresh();
       setSelectedProfileId(result.profile.id);
       setEditForm((current) => ({ ...current, apiKey: "", iconBackgroundColor: getProfileColor(result.profile) }));
-      setMessage(`Updated ${result.profile.name}. Config and launcher were regenerated.`);
+      showToast(`Updated ${result.profile.name}. Config and launcher were regenerated.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to update profile.");
+      showToast(error instanceof Error ? error.message : "Failed to update profile.");
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -747,7 +757,7 @@ export function App() {
     try {
       const report = await window.codexProfileManager.getDiagnosticsReport();
       await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-      setMessage(t.diagnosticsCopied);
+      showToast(t.diagnosticsCopied);
     } finally {
       setIsCopyingDiagnostics(false);
     }
@@ -755,7 +765,7 @@ export function App() {
 
   async function checkForUpdates() {
     setIsCheckingUpdates(true);
-    setMessage(null);
+    setToastMessage(null);
     try {
       const result = await window.codexProfileManager.checkForUpdates();
       setUpdateCheck(result);
@@ -825,7 +835,7 @@ export function App() {
       profileId: backup.profileId,
       backupPath: backup.backupPath
     });
-    setMessage(language === "zh" ? "配置备份已恢复。重启该 Codex Profile 后生效。" : "Config backup restored. Restart this Codex profile for the restored config to take effect.");
+    showToast(language === "zh" ? "配置备份已恢复。重启该 Codex Profile 后生效。" : "Config backup restored. Restart this Codex profile for the restored config to take effect.");
     setConfigBackups(await window.codexProfileManager.listConfigBackups(backup.profileId));
   }
 
@@ -907,8 +917,6 @@ export function App() {
             ) : null}
           </header>
         ) : null}
-
-        {message && activeView !== "settings" ? <div className="notice">{message}</div> : null}
 
         {activeView === "settings" ? (
           <SettingsPage
@@ -1203,6 +1211,12 @@ export function App() {
             )) ?? <p className="empty-text">{t.loadingChecks}</p>}
           </div>
         </Modal>
+      ) : null}
+      {toastMessage ? (
+        <div className="toast" role="status">
+          <CheckCircle2 size={16} />
+          <span>{toastMessage}</span>
+        </div>
       ) : null}
     </main>
   );
