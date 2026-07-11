@@ -1476,7 +1476,7 @@ code {
   display: grid;
   gap: 20px;
   width: 100%;
-  max-width: 1180px;
+  max-width: 1040px;
   margin: 0 auto;
 }
 
@@ -1514,7 +1514,7 @@ code {
 }
 
 .settings-panel {
-  width: min(760px, 100%);
+  width: 100%;
 }
 
 .settings-row {
@@ -1524,6 +1524,10 @@ code {
   gap: 16px;
   border-top: 1px solid #eef2f7;
   padding-top: 12px;
+}
+
+.settings-row > div:first-child {
+  min-width: 0;
 }
 
 .settings-row strong {
