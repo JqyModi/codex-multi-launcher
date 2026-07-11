@@ -1320,13 +1320,20 @@ code {
   line-height: 28px;
 }
 
+.dashboard-environment-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .dashboard-environment-note {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   width: fit-content;
   max-width: 100%;
-  margin-top: 10px;
   border: 0;
   border-radius: 999px;
   padding: 5px 9px;

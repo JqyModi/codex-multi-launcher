@@ -923,10 +923,6 @@ export function App() {
                   <RefreshCcw size={15} />
                   {isRefreshing ? t.refreshing : t.refresh}
                 </button>
-                <button className="button secondary" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
-                  <Copy size={15} />
-                  {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
-                </button>
               </>
             ) : null}
           </header>
@@ -975,12 +971,18 @@ export function App() {
                 </div>
               </div>
               {environmentIssues.length > 0 ? (
-                <button className="dashboard-environment-note" onClick={() => setIsEnvironmentOpen(true)} type="button">
-                  <TriangleAlert size={14} />
-                  <span>{t.environmentIssues}</span>
-                  <strong>{environmentIssues[0]?.label}</strong>
-                  <small>{environmentIssues.length}</small>
-                </button>
+                <div className="dashboard-environment-actions">
+                  <button className="dashboard-environment-note" onClick={() => setIsEnvironmentOpen(true)} type="button">
+                    <TriangleAlert size={14} />
+                    <span>{t.environmentIssues}</span>
+                    <strong>{environmentIssues[0]?.label}</strong>
+                    <small>{environmentIssues.length}</small>
+                  </button>
+                  <button className="button secondary compact" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
+                    <Copy size={14} />
+                    {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
+                  </button>
+                </div>
               ) : null}
               {activeProfiles.length === 0 ? (
                 <div className="empty-state compact-empty">
