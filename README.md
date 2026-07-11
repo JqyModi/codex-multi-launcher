@@ -4,6 +4,10 @@ English | [中文](README.zh-CN.md)
 
 Codex Multi Launcher is the public landing-page repository for **Codex 多开助手**, a cross-platform utility that creates isolated Codex desktop profiles. Each profile can use its own API key, Base URL, model, and launcher app.
 
+<p align="center">
+  <img alt="Codex Multi Launcher dashboard" src="https://raw.githubusercontent.com/JqyModi/codex-multi-launcher/main/user-manual-assets/01-dashboard.png" width="880">
+</p>
+
 This repository is used for:
 
 - publishing the product landing page and user manual;
@@ -16,16 +20,6 @@ This repository is used for:
 - User manual: <https://jqymodi.github.io/codex-multi-launcher/manual.html>
 - Feedback: <https://github.com/JqyModi/codex-multi-launcher/issues>
 - Latest release: <https://github.com/JqyModi/codex-multi-launcher/releases/latest>
-
-## App Preview
-
-The dashboard keeps shared notices, environment warnings, running instances, and update prompts in one place:
-
-![Codex Multi Launcher dashboard](user-manual-assets/01-dashboard.png)
-
-Create each profile with its own app path, launcher directory, provider, Base URL, model, and encrypted API key:
-
-![Create an isolated Codex profile](user-manual-assets/02-create-profile.png)
 
 ## What It Does
 
