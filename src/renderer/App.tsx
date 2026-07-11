@@ -20,7 +20,6 @@ import {
   RefreshCcw,
   Rocket,
   Settings,
-  ShieldCheck,
   TestTube2,
   Trash2,
   TriangleAlert,
@@ -62,16 +61,15 @@ const TEXT: Record<Language, Record<string, string>> = {
     pageTitle: "Profile Manager",
     pageSubtitle: "创建隔离的 Codex 桌面窗口，并为每个窗口使用独立配置。",
     dashboardTitle: "工作台",
-    dashboardSubtitle: "公共公告、运行状态和常用操作。",
+    dashboardSubtitle: "公共公告与运行概览。",
     overviewTitle: "概览",
     profileDetailTitle: "Profile 详情",
     profileDetailSubtitle: "独立配置、启动器和 Provider 设置。",
     pickProfile: "从左侧选择一个 Profile 查看详情。",
-    dashboardHint: "公共状态、运行概览与环境检查。",
+    dashboardHint: "运行中的实例会集中显示在这里，Profile 详情从左侧进入。",
     runningProfiles: "正在运行",
     noRunningProfiles: "暂无运行中的 Profile。",
-    environmentIssues: "环境问题",
-    noEnvironmentIssues: "环境检查未发现问题。",
+    environmentIssues: "环境提示",
     createProfile: "创建 Profile",
     showRemoved: "显示已移除",
     noProfiles: "暂无 Profile",
@@ -217,16 +215,15 @@ const TEXT: Record<Language, Record<string, string>> = {
     pageTitle: "Profile Manager",
     pageSubtitle: "Create isolated Codex desktop windows with separate provider configuration.",
     dashboardTitle: "Dashboard",
-    dashboardSubtitle: "Shared announcements, runtime status, and quick actions.",
+    dashboardSubtitle: "Shared announcements and runtime overview.",
     overviewTitle: "Overview",
     profileDetailTitle: "Profile Detail",
     profileDetailSubtitle: "Isolated config, launcher, and provider settings.",
     pickProfile: "Choose a profile from the sidebar to view details.",
-    dashboardHint: "Shared status, runtime overview, and environment checks.",
+    dashboardHint: "Running instances appear here. Open profile details from the sidebar.",
     runningProfiles: "Running",
     noRunningProfiles: "No profiles are currently running.",
-    environmentIssues: "Environment Issues",
-    noEnvironmentIssues: "No environment issues found.",
+    environmentIssues: "Environment Note",
     createProfile: "Create Profile",
     showRemoved: "Show removed",
     noProfiles: "No profiles yet.",
@@ -439,7 +436,6 @@ export function App() {
   const canGoBack = currentStepIndex > 0;
   const canGoNext = currentStepIndex < WIZARD_STEPS.length - 1 && isCurrentStepValid(wizardStep, form);
   const t = TEXT[language];
-  const environmentSummary = useMemo(() => summarizeEnvironment(environment, t), [environment, t]);
   const runningProfiles = useMemo(
     () => activeProfiles.filter((profile) => runtimeByProfileId.get(profile.id)?.status === "running"),
     [activeProfiles, runtimeByProfileId]
@@ -869,7 +865,7 @@ export function App() {
           ) : (
             <>
               {activeProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profile" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} />
+                <ProfileRow key={profile.id} profile={profile} selected={activeView === "profile" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} />
               ))}
               {deletedProfiles.length > 0 ? (
                 <div className="profile-group-separator">
@@ -877,7 +873,7 @@ export function App() {
                 </div>
               ) : null}
               {deletedProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profile" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} />
+                <ProfileRow key={profile.id} profile={profile} selected={activeView === "profile" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profile"); setSelectedProfileId(profile.id); }} />
               ))}
             </>
           )}
@@ -899,10 +895,6 @@ export function App() {
             </div>
             {activeView === "dashboard" ? (
               <>
-                <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
-                  {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
-                  {environmentSummary.label}
-                </button>
                 <button className="button secondary" disabled={isRefreshing} onClick={() => void refresh()} type="button">
                   <RefreshCcw size={15} />
                   {isRefreshing ? t.refreshing : t.refresh}
@@ -959,11 +951,15 @@ export function App() {
                   <span className="status-kicker">{t.running}</span>
                   <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
                 </div>
-                <div className="dashboard-summary-card">
-                  <span className="status-kicker">{t.environment}</span>
-                  <strong>{environmentSummary.shortLabel}</strong>
-                </div>
               </div>
+              {environmentIssues.length > 0 ? (
+                <button className="dashboard-environment-note" onClick={() => setIsEnvironmentOpen(true)} type="button">
+                  <TriangleAlert size={14} />
+                  <span>{t.environmentIssues}</span>
+                  <strong>{environmentIssues[0]?.label}</strong>
+                  <small>{environmentIssues.length}</small>
+                </button>
+              ) : null}
               {activeProfiles.length === 0 ? (
                 <div className="empty-state compact-empty">
                   <div className="empty-mark"><Rocket size={22} /></div>
@@ -995,27 +991,6 @@ export function App() {
                       </div>
                     ) : (
                       <p className="dashboard-empty-copy">{t.noRunningProfiles}</p>
-                    )}
-                  </section>
-                  <section className="dashboard-subpanel">
-                    <div className="dashboard-subpanel-heading">
-                      <h4>{t.environmentIssues}</h4>
-                      <span>{environmentIssues.length}</span>
-                    </div>
-                    {environmentIssues.length > 0 ? (
-                      <div className="dashboard-compact-list">
-                        {environmentIssues.slice(0, 3).map((issue) => (
-                          <button className="dashboard-compact-row issue" key={issue.id} onClick={() => setIsEnvironmentOpen(true)} type="button">
-                            <span>
-                              <TriangleAlert size={14} />
-                              <strong>{issue.label}</strong>
-                            </span>
-                            <small>{issue.status}</small>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="dashboard-empty-copy">{t.noEnvironmentIssues}</p>
                     )}
                   </section>
                 </div>
@@ -1837,7 +1812,7 @@ function ProfileColorMark({ color, size = "regular" }: { color: string; size?: "
   );
 }
 
-function ProfileRow({ onSelect, profile, runtime, selected }: { onSelect: () => void; profile: ManagedProfile; runtime?: ProfileRuntimeInfo; selected: boolean }) {
+function ProfileRow({ onSelect, profile, selected }: { onSelect: () => void; profile: ManagedProfile; selected: boolean }) {
   const profileColor = getProfileColor(profile);
 
   return (
@@ -1852,7 +1827,6 @@ function ProfileRow({ onSelect, profile, runtime, selected }: { onSelect: () => 
       </span>
       <span className="profile-meta">{profile.provider.displayName} / {profile.provider.model}</span>
       {profile.status === "deleted" ? <span className="runtime-badge deleted">Removed</span> : null}
-      <RuntimeBadge runtime={runtime} />
     </button>
   );
 }
@@ -1907,25 +1881,6 @@ function ColorReviewRow({ color, label }: { color: string; label: string }) {
       </div>
     </div>
   );
-}
-
-function summarizeEnvironment(environment: EnvironmentReport | null, t: Record<string, string>): { label: string; shortLabel: string; status: "pass" | "warn" | "fail" } {
-  if (!environment) {
-    return { label: t.checking, shortLabel: t.checking, status: "warn" };
-  }
-
-  const failed = environment.checks.filter((check) => check.status === "fail").length;
-  const warned = environment.checks.filter((check) => check.status === "warn").length;
-
-  if (failed > 0) {
-    return { label: `${failed} issue${failed === 1 ? "" : "s"}`, shortLabel: `${failed} issue${failed === 1 ? "" : "s"}`, status: "fail" };
-  }
-
-  if (warned > 0) {
-    return { label: `${warned} warning${warned === 1 ? "" : "s"}`, shortLabel: `${warned} warn`, status: "warn" };
-  }
-
-  return { label: t.environmentOk, shortLabel: "OK", status: "pass" };
 }
 
 function sortProfilesByRuntime(profiles: ManagedProfile[], runtimeByProfileId: Map<string, ProfileRuntimeInfo>): ManagedProfile[] {

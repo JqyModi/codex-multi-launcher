@@ -342,6 +342,10 @@ code {
   line-height: 30px;
 }
 
+.toolbar p {
+  margin-top: 7px;
+}
+
 .language-switch {
   display: inline-flex;
   flex: 0 0 auto;
@@ -1187,7 +1191,7 @@ code {
 
 .dashboard-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1207,9 +1211,49 @@ code {
   line-height: 28px;
 }
 
+.dashboard-environment-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #92400e;
+  background: rgb(255 251 235 / 72%);
+  font-size: 12px;
+}
+
+.dashboard-environment-note:hover {
+  background: #fffbeb;
+}
+
+.dashboard-environment-note strong {
+  overflow: hidden;
+  max-width: 260px;
+  color: #78350f;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-environment-note small {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+  color: #92400e;
+  background: rgb(253 230 138 / 72%);
+  font-size: 10px;
+  font-weight: 750;
+}
+
 .dashboard-lower-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-top: 12px;
 }
@@ -1299,11 +1343,6 @@ code {
 
 .dashboard-compact-row .runtime-badge {
   align-self: center;
-}
-
-.dashboard-compact-row.issue svg {
-  flex: 0 0 auto;
-  color: #d97706;
 }
 
 .dashboard-empty-copy {
@@ -1633,24 +1672,6 @@ code {
   color: #7a8495;
   font-size: 12px;
   font-weight: 650;
-}
-
-.environment-trigger.pass {
-  border-color: #bbf7d0;
-  color: #166534;
-  background: #f0fdf4;
-}
-
-.environment-trigger.warn {
-  border-color: #fde68a;
-  color: #92400e;
-  background: #fffbeb;
-}
-
-.environment-trigger.fail {
-  border-color: #fecaca;
-  color: #b91c1c;
-  background: #fff5f5;
 }
 
 .modal-backdrop {
