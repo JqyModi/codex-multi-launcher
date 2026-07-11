@@ -26,7 +26,7 @@ import {
   User,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   CreateProfileInput,
   EnvironmentReport,
@@ -181,6 +181,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     openChangelog: "更新记录",
     upToDate: "已是最新版本",
     updateAvailable: "发现新版本",
+    updatePromptTitle: "发现新版本",
+    updatePromptBody: "v{version} 已可用，可在应用内下载并重启安装。",
+    viewUpdate: "查看更新",
     updateCheckFailed: "检查更新失败",
     notCheckedYet: "尚未检查",
     author: "作者",
@@ -340,6 +343,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     openChangelog: "Changelog",
     upToDate: "Up to date",
     updateAvailable: "Update available",
+    updatePromptTitle: "Update available",
+    updatePromptBody: "v{version} is ready to download and install in the app.",
+    viewUpdate: "View Update",
     updateCheckFailed: "Update check failed",
     notCheckedYet: "Not checked yet",
     author: "Author",
@@ -395,6 +401,7 @@ export function App() {
   const [updateEvent, setUpdateEvent] = useState<UpdateDownloadEvent | null>(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
+  const [dismissedUpdatePromptVersion, setDismissedUpdatePromptVersion] = useState<string | null>(null);
   const [environment, setEnvironment] = useState<EnvironmentReport | null>(null);
   const [profiles, setProfiles] = useState<ManagedProfile[]>([]);
   const [runtimeStatuses, setRuntimeStatuses] = useState<ProfileRuntimeInfo[]>([]);
@@ -426,6 +433,7 @@ export function App() {
     iconBackgroundColor: DEFAULT_PROFILE_COLOR
   });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const hasCheckedForUpdatesOnLaunch = useRef(false);
 
   const runtimeByProfileId = useMemo(
     () => new Map(runtimeStatuses.map((runtime) => [runtime.profileId, runtime])),
@@ -489,6 +497,12 @@ export function App() {
     void window.codexProfileManager.getAnnouncement()
       .then((result) => setAnnouncement(result.item))
       .catch(() => setAnnouncement(null));
+  }, []);
+
+  useEffect(() => {
+    if (hasCheckedForUpdatesOnLaunch.current) return;
+    hasCheckedForUpdatesOnLaunch.current = true;
+    void checkForUpdates({ openModal: false, silent: true });
   }, []);
 
   useEffect(() => window.codexProfileManager.onUpdateEvent((event) => {
@@ -777,18 +791,23 @@ export function App() {
     }
   }
 
-  async function checkForUpdates() {
-    setIsCheckingUpdates(true);
-    setToastMessage(null);
+  async function checkForUpdates(options: { openModal?: boolean; silent?: boolean } = {}) {
+    const shouldOpenModal = options.openModal ?? true;
+    if (!options.silent) {
+      setIsCheckingUpdates(true);
+      setToastMessage(null);
+    }
     try {
       const result = await window.codexProfileManager.checkForUpdates();
       setUpdateCheck(result);
       setUpdateEvent(null);
-      if (result.status === "update_available" && !isSkippedUpdate(result.latestVersion)) {
+      if (result.status === "update_available" && shouldOpenModal && !isSkippedUpdate(result.latestVersion)) {
         setIsUpdateModalOpen(true);
       }
     } finally {
-      setIsCheckingUpdates(false);
+      if (!options.silent) {
+        setIsCheckingUpdates(false);
+      }
     }
   }
 
@@ -806,6 +825,7 @@ export function App() {
         : "- Simulated a newer release.\n- The update button runs the in-app download flow."
     });
     setUpdateEvent(null);
+    setDismissedUpdatePromptVersion(null);
     setIsUpdateModalOpen(true);
   }
 
@@ -827,6 +847,7 @@ export function App() {
   function skipUpdateVersion() {
     if (updateCheck?.latestVersion) {
       window.localStorage.setItem(SKIPPED_UPDATE_VERSION_KEY, updateCheck.latestVersion);
+      setDismissedUpdatePromptVersion(updateCheck.latestVersion);
     }
     setIsUpdateModalOpen(false);
   }
@@ -937,7 +958,7 @@ export function App() {
             t={t}
             updateCheck={updateCheck}
             onChangeLanguage={setLanguage}
-            onCheckForUpdates={() => void checkForUpdates()}
+            onCheckForUpdates={() => void checkForUpdates({ openModal: true })}
             onClearUpdateSimulation={clearUpdateSimulation}
             onOpenExternal={(url) => void openExternalUrl(url)}
             onOpenUpdateDialog={() => setIsUpdateModalOpen(true)}
@@ -951,6 +972,14 @@ export function App() {
                 item={announcement}
                 onDismiss={() => void dismissAnnouncement(announcement.id)}
                 onOpen={(url) => void openExternalUrl(url)}
+              />
+            ) : null}
+            {updateCheck?.status === "update_available" && updateCheck.latestVersion && !isSkippedUpdate(updateCheck.latestVersion) && dismissedUpdatePromptVersion !== updateCheck.latestVersion ? (
+              <UpdatePromptBanner
+                latestVersion={updateCheck.latestVersion}
+                t={t}
+                onDismiss={() => setDismissedUpdatePromptVersion(updateCheck.latestVersion)}
+                onOpen={() => setIsUpdateModalOpen(true)}
               />
             ) : null}
             <section className="panel dashboard-panel">
@@ -1386,6 +1415,41 @@ function AnnouncementBanner({
             <X size={14} />
           </button>
         ) : null}
+      </div>
+    </section>
+  );
+}
+
+function UpdatePromptBanner({
+  latestVersion,
+  onDismiss,
+  onOpen,
+  t
+}: {
+  latestVersion: string;
+  onDismiss: () => void;
+  onOpen: () => void;
+  t: Record<string, string>;
+}) {
+  return (
+    <section className="update-prompt-banner">
+      <div className="update-prompt-main">
+        <span className="update-prompt-icon">
+          <Download size={14} />
+        </span>
+        <div>
+          <strong>{t.updatePromptTitle}</strong>
+          <p>{t.updatePromptBody.replace("{version}", latestVersion)}</p>
+        </div>
+      </div>
+      <div className="update-prompt-actions">
+        <button className="button primary compact" onClick={onOpen} type="button">
+          <Download size={14} />
+          {t.viewUpdate}
+        </button>
+        <button aria-label="Close" className="icon-button compact" onClick={onDismiss} type="button">
+          <X size={14} />
+        </button>
       </div>
     </section>
   );

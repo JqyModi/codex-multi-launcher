@@ -1230,6 +1230,66 @@ code {
   gap: 6px;
 }
 
+.update-prompt-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 56px;
+  margin-bottom: 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 9px 8px 9px 12px;
+  background: linear-gradient(135deg, rgb(239 246 255 / 92%), rgb(236 253 245 / 78%));
+  box-shadow: 0 14px 32px rgb(37 99 235 / 8%);
+}
+
+.update-prompt-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.update-prompt-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 10px;
+  color: #1d4ed8;
+  background: rgb(255 255 255 / 78%);
+}
+
+.update-prompt-main strong,
+.update-prompt-main p {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.update-prompt-main strong {
+  display: block;
+  color: #172033;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.update-prompt-main p {
+  color: #5b6472;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.update-prompt-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
 .button-row {
   display: flex;
   gap: 8px;
