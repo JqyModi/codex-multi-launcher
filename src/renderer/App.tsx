@@ -152,6 +152,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     noBackups: "暂无快照。每次配置变更前会自动创建快照。",
     editProvider: "编辑 Provider",
     appearance: "外观标识",
+    advancedInfo: "高级信息",
+    advancedInfoDesc: "路径、运行状态和配置备份。",
     newApiKey: "新的 API Key",
     keepCurrentKey: "留空则保留当前 Key",
     saveProvider: "保存 Provider",
@@ -306,6 +308,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     noBackups: "No snapshots yet. A snapshot is created before config changes.",
     editProvider: "Edit Provider",
     appearance: "Appearance",
+    advancedInfo: "Advanced Info",
+    advancedInfoDesc: "Paths, runtime status, and config backups.",
     newApiKey: "New API key",
     keepCurrentKey: "Leave empty to keep current key",
     saveProvider: "Save Provider",
@@ -1041,37 +1045,6 @@ export function App() {
           </div>
           {selectedProfile ? (
             <div className="profile-detail">
-              <PathRow icon={<Folder size={15} />} label="CODEX_HOME" onReveal={() => void revealPath(selectedProfile.paths.codexHome)} value={selectedProfile.paths.codexHome} />
-              <PathRow icon={<Folder size={15} />} label="user-data-dir" onReveal={() => void revealPath(selectedProfile.paths.userDataDir)} value={selectedProfile.paths.userDataDir} />
-              <PathRow icon={<Folder size={15} />} label="Launcher" onReveal={() => void revealPath(selectedProfile.paths.launcherPath)} value={selectedProfile.paths.launcherPath} />
-              <PathRow label="Provider" value={`${selectedProfile.provider.displayName} (${selectedProfile.provider.wireApi})`} />
-              <PathRow label="Base URL" value={selectedProfile.provider.baseUrl ?? "Official OpenAI"} />
-              <PathRow label="Env key" value={selectedProfile.provider.envKeyName} />
-              <PathRow label="Last launched" value={selectedProfile.launch.lastLaunchedAt ? new Date(selectedProfile.launch.lastLaunchedAt).toLocaleString() : t.never} />
-              <PathRow label="Runtime" value={runtimeStatuses.find((item) => item.profileId === selectedProfile.id)?.detail ?? t.notChecked} />
-              <div className="backup-list">
-                <h4>{t.recentBackups}</h4>
-                {configBackups.length === 0 ? (
-                  <p className="empty-text">{t.noBackups}</p>
-                ) : (
-                  configBackups.slice(0, 3).map((backup) => (
-                    <div className="backup-row" key={backup.backupPath}>
-                      <div>
-                        <strong>{new Date(backup.createdAt).toLocaleString()}</strong>
-                        <p>{backup.reason}</p>
-                      </div>
-                      <div className="backup-actions">
-                        <button className="icon-button" onClick={() => void revealPath(backup.backupPath)} title="Reveal backup" type="button">
-                          <FolderOpen size={15} />
-                        </button>
-                        <button className="button secondary compact" onClick={() => void restoreBackup(backup)} type="button">
-                          {t.restore}
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
               <div className="edit-box">
                 <h4>{t.appearance}</h4>
                 <ColorPicker
@@ -1122,6 +1095,50 @@ export function App() {
                 </div>
                 <ProviderTestBox providerTest={editProviderTest} t={t} />
               </div>
+              <details className="advanced-details">
+                <summary>
+                  <span className="advanced-summary-icon"><ChevronRight size={15} /></span>
+                  <span>
+                    <strong>{t.advancedInfo}</strong>
+                    <small>{t.advancedInfoDesc}</small>
+                  </span>
+                </summary>
+                <div className="advanced-details-body">
+                  <div className="advanced-path-list">
+                    <PathRow icon={<Folder size={15} />} label="CODEX_HOME" onReveal={() => void revealPath(selectedProfile.paths.codexHome)} value={selectedProfile.paths.codexHome} />
+                    <PathRow icon={<Folder size={15} />} label="user-data-dir" onReveal={() => void revealPath(selectedProfile.paths.userDataDir)} value={selectedProfile.paths.userDataDir} />
+                    <PathRow icon={<Folder size={15} />} label="Launcher" onReveal={() => void revealPath(selectedProfile.paths.launcherPath)} value={selectedProfile.paths.launcherPath} />
+                    <PathRow label="Provider" value={`${selectedProfile.provider.displayName} (${selectedProfile.provider.wireApi})`} />
+                    <PathRow label="Base URL" value={selectedProfile.provider.baseUrl ?? "Official OpenAI"} />
+                    <PathRow label="Env key" value={selectedProfile.provider.envKeyName} />
+                    <PathRow label="Last launched" value={selectedProfile.launch.lastLaunchedAt ? new Date(selectedProfile.launch.lastLaunchedAt).toLocaleString() : t.never} />
+                    <PathRow label="Runtime" value={runtimeStatuses.find((item) => item.profileId === selectedProfile.id)?.detail ?? t.notChecked} />
+                  </div>
+                  <div className="backup-list">
+                    <h4>{t.recentBackups}</h4>
+                    {configBackups.length === 0 ? (
+                      <p className="empty-text">{t.noBackups}</p>
+                    ) : (
+                      configBackups.slice(0, 3).map((backup) => (
+                        <div className="backup-row" key={backup.backupPath}>
+                          <div>
+                            <strong>{new Date(backup.createdAt).toLocaleString()}</strong>
+                            <p>{backup.reason}</p>
+                          </div>
+                          <div className="backup-actions">
+                            <button className="icon-button" onClick={() => void revealPath(backup.backupPath)} title="Reveal backup" type="button">
+                              <FolderOpen size={15} />
+                            </button>
+                            <button className="button secondary compact" onClick={() => void restoreBackup(backup)} type="button">
+                              {t.restore}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </details>
             </div>
           ) : (
             <div className="empty-state">
