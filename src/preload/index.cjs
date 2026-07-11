@@ -1,8 +1,21 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 const api = {
+  getAppInfo: () => ipcRenderer.invoke("app:get-info"),
+  getAnnouncement: () => ipcRenderer.invoke("app:get-announcement"),
+  dismissAnnouncement: (id) => ipcRenderer.invoke("app:dismiss-announcement", id),
+  checkForUpdates: () => ipcRenderer.invoke("app:check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("app:download-update"),
+  installUpdate: () => ipcRenderer.invoke("app:install-update"),
+  onUpdateEvent: (listener) => {
+    const wrappedListener = (_event, payload) => listener(payload);
+    ipcRenderer.on("app:update-event", wrappedListener);
+    return () => ipcRenderer.removeListener("app:update-event", wrappedListener);
+  },
+  openExternalUrl: (url) => ipcRenderer.invoke("shell:open-external", url),
   getEnvironmentReport: () => ipcRenderer.invoke("environment:get"),
   getDiagnosticsReport: () => ipcRenderer.invoke("diagnostics:get"),
+  pickCodexAppPath: () => ipcRenderer.invoke("dialog:pick-codex-app-path"),
   pickLauncherDirectory: () => ipcRenderer.invoke("dialog:pick-launcher-directory"),
   revealPath: (path) => ipcRenderer.invoke("shell:reveal-path", path),
   listProfiles: (includeDeleted) => ipcRenderer.invoke("profiles:list", includeDeleted),

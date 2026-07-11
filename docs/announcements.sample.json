@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "local-promo-preview",
+      "enabled": true,
+      "priority": 100,
+      "placement": "dashboard_top",
+      "type": "promo",
+      "label": "推广",
+      "title": "Codex Plus 30 天试用开放中",
+      "description": "本地公告源验证：检查展示、跳转和关闭记忆。",
+      "ctaText": "查看",
+      "ctaUrl": "https://jqymodi.github.io/codex-multi-launcher/",
+      "platforms": ["darwin", "win32"],
+      "minAppVersion": "0.0.0",
+      "maxAppVersion": null,
+      "dismissible": true
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 appId: local.codex.multiopen.helper
 productName: Codex 多开助手
+publish:
+  provider: github
+  owner: JqyModi
+  repo: codex-multi-launcher
 directories:
   output: dist-app
 files:
@@ -9,6 +13,7 @@ files:
   - package.json
 mac:
   icon: build/icon.icns
+  artifactName: codex-profile-manager-${version}-${arch}-mac.${ext}
   target:
     - zip
     - dir
@@ -19,7 +24,14 @@ mac:
 win:
   icon: docs/landing/assets/app-icon.png
   executableName: Codex Profile Manager
-  artifactName: Codex-Profile-Manager-${version}-${arch}.${ext}
   target:
+    - nsis
     - portable
+nsis:
+  artifactName: Codex-Profile-Manager-Setup-${version}-${arch}.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+portable:
+  artifactName: Codex-Profile-Manager-Portable-${version}-${arch}.${ext}
 asar: true

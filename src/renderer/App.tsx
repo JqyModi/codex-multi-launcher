@@ -3,18 +3,27 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Download,
+  ExternalLink,
+  FileText,
   Folder,
   FolderOpen,
+  Github,
+  Heart,
   Info,
   Languages,
+  MessageSquare,
+  Megaphone,
   Play,
   Plus,
   RefreshCcw,
   Rocket,
+  Settings,
   ShieldCheck,
   TestTube2,
   Trash2,
   TriangleAlert,
+  User,
   X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -22,18 +31,26 @@ import type {
   CreateProfileInput,
   EnvironmentReport,
   ConfigBackupInfo,
+  AppInfo,
+  AnnouncementItem,
   ManagedProfile,
   ProfileRuntimeInfo,
   ProviderModelsResult,
-  ProviderTestResult
+  ProviderTestResult,
+  UpdateDownloadEvent,
+  UpdateCheckResult
 } from "../shared/types";
 
 type WizardStep = "profile" | "provider" | "test" | "launcher" | "generate";
 type Language = "zh" | "en";
+type ActiveView = "profiles" | "settings";
+type SettingsTab = "general" | "about";
 
 const WIZARD_STEPS: WizardStep[] = ["profile", "provider", "test", "launcher", "generate"];
 const DEFAULT_PROFILE_COLOR = "#34C759";
 const PROFILE_COLOR_OPTIONS = ["#34C759", "#007AFF", "#5856D6", "#AF52DE", "#FF2D55", "#FF9500", "#FFCC00", "#30B0C7"];
+const APP_LOGO_URL = new URL("../../assets/logo-light-1.png", import.meta.url).href;
+const SKIPPED_UPDATE_VERSION_KEY = "codex-profile-manager.skipped-update-version";
 
 const TEXT: Record<Language, Record<string, string>> = {
   zh: {
@@ -59,6 +76,12 @@ const TEXT: Record<Language, Record<string, string>> = {
     deletePermanently: "彻底删除",
     remove: "移除",
     open: "打开",
+    about: "关于",
+    settings: "设置",
+    general: "通用",
+    language: "语言",
+    chinese: "中文",
+    english: "English",
     noProfilesTitle: "还没有 Profile",
     noProfilesBody: "创建一个拥有独立 API Key、Provider、配置和启动器的 Codex Profile。",
     createProfileTitle: "创建 Profile",
@@ -95,6 +118,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     testProvider: "测试 Provider",
     testing: "测试中",
     testNote: "生成前建议测试 Provider。即使测试失败也可以继续，但 Provider 需要支持 Responses API 后启动器才能正常工作。",
+    codexAppPath: "桌面 App 路径",
+    codexAppPlaceholder: "自动探测 ChatGPT/Codex App",
+    codexAppNote: "留空会自动查找新版 ChatGPT App，并兼容旧版 Codex App。",
     launcherDirectory: "启动器目录",
     launcherPlaceholder: "默认：~/Applications/Codex Profiles/",
     launcherNote: "留空会使用默认启动器目录，也可以选择自定义文件夹。",
@@ -125,7 +151,49 @@ const TEXT: Record<Language, Record<string, string>> = {
     activeProfiles: "可用 Profile",
     removedProfiles: "已移除 Profile",
     permanentDeleteConfirm: "彻底删除后无法恢复。将同时删除该 Profile 的 CODEX_HOME、user-data-dir、启动器和本地密钥。确定继续吗？",
-    permanentDeleteDone: "Profile 及附属文件已彻底删除。"
+    permanentDeleteDone: "Profile 及附属文件已彻底删除。",
+    aboutTitle: "关于",
+    settingsTitle: "应用设置",
+    settingsSubtitle: "偏好设置、版本更新和项目支持。",
+    aboutSubtitle: "版本、更新、反馈和项目支持。",
+    currentVersion: "当前版本",
+    latestVersion: "最新版本",
+    checkForUpdates: "检查更新",
+    checkingUpdates: "检查中",
+    downloadUpdate: "下载更新",
+    openChangelog: "更新记录",
+    upToDate: "已是最新版本",
+    updateAvailable: "发现新版本",
+    updateCheckFailed: "检查更新失败",
+    notCheckedYet: "尚未检查",
+    author: "作者",
+    repository: "开源仓库",
+    sponsor: "赞助支持",
+    feedback: "意见反馈",
+    productPage: "产品主页",
+    authorNote: "Modi",
+    repositoryNote: "查看源码和 Release",
+    sponsorNote: "支持项目继续开发",
+    feedbackNote: "报告问题或提交建议",
+    productPageNote: "查看介绍和使用手册",
+    releaseNotes: "更新日志",
+    noReleaseNotes: "暂无更新日志。",
+    simulateUpdate: "模拟新版本",
+    clearSimulation: "清除模拟",
+    updateModalTitle: "发现新版本",
+    updateModalCurrent: "当前版本",
+    updateModalAvailable: "新版本已可用。",
+    updateContent: "更新内容",
+    cancel: "取消",
+    skipVersion: "跳过此版本",
+    updateNow: "立即更新",
+    downloading: "下载中",
+    updateReady: "更新已就绪，重启后生效。",
+    updateInstalling: "正在重启并安装更新...",
+    updateInstallVerified: "模拟安装调用已验证。开发模式不会重启应用，真实打包环境会退出并安装更新。",
+    later: "稍后",
+    restartNow: "立即重启",
+    close: "关闭"
   },
   en: {
     appTitle: "Codex Launcher",
@@ -150,6 +218,12 @@ const TEXT: Record<Language, Record<string, string>> = {
     deletePermanently: "Delete Permanently",
     remove: "Remove",
     open: "Open",
+    about: "About",
+    settings: "Settings",
+    general: "General",
+    language: "Language",
+    chinese: "中文",
+    english: "English",
     noProfilesTitle: "No profiles yet",
     noProfilesBody: "Create a Codex profile with its own API key, provider, config, and launcher.",
     createProfileTitle: "Create Profile",
@@ -186,6 +260,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     testProvider: "Test Provider",
     testing: "Testing...",
     testNote: "Test the provider before generation. You can continue even if the test fails, but the launcher may not work until the provider supports Responses API.",
+    codexAppPath: "Desktop app path",
+    codexAppPlaceholder: "Auto-detect ChatGPT/Codex App",
+    codexAppNote: "Leave empty to find the new ChatGPT app automatically, with legacy Codex app fallback.",
     launcherDirectory: "Launcher directory",
     launcherPlaceholder: "Default: ~/Applications/Codex Profiles/",
     launcherNote: "Leave empty to use the default launcher directory, or pick a folder for the generated launcher app.",
@@ -216,7 +293,49 @@ const TEXT: Record<Language, Record<string, string>> = {
     activeProfiles: "Active Profiles",
     removedProfiles: "Removed Profiles",
     permanentDeleteConfirm: "This cannot be undone. CODEX_HOME, user-data-dir, launcher, and local secret will be deleted. Continue?",
-    permanentDeleteDone: "Profile and generated files were permanently deleted."
+    permanentDeleteDone: "Profile and generated files were permanently deleted.",
+    aboutTitle: "About",
+    settingsTitle: "App Settings",
+    settingsSubtitle: "Preferences, updates, and project support.",
+    aboutSubtitle: "Version, updates, feedback, and project support.",
+    currentVersion: "Current Version",
+    latestVersion: "Latest Version",
+    checkForUpdates: "Check Updates",
+    checkingUpdates: "Checking",
+    downloadUpdate: "Download Update",
+    openChangelog: "Changelog",
+    upToDate: "Up to date",
+    updateAvailable: "Update available",
+    updateCheckFailed: "Update check failed",
+    notCheckedYet: "Not checked yet",
+    author: "Author",
+    repository: "Repository",
+    sponsor: "Sponsor",
+    feedback: "Feedback",
+    productPage: "Product Page",
+    authorNote: "Modi",
+    repositoryNote: "Source and releases",
+    sponsorNote: "Support ongoing development",
+    feedbackNote: "Report bugs or request features",
+    productPageNote: "Overview and user manual",
+    releaseNotes: "Release Notes",
+    noReleaseNotes: "No release notes yet.",
+    simulateUpdate: "Simulate Update",
+    clearSimulation: "Clear Simulation",
+    updateModalTitle: "Update Available",
+    updateModalCurrent: "Current version",
+    updateModalAvailable: "A new version is available.",
+    updateContent: "What's New",
+    cancel: "Cancel",
+    skipVersion: "Skip This Version",
+    updateNow: "Update Now",
+    downloading: "Downloading",
+    updateReady: "Update is ready. Restart to apply it.",
+    updateInstalling: "Restarting to install the update...",
+    updateInstallVerified: "Simulated install call was verified. Dev mode will not restart; a packaged app will quit and install the update.",
+    later: "Later",
+    restartNow: "Restart Now",
+    close: "Close"
   }
 };
 
@@ -229,10 +348,19 @@ const DEFAULT_FORM = {
   apiKey: "",
   inheritDefaultConfig: true,
   iconBackgroundColor: DEFAULT_PROFILE_COLOR,
+  codexAppPath: "",
   launcherDirectory: ""
 };
 
 export function App() {
+  const [activeView, setActiveView] = useState<ActiveView>("profiles");
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("about");
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
+  const [announcement, setAnnouncement] = useState<AnnouncementItem | null>(null);
+  const [updateCheck, setUpdateCheck] = useState<UpdateCheckResult | null>(null);
+  const [updateEvent, setUpdateEvent] = useState<UpdateDownloadEvent | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [environment, setEnvironment] = useState<EnvironmentReport | null>(null);
   const [profiles, setProfiles] = useState<ManagedProfile[]>([]);
   const [runtimeStatuses, setRuntimeStatuses] = useState<ProfileRuntimeInfo[]>([]);
@@ -313,6 +441,23 @@ export function App() {
   }, [showDeletedProfiles]);
 
   useEffect(() => {
+    void window.codexProfileManager.getAppInfo().then(setAppInfo);
+  }, []);
+
+  useEffect(() => {
+    void window.codexProfileManager.getAnnouncement()
+      .then((result) => setAnnouncement(result.item))
+      .catch(() => setAnnouncement(null));
+  }, []);
+
+  useEffect(() => window.codexProfileManager.onUpdateEvent((event) => {
+    setUpdateEvent(event);
+    if (event.state === "downloaded" || event.state === "error") {
+      setIsUpdateModalOpen(true);
+    }
+  }), []);
+
+  useEffect(() => {
     if (!selectedProfile) return;
     setEditForm({
       providerName: selectedProfile.provider.displayName,
@@ -343,6 +488,7 @@ export function App() {
     try {
       const input: CreateProfileInput = {
         name: form.name,
+        codexAppPath: form.codexAppPath || undefined,
         inheritDefaultConfig: form.inheritDefaultConfig,
         launcherDirectory: form.launcherDirectory || undefined,
         appearance: {
@@ -552,6 +698,12 @@ export function App() {
     setForm((current) => ({ ...current, launcherDirectory: selectedDirectory }));
   }
 
+  async function pickCodexAppPath() {
+    const selectedPath = await window.codexProfileManager.pickCodexAppPath();
+    if (!selectedPath) return;
+    setForm((current) => ({ ...current, codexAppPath: selectedPath }));
+  }
+
   async function revealPath(targetPath: string) {
     await window.codexProfileManager.revealPath(targetPath);
   }
@@ -565,6 +717,70 @@ export function App() {
     } finally {
       setIsCopyingDiagnostics(false);
     }
+  }
+
+  async function checkForUpdates() {
+    setIsCheckingUpdates(true);
+    setMessage(null);
+    try {
+      const result = await window.codexProfileManager.checkForUpdates();
+      setUpdateCheck(result);
+      setUpdateEvent(null);
+      if (result.status === "update_available" && !isSkippedUpdate(result.latestVersion)) {
+        setIsUpdateModalOpen(true);
+      }
+    } finally {
+      setIsCheckingUpdates(false);
+    }
+  }
+
+  function simulateUpdateAvailable() {
+    const currentVersion = appInfo?.version ?? "0.1.1";
+    setUpdateCheck({
+      status: "update_available",
+      currentVersion,
+      latestVersion: bumpPatchVersion(currentVersion),
+      releaseName: "v" + bumpPatchVersion(currentVersion),
+      releaseUrl: appInfo?.releasesUrl,
+      publishedAt: new Date().toISOString(),
+      changelog: language === "zh"
+        ? "- 模拟发现一个新版本。\n- 立即更新按钮会进入应用内下载流程。"
+        : "- Simulated a newer release.\n- The update button runs the in-app download flow."
+    });
+    setUpdateEvent(null);
+    setIsUpdateModalOpen(true);
+  }
+
+  function clearUpdateSimulation() {
+    setUpdateCheck(null);
+    setUpdateEvent(null);
+    setIsUpdateModalOpen(false);
+  }
+
+  async function downloadUpdate() {
+    setUpdateEvent({ state: "downloading", progress: 0, version: updateCheck?.latestVersion ?? undefined });
+    await window.codexProfileManager.downloadUpdate();
+  }
+
+  async function installUpdate() {
+    await window.codexProfileManager.installUpdate();
+  }
+
+  function skipUpdateVersion() {
+    if (updateCheck?.latestVersion) {
+      window.localStorage.setItem(SKIPPED_UPDATE_VERSION_KEY, updateCheck.latestVersion);
+    }
+    setIsUpdateModalOpen(false);
+  }
+
+  async function openExternalUrl(targetUrl: string | undefined) {
+    if (!targetUrl) return;
+    await window.codexProfileManager.openExternalUrl(targetUrl);
+  }
+
+  async function dismissAnnouncement(id: string) {
+    setAnnouncement(null);
+    await window.codexProfileManager.dismissAnnouncement(id);
   }
 
   async function restoreBackup(backup: ConfigBackupInfo) {
@@ -583,9 +799,7 @@ export function App() {
     <main className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">
-            <Rocket size={18} />
-          </div>
+          <img alt="" className="brand-logo" src={APP_LOGO_URL} />
           <div>
             <h1>{t.appTitle}</h1>
             <p>{t.appSubtitle}</p>
@@ -607,7 +821,7 @@ export function App() {
           ) : (
             <>
               {activeProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profiles" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profiles"); setSelectedProfileId(profile.id); }} />
               ))}
               {deletedProfiles.length > 0 ? (
                 <div className="profile-group-separator">
@@ -615,41 +829,68 @@ export function App() {
                 </div>
               ) : null}
               {deletedProfiles.map((profile) => (
-                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={selectedProfile?.id === profile.id} onSelect={() => setSelectedProfileId(profile.id)} />
+                <ProfileRow key={profile.id} profile={profile} runtime={runtimeByProfileId.get(profile.id)} selected={activeView === "profiles" && selectedProfile?.id === profile.id} onSelect={() => { setActiveView("profiles"); setSelectedProfileId(profile.id); }} />
               ))}
             </>
           )}
         </div>
         <div className="sidebar-footer">
-          <button className="language-switch" aria-label="Language" onClick={() => setLanguage(language === "zh" ? "en" : "zh")} type="button">
-            <Languages size={15} />
-            <span>{language === "zh" ? "中文" : "EN"}</span>
+          <button className={`sidebar-nav-button ${activeView === "settings" ? "selected" : ""}`} onClick={() => setActiveView("settings")} type="button">
+            <Settings size={15} />
+            <span>{t.settings}</span>
           </button>
         </div>
       </aside>
 
-      <section className="content">
-        <header className="toolbar">
-          <div>
-            <h2>{t.pageTitle}</h2>
-            <p>{t.pageSubtitle}</p>
-          </div>
-          <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
-            {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
-            {environmentSummary.label}
-          </button>
-          <button className="button secondary" disabled={isRefreshing} onClick={() => void refresh()} type="button">
-            <RefreshCcw size={15} />
-            {isRefreshing ? t.refreshing : t.refresh}
-          </button>
-          <button className="button secondary" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
-            <Copy size={15} />
-            {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
-          </button>
-        </header>
+      <section className={`content ${activeView === "settings" ? "settings-content" : ""}`}>
+        {activeView === "profiles" ? (
+          <header className="toolbar">
+            <div>
+              <h2>{t.pageTitle}</h2>
+              <p>{t.pageSubtitle}</p>
+            </div>
+            <button className={`button environment-trigger ${environmentSummary.status}`} onClick={() => setIsEnvironmentOpen(true)} type="button">
+              {environmentSummary.status === "pass" ? <ShieldCheck size={15} /> : <TriangleAlert size={15} />}
+              {environmentSummary.label}
+            </button>
+            <button className="button secondary" disabled={isRefreshing} onClick={() => void refresh()} type="button">
+              <RefreshCcw size={15} />
+              {isRefreshing ? t.refreshing : t.refresh}
+            </button>
+            <button className="button secondary" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
+              <Copy size={15} />
+              {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
+            </button>
+          </header>
+        ) : null}
 
-        {message ? <div className="notice">{message}</div> : null}
+        {message && activeView === "profiles" ? <div className="notice">{message}</div> : null}
 
+        {activeView === "settings" ? (
+          <SettingsPage
+            appInfo={appInfo}
+            isCheckingUpdates={isCheckingUpdates}
+            language={language}
+            settingsTab={settingsTab}
+            t={t}
+            updateCheck={updateCheck}
+            onChangeLanguage={setLanguage}
+            onCheckForUpdates={() => void checkForUpdates()}
+            onClearUpdateSimulation={clearUpdateSimulation}
+            onOpenExternal={(url) => void openExternalUrl(url)}
+            onOpenUpdateDialog={() => setIsUpdateModalOpen(true)}
+            onSetSettingsTab={setSettingsTab}
+            onSimulateUpdate={simulateUpdateAvailable}
+          />
+        ) : (
+          <>
+        {announcement ? (
+          <AnnouncementBanner
+            item={announcement}
+            onDismiss={() => void dismissAnnouncement(announcement.id)}
+            onOpen={(url) => void openExternalUrl(url)}
+          />
+        ) : null}
         <section className="status-strip">
           <div>
             <span className="status-kicker">{t.profiles}</span>
@@ -794,6 +1035,8 @@ export function App() {
             </div>
           )}
         </section>
+          </>
+        )}
       </section>
       {isCreateProfileOpen ? (
         <Modal title={t.createProfileTitle} subtitle={t.createProfileSubtitle} onClose={() => setIsCreateProfileOpen(false)}>
@@ -816,6 +1059,7 @@ export function App() {
               }
             }}
             onFetchModels={() => void fetchProviderModels()}
+            onPickCodexAppPath={() => void pickCodexAppPath()}
             onPickLauncherDirectory={() => void pickLauncherDirectory()}
             onTestProvider={() => void testProvider()}
           />
@@ -837,6 +1081,17 @@ export function App() {
             )}
           </div>
         </Modal>
+      ) : null}
+      {isUpdateModalOpen && updateCheck?.status === "update_available" ? (
+        <UpdateModal
+          t={t}
+          updateCheck={updateCheck}
+          updateEvent={updateEvent}
+          onCancel={() => setIsUpdateModalOpen(false)}
+          onDownload={() => void downloadUpdate()}
+          onInstall={() => void installUpdate()}
+          onSkip={skipUpdateVersion}
+        />
       ) : null}
       {isEnvironmentOpen ? (
         <Modal title={t.environment} subtitle={t.environmentSubtitle} onClose={() => setIsEnvironmentOpen(false)}>
@@ -860,6 +1115,343 @@ export function App() {
       ) : null}
     </main>
   );
+}
+
+function UpdateModal({
+  onCancel,
+  onDownload,
+  onInstall,
+  onSkip,
+  t,
+  updateCheck,
+  updateEvent
+}: {
+  onCancel: () => void;
+  onDownload: () => void;
+  onInstall: () => void;
+  onSkip: () => void;
+  t: Record<string, string>;
+  updateCheck: UpdateCheckResult;
+  updateEvent: UpdateDownloadEvent | null;
+}) {
+  const isDownloading = updateEvent?.state === "downloading";
+  const isDownloaded = updateEvent?.state === "downloaded";
+  const isInstalling = updateEvent?.state === "installing";
+  const isInstalled = updateEvent?.state === "installed";
+  const progress = Math.max(0, Math.min(updateEvent?.progress ?? 0, 100));
+  const latestVersion = updateCheck.latestVersion ?? "-";
+
+  return (
+    <div className="modal-backdrop update-backdrop" role="presentation">
+      <section aria-modal="true" className="update-modal" role="dialog">
+        <header className="update-modal-header">
+          <div className="modal-title">
+            <span className="modal-icon"><Download size={18} /></span>
+            <h3>{t.updateModalTitle}</h3>
+          </div>
+          <button aria-label="Close" className="icon-button" disabled={isDownloading || isInstalling} onClick={onCancel} type="button">
+            <X size={16} />
+          </button>
+        </header>
+        <div className="update-modal-body">
+          <strong className="update-version">v{latestVersion}</strong>
+          <p>{t.updateModalCurrent} v{updateCheck.currentVersion}，{t.updateModalAvailable}</p>
+          {isDownloading ? (
+            <div className="download-progress">
+              <div><span style={{ width: `${progress}%` }} /></div>
+              <p>{t.downloading}... {progress}%</p>
+            </div>
+          ) : null}
+          {isDownloaded ? <div className="update-ready"><CheckCircle2 size={16} />{t.updateReady}</div> : null}
+          {isInstalling ? <div className="update-ready"><RefreshCcw size={16} />{t.updateInstalling}</div> : null}
+          {isInstalled ? <div className="update-ready"><CheckCircle2 size={16} />{t.updateInstallVerified}</div> : null}
+          <div className="update-notes-heading">
+            <strong>{t.updateContent}</strong>
+          </div>
+          <pre>{updateCheck.changelog?.trim() || t.noReleaseNotes}</pre>
+        </div>
+        <footer className="update-modal-footer">
+          {isInstalled ? (
+            <>
+              <button className="button secondary" onClick={onCancel} type="button">{t.later}</button>
+              <button className="button primary" onClick={onCancel} type="button">
+                <CheckCircle2 size={15} />
+                {t.close}
+              </button>
+            </>
+          ) : isInstalling ? (
+            <>
+              <button className="button secondary" disabled type="button">{t.later}</button>
+              <button className="button primary" disabled type="button">
+                <RefreshCcw size={15} />
+                {t.updateInstalling}
+              </button>
+            </>
+          ) : isDownloaded ? (
+            <>
+              <button className="button secondary" onClick={onCancel} type="button">{t.later}</button>
+              <button className="button secondary" onClick={onSkip} type="button">{t.skipVersion}</button>
+              <button className="button primary" onClick={onInstall} type="button">
+                <RefreshCcw size={15} />
+                {t.restartNow}
+              </button>
+            </>
+          ) : isDownloading ? (
+            <>
+              <button className="button secondary" onClick={onCancel} type="button">{t.later}</button>
+              <button className="button primary" disabled type="button">
+                <RefreshCcw size={15} />
+                {t.downloading}...
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="button secondary" onClick={onCancel} type="button">{t.cancel}</button>
+              <button className="button secondary" onClick={onSkip} type="button">{t.skipVersion}</button>
+              <button className="button primary" onClick={onDownload} type="button">
+                <Download size={15} />
+                {t.updateNow}
+              </button>
+            </>
+          )}
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function AnnouncementBanner({
+  item,
+  onDismiss,
+  onOpen
+}: {
+  item: AnnouncementItem;
+  onDismiss: () => void;
+  onOpen: (url: string | undefined) => void;
+}) {
+  return (
+    <section className={`announcement-banner ${item.type}`}>
+      <div className="announcement-main">
+        <span className="announcement-label">
+          <Megaphone size={13} />
+          {item.label || item.type}
+        </span>
+        <div className="announcement-copy">
+          <strong>{item.title}</strong>
+          {item.description ? <p>{item.description}</p> : null}
+        </div>
+      </div>
+      <div className="announcement-actions">
+        {item.ctaUrl ? (
+          <button className="button secondary compact" onClick={() => onOpen(item.ctaUrl)} type="button">
+            {item.ctaText || "查看"}
+          </button>
+        ) : null}
+        {item.dismissible !== false ? (
+          <button aria-label="Close" className="icon-button compact" onClick={onDismiss} type="button">
+            <X size={14} />
+          </button>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function SettingsPage({
+  appInfo,
+  isCheckingUpdates,
+  language,
+  onChangeLanguage,
+  onCheckForUpdates,
+  onClearUpdateSimulation,
+  onOpenExternal,
+  onOpenUpdateDialog,
+  onSetSettingsTab,
+  onSimulateUpdate,
+  settingsTab,
+  t,
+  updateCheck
+}: {
+  appInfo: AppInfo | null;
+  isCheckingUpdates: boolean;
+  language: Language;
+  onChangeLanguage: (language: Language) => void;
+  onCheckForUpdates: () => void;
+  onClearUpdateSimulation: () => void;
+  onOpenExternal: (url: string | undefined) => void;
+  onOpenUpdateDialog: () => void;
+  onSetSettingsTab: (tab: SettingsTab) => void;
+  onSimulateUpdate: () => void;
+  settingsTab: SettingsTab;
+  t: Record<string, string>;
+  updateCheck: UpdateCheckResult | null;
+}) {
+  return (
+    <div className="settings-page">
+      <nav className="settings-tabs" aria-label="Settings">
+        <button className={settingsTab === "general" ? "selected" : ""} onClick={() => onSetSettingsTab("general")} type="button">
+          {t.general}
+        </button>
+        <button className={settingsTab === "about" ? "selected" : ""} onClick={() => onSetSettingsTab("about")} type="button">
+          {t.about}
+        </button>
+      </nav>
+      {settingsTab === "general" ? (
+        <section className="panel settings-panel">
+          <div className="panel-heading">
+            <div>
+              <h3>{t.general}</h3>
+              <p>{t.settingsSubtitle}</p>
+            </div>
+          </div>
+          <div className="settings-row">
+            <div>
+              <strong>{t.language}</strong>
+              <p>{language === "zh" ? t.chinese : t.english}</p>
+            </div>
+            <div className="segmented-control">
+              <button className={language === "zh" ? "selected" : ""} onClick={() => onChangeLanguage("zh")} type="button">
+                <Languages size={14} />
+                {t.chinese}
+              </button>
+              <button className={language === "en" ? "selected" : ""} onClick={() => onChangeLanguage("en")} type="button">
+                {t.english}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <AboutPage
+          appInfo={appInfo}
+          isCheckingUpdates={isCheckingUpdates}
+          t={t}
+          updateCheck={updateCheck}
+          onCheckForUpdates={onCheckForUpdates}
+          onClearUpdateSimulation={onClearUpdateSimulation}
+          onOpenExternal={onOpenExternal}
+          onOpenUpdateDialog={onOpenUpdateDialog}
+          onSimulateUpdate={onSimulateUpdate}
+        />
+      )}
+    </div>
+  );
+}
+
+function AboutPage({
+  appInfo,
+  isCheckingUpdates,
+  onCheckForUpdates,
+  onClearUpdateSimulation,
+  onOpenExternal,
+  onOpenUpdateDialog,
+  onSimulateUpdate,
+  t,
+  updateCheck
+}: {
+  appInfo: AppInfo | null;
+  isCheckingUpdates: boolean;
+  onCheckForUpdates: () => void;
+  onClearUpdateSimulation: () => void;
+  onOpenExternal: (url: string | undefined) => void;
+  onOpenUpdateDialog: () => void;
+  onSimulateUpdate: () => void;
+  t: Record<string, string>;
+  updateCheck: UpdateCheckResult | null;
+}) {
+  const currentVersion = appInfo?.version ?? "-";
+  const releaseUrl = updateCheck?.releaseUrl ?? appInfo?.releasesUrl;
+  const updateStatus = updateCheckStatusLabel(updateCheck, t);
+  const changelog = updateCheck?.status === "error" ? t.noReleaseNotes : updateCheck?.changelog?.trim() || t.noReleaseNotes;
+
+  return (
+    <div className="about-page">
+      <section className="about-hero">
+        <img alt="" className="about-app-icon" src={APP_LOGO_URL} />
+        <h3>{appInfo?.name ?? t.appTitle}</h3>
+        <div className="about-meta-row">
+          <span className="about-version-pill">v{currentVersion}</span>
+          <span className={`about-status-pill ${updateCheck?.status ?? "unknown"}`}>{updateStatus}</span>
+        </div>
+        <div className="about-actions">
+          <button className="button secondary compact" disabled={isCheckingUpdates} onClick={onCheckForUpdates} type="button">
+            <RefreshCcw size={14} />
+            {isCheckingUpdates ? t.checkingUpdates : t.checkForUpdates}
+          </button>
+          <button className="button secondary compact" disabled={!releaseUrl} onClick={() => onOpenExternal(releaseUrl)} type="button">
+            <FileText size={14} />
+            {t.openChangelog}
+          </button>
+          <button className="button secondary compact" onClick={() => onOpenExternal(appInfo?.productPageUrl)} type="button">
+            <ExternalLink size={14} />
+            {t.productPage}
+          </button>
+          {updateCheck?.status === "update_available" ? (
+            <button className="button primary compact" onClick={onOpenUpdateDialog} type="button">
+              <Download size={14} />
+              {t.downloadUpdate}
+            </button>
+          ) : null}
+          {import.meta.env.DEV ? (
+            <>
+              <button className="button secondary compact" onClick={onSimulateUpdate} type="button">
+                {t.simulateUpdate}
+              </button>
+              <button className="button secondary compact" onClick={onClearUpdateSimulation} type="button">
+                {t.clearSimulation}
+              </button>
+            </>
+          ) : null}
+        </div>
+        <p>{t.aboutSubtitle}</p>
+      </section>
+
+      <section className="about-link-grid">
+        <AboutCard icon={<User size={22} />} label={t.author} note={appInfo?.author ?? t.authorNote} onClick={() => onOpenExternal(appInfo?.authorUrl)} />
+        <AboutCard icon={<Github size={22} />} label={t.repository} note={t.repositoryNote} onClick={() => onOpenExternal(appInfo?.repositoryUrl)} />
+        <AboutCard icon={<Heart size={22} />} label={t.sponsor} note={t.sponsorNote} tone="warm" onClick={() => onOpenExternal(appInfo?.sponsorUrl)} />
+        <AboutCard icon={<MessageSquare size={22} />} label={t.feedback} note={t.feedbackNote} onClick={() => onOpenExternal(appInfo?.issuesUrl)} />
+      </section>
+
+      <section className="panel about-release-panel">
+        <div className="panel-heading">
+          <div>
+            <h3>{t.releaseNotes}</h3>
+            {updateCheck?.publishedAt ? <p>{new Date(updateCheck.publishedAt).toLocaleDateString()}</p> : null}
+          </div>
+          {updateCheck?.releaseName ? <span className="badge">{updateCheck.releaseName}</span> : null}
+        </div>
+        <pre>{changelog}</pre>
+        {updateCheck?.status === "error" ? <p className="update-error">{t.updateCheckFailed}</p> : null}
+      </section>
+    </div>
+  );
+}
+
+function AboutCard({ icon, label, note, onClick, tone }: { icon: React.ReactNode; label: string; note: string; onClick: () => void; tone?: "warm" }) {
+  return (
+    <button className={`about-card ${tone ?? ""}`} onClick={onClick} type="button">
+      <span>{icon}</span>
+      <strong>{label}</strong>
+      <p>{note}</p>
+    </button>
+  );
+}
+
+function updateCheckStatusLabel(updateCheck: UpdateCheckResult | null, t: Record<string, string>): string {
+  if (!updateCheck) return t.notCheckedYet;
+  if (updateCheck.status === "update_available") return t.updateAvailable;
+  if (updateCheck.status === "up_to_date") return t.upToDate;
+  return t.updateCheckFailed;
+}
+
+function isSkippedUpdate(version: string | null): boolean {
+  if (!version) return false;
+  return window.localStorage.getItem(SKIPPED_UPDATE_VERSION_KEY) === version;
+}
+
+function bumpPatchVersion(version: string): string {
+  const parts = version.split(".").map((part) => Number.parseInt(part, 10) || 0);
+  return `${parts[0] ?? 0}.${parts[1] ?? 0}.${(parts[2] ?? 0) + 1}`;
 }
 
 function Modal({ children, onClose, subtitle, title }: { children: React.ReactNode; onClose: () => void; subtitle: string; title: string }) {
@@ -907,6 +1499,7 @@ function WizardBody({
   t,
   onChange,
   onFetchModels,
+  onPickCodexAppPath,
   onPickLauncherDirectory,
   onTestProvider
 }: {
@@ -919,6 +1512,7 @@ function WizardBody({
   t: Record<string, string>;
   onChange: (nextForm: typeof DEFAULT_FORM) => void;
   onFetchModels: () => void;
+  onPickCodexAppPath: () => void;
   onPickLauncherDirectory: () => void;
   onTestProvider: () => void;
 }) {
@@ -1009,6 +1603,20 @@ function WizardBody({
     return (
       <div className="form">
         <label>
+          {t.codexAppPath}
+          <div className="input-action-row">
+            <input
+              placeholder={t.codexAppPlaceholder}
+              value={form.codexAppPath}
+              onChange={(event) => onChange({ ...form, codexAppPath: event.target.value })}
+            />
+            <button className="icon-button" onClick={onPickCodexAppPath} title="Choose app" type="button">
+              <FolderOpen size={15} />
+            </button>
+          </div>
+        </label>
+        <p className="field-note">{t.codexAppNote}</p>
+        <label>
           {t.launcherDirectory}
           <div className="input-action-row">
             <input
@@ -1034,6 +1642,7 @@ function WizardBody({
       <PathRow label={t.providerTypeReview} value={form.providerType === "official_openai" ? t.officialOpenAI : t.thirdPartyResponses} />
       <PathRow label={t.baseUrl} value={form.providerType === "third_party_responses" ? form.baseUrl || t.missing : "https://api.openai.com/v1"} />
       <PathRow label={t.model} value={form.model || t.missing} />
+      <PathRow label={t.codexAppPath} value={form.codexAppPath || t.codexAppPlaceholder} />
       <PathRow label={t.launcherDirectory} value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
       <PathRow label={t.inheritConfigReview} value={form.inheritDefaultConfig ? t.yes : t.no} />
       <PathRow label={t.providerTestReview} value={providerTest ? providerTest.summary : t.notTested} />

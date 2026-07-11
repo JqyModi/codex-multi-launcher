@@ -1,9 +1,22 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { CodexApi, CreateProfileInput } from "../shared/types.js";
+import type { CodexApi, CreateProfileInput, UpdateDownloadEvent } from "../shared/types.js";
 
 const api: CodexApi = {
+  getAppInfo: () => ipcRenderer.invoke("app:get-info"),
+  getAnnouncement: () => ipcRenderer.invoke("app:get-announcement"),
+  dismissAnnouncement: (id: string) => ipcRenderer.invoke("app:dismiss-announcement", id),
+  checkForUpdates: () => ipcRenderer.invoke("app:check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("app:download-update"),
+  installUpdate: () => ipcRenderer.invoke("app:install-update"),
+  onUpdateEvent: (listener: (event: UpdateDownloadEvent) => void) => {
+    const wrappedListener = (_event: Electron.IpcRendererEvent, payload: UpdateDownloadEvent) => listener(payload);
+    ipcRenderer.on("app:update-event", wrappedListener);
+    return () => ipcRenderer.removeListener("app:update-event", wrappedListener);
+  },
+  openExternalUrl: (url: string) => ipcRenderer.invoke("shell:open-external", url),
   getEnvironmentReport: () => ipcRenderer.invoke("environment:get"),
   getDiagnosticsReport: () => ipcRenderer.invoke("diagnostics:get"),
+  pickCodexAppPath: () => ipcRenderer.invoke("dialog:pick-codex-app-path"),
   pickLauncherDirectory: () => ipcRenderer.invoke("dialog:pick-launcher-directory"),
   revealPath: (path: string) => ipcRenderer.invoke("shell:reveal-path", path),
   listProfiles: (includeDeleted?: boolean) => ipcRenderer.invoke("profiles:list", includeDeleted),

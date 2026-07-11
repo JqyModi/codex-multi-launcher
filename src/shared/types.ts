@@ -220,9 +220,75 @@ export interface LauncherResult {
   executablePath: string;
 }
 
+export interface AppInfo {
+  name: string;
+  version: string;
+  author: string;
+  authorUrl: string;
+  repositoryUrl: string;
+  releasesUrl: string;
+  issuesUrl: string;
+  sponsorUrl: string;
+  productPageUrl: string;
+}
+
+export interface UpdateCheckResult {
+  status: "up_to_date" | "update_available" | "error";
+  currentVersion: string;
+  latestVersion: string | null;
+  releaseName?: string;
+  releaseUrl?: string;
+  publishedAt?: string;
+  changelog?: string;
+  error?: string;
+}
+
+export interface UpdateDownloadEvent {
+  state: "downloading" | "downloaded" | "installing" | "installed" | "error";
+  progress?: number;
+  version?: string;
+  error?: string;
+}
+
+export type AnnouncementPlatform = "aix" | "android" | "darwin" | "freebsd" | "haiku" | "linux" | "openbsd" | "sunos" | "win32" | "cygwin" | "netbsd";
+
+export interface AnnouncementItem {
+  id: string;
+  enabled: boolean;
+  priority: number;
+  placement: "dashboard_top";
+  type: "info" | "promo" | "warning" | "success";
+  label?: string;
+  title: string;
+  description?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  startAt?: string;
+  endAt?: string;
+  platforms?: AnnouncementPlatform[];
+  minAppVersion?: string;
+  maxAppVersion?: string | null;
+  dismissible?: boolean;
+}
+
+export interface AnnouncementResult {
+  item: AnnouncementItem | null;
+  source: "remote" | "cache" | "none";
+  fetchedAt?: string;
+}
+
 export interface CodexApi {
+  getAppInfo(): Promise<AppInfo>;
+  getAnnouncement(): Promise<AnnouncementResult>;
+  dismissAnnouncement(id: string): Promise<{ ok: true }>;
+  checkForUpdates(): Promise<UpdateCheckResult>;
+  downloadUpdate(): Promise<{ ok: true }>;
+  installUpdate(): Promise<{ ok: true }>;
+  onUpdateEvent(listener: (event: UpdateDownloadEvent) => void): () => void;
+  openExternalUrl(url: string): Promise<{ ok: true }>;
   getEnvironmentReport(): Promise<EnvironmentReport>;
   getDiagnosticsReport(): Promise<DiagnosticsReport>;
+  pickCodexAppPath(): Promise<string | null>;
   pickLauncherDirectory(): Promise<string | null>;
   revealPath(path: string): Promise<{ ok: true }>;
   listProfiles(includeDeleted?: boolean): Promise<ManagedProfile[]>;
