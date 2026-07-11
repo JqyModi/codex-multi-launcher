@@ -20,8 +20,8 @@ mac:
   category: public.app-category.developer-tools
   hardenedRuntime: true
   gatekeeperAssess: false
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
+  entitlements: config/entitlements.mac.plist
+  entitlementsInherit: config/entitlements.mac.plist
   notarize: true
 win:
   icon: docs/landing/assets/app-icon.png
