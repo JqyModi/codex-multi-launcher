@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "local-promo-preview",
+      "enabled": true,
+      "priority": 100,
+      "placement": "dashboard_top",
+      "type": "promo",
+      "label": "公告测试",
+      "title": "Grok 4.5最近这么火，用过的佬友来L站帖子下冒个泡，让我知道公告栏是生效的可以吗？",
+      "description": "公告验证：检查展示、跳转和关闭。",
+      "ctaText": "查看",
+      "ctaUrl": "https://linux.do/t/topic/2392021",
+      "platforms": ["darwin", "win32"],
+      "minAppVersion": "0.0.0",
+      "maxAppVersion": null,
+      "dismissible": true
+    }
+  ]
+}
