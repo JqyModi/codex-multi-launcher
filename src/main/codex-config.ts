@@ -13,6 +13,16 @@ const INHERITED_CODEX_HOME_ENTRIES = [
   "plugins"
 ];
 
+const SESSION_HISTORY_DIRECTORIES = [
+  "sessions",
+  "archived_sessions"
+];
+
+const SESSION_HISTORY_INDEX_FILES = [
+  "session_index.jsonl",
+  "history.jsonl"
+];
+
 function tomlString(value: string): string {
   return JSON.stringify(value);
 }
@@ -87,6 +97,151 @@ export async function inheritDefaultCodexHomeResources(profile: ManagedProfile):
 
   await ensureDir(profile.paths.codexHome);
   await Promise.all(INHERITED_CODEX_HOME_ENTRIES.map((entry) => copyIfExists(path.join(defaultCodexHome, entry), path.join(profileCodexHome, entry))));
+  await inheritProjectSessionHistoryIfRequested(defaultCodexHome, profileCodexHome);
+}
+
+async function inheritProjectSessionHistoryIfRequested(defaultCodexHome: string, profileCodexHome: string): Promise<void> {
+  const projectPath = process.env.CODEX_PROFILE_MANAGER_SESSION_SYNC_PROJECT?.trim();
+  if (!projectPath) {
+    return;
+  }
+
+  const normalizedProjectPath = path.resolve(projectPath);
+  const inheritedSessionIds = new Set<string>();
+
+  for (const entry of SESSION_HISTORY_DIRECTORIES) {
+    const sourceRoot = path.join(defaultCodexHome, entry);
+    if (!(await pathExists(sourceRoot))) {
+      continue;
+    }
+
+    await copyProjectSessionDirectory(sourceRoot, path.join(profileCodexHome, entry), normalizedProjectPath, inheritedSessionIds);
+  }
+
+  await Promise.all(SESSION_HISTORY_INDEX_FILES.map((entry) => copyFilteredSessionIndexFile(
+    path.join(defaultCodexHome, entry),
+    path.join(profileCodexHome, entry),
+    inheritedSessionIds
+  )));
+}
+
+async function copyProjectSessionDirectory(sourceRoot: string, destinationRoot: string, projectPath: string, inheritedSessionIds: Set<string>): Promise<void> {
+  const entries = await fs.readdir(sourceRoot, { withFileTypes: true });
+  await Promise.all(entries.map(async (entry) => {
+    const sourcePath = path.join(sourceRoot, entry.name);
+    const destinationPath = path.join(destinationRoot, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyProjectSessionDirectory(sourcePath, destinationPath, projectPath, inheritedSessionIds);
+      return;
+    }
+
+    if (!entry.isFile() || path.extname(entry.name) !== ".jsonl") {
+      return;
+    }
+
+    const metadata = await readSessionMetadata(sourcePath);
+    if (!metadata || !isProjectSession(metadata.cwd, projectPath)) {
+      return;
+    }
+
+    await ensureDir(path.dirname(destinationPath));
+    await fs.copyFile(sourcePath, destinationPath);
+    inheritedSessionIds.add(metadata.sessionId);
+  }));
+}
+
+async function readSessionMetadata(sessionPath: string): Promise<{ sessionId: string; cwd: string } | null> {
+  const firstLine = await readFirstLine(sessionPath);
+  if (!firstLine) {
+    return null;
+  }
+
+  try {
+    const event = JSON.parse(firstLine) as {
+      type?: string;
+      payload?: {
+        session_id?: string;
+        id?: string;
+        cwd?: string;
+      };
+    };
+    if (event.type !== "session_meta" || !event.payload?.cwd) {
+      return null;
+    }
+
+    const sessionId = event.payload.session_id ?? event.payload.id;
+    return sessionId ? { sessionId, cwd: event.payload.cwd } : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readFirstLine(filePath: string): Promise<string | null> {
+  const file = await fs.open(filePath, "r");
+  try {
+    const chunks: Buffer[] = [];
+    const buffer = Buffer.alloc(64 * 1024);
+    let totalBytes = 0;
+
+    while (totalBytes < 1024 * 1024) {
+      const { bytesRead } = await file.read(buffer, 0, buffer.length, totalBytes);
+      if (bytesRead === 0) {
+        break;
+      }
+
+      const chunk = Buffer.from(buffer.subarray(0, bytesRead));
+      const newlineIndex = chunk.indexOf(0x0a);
+      if (newlineIndex !== -1) {
+        chunks.push(chunk.subarray(0, newlineIndex));
+        return Buffer.concat(chunks).toString("utf8");
+      }
+
+      chunks.push(chunk);
+      totalBytes += bytesRead;
+    }
+
+    return chunks.length > 0 ? Buffer.concat(chunks).toString("utf8") : null;
+  } finally {
+    await file.close();
+  }
+}
+
+function isProjectSession(cwd: string, projectPath: string): boolean {
+  const normalizedCwd = path.resolve(cwd);
+  return normalizedCwd === projectPath || normalizedCwd.startsWith(`${projectPath}${path.sep}`);
+}
+
+async function copyFilteredSessionIndexFile(sourcePath: string, destinationPath: string, inheritedSessionIds: Set<string>): Promise<void> {
+  if (inheritedSessionIds.size === 0 || !(await pathExists(sourcePath))) {
+    return;
+  }
+
+  const source = await fs.readFile(sourcePath, "utf8");
+  const filteredLines = source
+    .split("\n")
+    .filter((line) => shouldKeepSessionIndexLine(line, inheritedSessionIds));
+
+  if (filteredLines.length === 0) {
+    return;
+  }
+
+  await ensureDir(path.dirname(destinationPath));
+  await fs.writeFile(destinationPath, `${filteredLines.join("\n")}\n`, { mode: 0o600 });
+}
+
+function shouldKeepSessionIndexLine(line: string, inheritedSessionIds: Set<string>): boolean {
+  if (!line.trim()) {
+    return false;
+  }
+
+  try {
+    const item = JSON.parse(line) as { id?: string; session_id?: string };
+    const sessionId = item.session_id ?? item.id;
+    return Boolean(sessionId && inheritedSessionIds.has(sessionId));
+  } catch {
+    return false;
+  }
 }
 
 function renderManagedConfig(profile: ManagedProfile): string {
