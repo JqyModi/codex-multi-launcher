@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ensureDir } from "./fs-utils.js";
+import { ensureDir, pathExists } from "./fs-utils.js";
 import { generateProfileIcon } from "./icon-generator.js";
-import { codexExecutablePath, getAppPaths, getRuntimePlatform } from "./paths.js";
+import { codexExecutablePath, getAppPaths, getRuntimePlatform, isWindowsAppsPath } from "./paths.js";
 import { defaultExecutablePathEnv, findExecutable } from "./executable-lookup.js";
+import { ensureWindowsAppxDesktopCache } from "./windows-appx-cache.js";
 import type { LauncherResult, ManagedProfile } from "../shared/types.js";
 
 function plist(profile: ManagedProfile): string {
@@ -120,7 +121,12 @@ exec ${shellQuote(codexExecutablePath(profile.paths.codexAppPath))} \\
 }
 
 async function windowsLauncherScript(profile: ManagedProfile): Promise<string> {
-  const executablePath = codexExecutablePath(profile.paths.codexAppPath);
+  let executablePath = codexExecutablePath(profile.paths.codexAppPath);
+  if (!(await pathExists(executablePath)) || isWindowsAppsPath(executablePath)) {
+    const cachedAppx = await ensureWindowsAppxDesktopCache();
+    executablePath = cachedAppx?.cachedExecutablePath ?? executablePath;
+  }
+
   return `@echo off
 setlocal
 set "CODEX_HOME=${profile.paths.codexHome}"

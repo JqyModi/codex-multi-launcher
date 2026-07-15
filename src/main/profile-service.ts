@@ -5,6 +5,7 @@ import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, re
 import { generateLauncher } from "./launcher.js";
 import { codexExecutablePath, findWindowsCodexAppxDesktopApp, getRuntimePlatform, isWindowsAppsPath, isWindowsCodexGuiExecutable } from "./paths.js";
 import { pathExists } from "./fs-utils.js";
+import { ensureWindowsAppxDesktopCache } from "./windows-appx-cache.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
@@ -150,7 +151,15 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
   if (apiKey) {
     await writeCodexAuth(profile, apiKey);
   }
-  const codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
+  let codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
+  const shouldUseAppxCache = getRuntimePlatform() === "win32" && (!(await pathExists(codexExecutable)) || isWindowsAppsPath(codexExecutable));
+  if (shouldUseAppxCache) {
+    const cachedAppx = await ensureWindowsAppxDesktopCache();
+    if (cachedAppx) {
+      codexExecutable = cachedAppx.cachedExecutablePath;
+    }
+  }
+
   if (!(await pathExists(codexExecutable)) || !isWindowsCodexGuiExecutable(codexExecutable)) {
     if (getRuntimePlatform() === "win32") {
       const appx = findWindowsCodexAppxDesktopApp();
