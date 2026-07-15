@@ -33,6 +33,7 @@
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
     "verify:paths": "npm run build:main && node scripts/verify-path-provider.mjs",
     "verify:win-launcher": "npm run build:main && node scripts/verify-windows-launcher.mjs",
+    "verify:win-inheritance": "npm run build:main && node scripts/verify-windows-inheritance.mjs",
     "verify:e2e": "npm run build && node scripts/verify-profile-generation.mjs",
     "verify:update-cdp": "node scripts/run-update-cdp-test.mjs"
   },

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ensureDir, pathExists } from "./fs-utils.js";
-import { getDefaultCodexHome } from "./paths.js";
+import { getDefaultCodexHome, getRuntimePlatform } from "./paths.js";
 import type { ConfigBackupInfo, ManagedProfile, RestoreConfigBackupResult } from "../shared/types.js";
 
 const INHERITED_CODEX_HOME_ENTRIES = [
@@ -238,13 +238,42 @@ async function copyIfExists(sourcePath: string, destinationPath: string): Promis
     recursive: true,
     force: false,
     errorOnExist: false,
-    filter: (source) => !shouldSkipInheritedPath(source)
+    filter: shouldCopyInheritedPath
   });
+}
+
+async function shouldCopyInheritedPath(sourcePath: string): Promise<boolean> {
+  if (shouldSkipInheritedPath(sourcePath)) {
+    return false;
+  }
+
+  if (getRuntimePlatform() !== "win32") {
+    return true;
+  }
+
+  try {
+    const stat = await fs.lstat(sourcePath);
+    return !stat.isSymbolicLink();
+  } catch {
+    return false;
+  }
 }
 
 function shouldSkipInheritedPath(sourcePath: string): boolean {
   const basename = path.basename(sourcePath);
-  return basename === ".DS_Store" || basename === "node_modules";
+  if (basename === ".DS_Store" || basename === "node_modules") {
+    return true;
+  }
+
+  if (getRuntimePlatform() !== "win32") {
+    return false;
+  }
+
+  const normalized = sourcePath.replace(/\\/g, "/").toLowerCase();
+  return normalized.includes("/.codex/.tmp/")
+    || normalized.endsWith("/.codex/.tmp")
+    || normalized.includes("/.codex/plugins/cache/")
+    || normalized.endsWith("/.codex/plugins/cache");
 }
 
 export async function restoreConfigBackup(profile: ManagedProfile, backupPath: string): Promise<RestoreConfigBackupResult> {
