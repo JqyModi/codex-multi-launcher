@@ -20,6 +20,14 @@ export interface ResolvedDesktopApp {
   source: DesktopAppSource;
 }
 
+export interface WindowsAppxDesktopApp {
+  packageName: string;
+  packageFullName: string;
+  installLocation: string;
+  executablePath: string;
+  productName: "ChatGPT" | "Codex";
+}
+
 export interface PathProvider {
   home(): string;
   appData(): string;
@@ -230,6 +238,14 @@ export function isWindowsCodexGuiExecutable(candidatePath: string): boolean {
     && !normalized.endsWith("/resources/chatgpt.exe");
 }
 
+export function isWindowsAppsPath(candidatePath: string): boolean {
+  if (getRuntimePlatform() !== "win32") {
+    return false;
+  }
+
+  return candidatePath.replace(/\\/g, "/").toLowerCase().includes("/program files/windowsapps/");
+}
+
 function defaultLauncherRoot(home: string): string {
   if (getRuntimePlatform() === "win32") {
     return path.join(home, "Desktop", "Codex Profiles");
@@ -262,7 +278,6 @@ function findWindowsCodexAppExecutables(): string[] {
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Microsoft", "WindowsApps", "ChatGPT.exe") : null,
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Microsoft", "WindowsApps", "Codex.exe") : null,
     findRunningWindowsCodexAppExecutable(),
-    findWindowsCodexAppxExecutable(),
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Programs", "ChatGPT", "ChatGPT.exe") : null,
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Programs", "Codex", "Codex.exe") : null,
     process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "ChatGPT", "ChatGPT.exe") : null,
@@ -306,14 +321,39 @@ function findRunningWindowsCodexAppExecutable(): string | null {
   }
 }
 
-function findWindowsCodexAppxExecutable(): string | null {
+export function findWindowsCodexAppxDesktopApp(): WindowsAppxDesktopApp | null {
+  if (getRuntimePlatform() !== "win32") {
+    return null;
+  }
+
   try {
     const output = execFileSync("powershell.exe", [
       "-NoProfile",
       "-Command",
-      "$pkg = Get-AppxPackage OpenAI.Codex,OpenAI.ChatGPT,*OpenAI*Codex*,*OpenAI*ChatGPT* -ErrorAction SilentlyContinue | Select-Object -First 1; if ($pkg) { foreach ($name in 'ChatGPT.exe','Codex.exe','app\\ChatGPT.exe','app\\Codex.exe') { $candidate = Join-Path $pkg.InstallLocation $name; if (Test-Path $candidate) { $candidate; break } } }"
+      "$packages = @(); foreach ($pattern in 'OpenAI.Codex','OpenAI.ChatGPT','*OpenAI*Codex*','*OpenAI*ChatGPT*') { $packages += Get-AppxPackage -Name $pattern -ErrorAction SilentlyContinue }; $pkg = $packages | Select-Object -First 1; if ($pkg) { foreach ($name in 'app\\ChatGPT.exe','app\\Codex.exe','ChatGPT.exe','Codex.exe') { $candidate = Join-Path $pkg.InstallLocation $name; if (Test-Path $candidate) { [PSCustomObject]@{ PackageName = $pkg.Name; PackageFullName = $pkg.PackageFullName; InstallLocation = $pkg.InstallLocation; ExecutablePath = $candidate } | ConvertTo-Json -Compress; break } } }"
     ], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
-    return output.trim() || null;
+    const trimmed = output.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const appx = JSON.parse(trimmed) as {
+      PackageName?: string;
+      PackageFullName?: string;
+      InstallLocation?: string;
+      ExecutablePath?: string;
+    };
+    if (!appx.PackageName || !appx.PackageFullName || !appx.InstallLocation || !appx.ExecutablePath) {
+      return null;
+    }
+
+    return {
+      packageName: appx.PackageName,
+      packageFullName: appx.PackageFullName,
+      installLocation: appx.InstallLocation,
+      executablePath: appx.ExecutablePath,
+      productName: productNameForPath(appx.ExecutablePath)
+    };
   } catch {
     return null;
   }

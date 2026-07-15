@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { inheritDefaultCodexHomeResources, listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
 import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, repairProfileCodexAppPath, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
-import { codexExecutablePath, getRuntimePlatform, isWindowsCodexGuiExecutable } from "./paths.js";
+import { codexExecutablePath, findWindowsCodexAppxDesktopApp, getRuntimePlatform, isWindowsAppsPath, isWindowsCodexGuiExecutable } from "./paths.js";
 import { pathExists } from "./fs-utils.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
@@ -152,6 +152,19 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
   }
   const codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
   if (!(await pathExists(codexExecutable)) || !isWindowsCodexGuiExecutable(codexExecutable)) {
+    if (getRuntimePlatform() === "win32") {
+      const appx = findWindowsCodexAppxDesktopApp();
+      if (appx || isWindowsAppsPath(codexExecutable)) {
+        throw new Error([
+          "Microsoft Store / WindowsApps Codex is installed, but Windows blocks direct launching from the protected WindowsApps directory.",
+          "Codex Multi Launcher cannot reliably open isolated profiles with the Store/AppX package yet because the launch needs per-profile environment variables and --user-data-dir.",
+          appx ? `Detected package: ${appx.packageFullName}` : null,
+          appx ? `Detected executable: ${appx.executablePath}` : `Requested executable: ${codexExecutable}`,
+          "Profile creation is fixed; Store/AppX profile launching still needs a separate compatibility path."
+        ].filter(Boolean).join(" "));
+      }
+    }
+
     throw new Error(`Codex desktop executable was not found: ${codexExecutable}. Install Codex for Windows or update this profile with the correct Codex.exe path.`);
   }
   await generateLauncher(profile);
