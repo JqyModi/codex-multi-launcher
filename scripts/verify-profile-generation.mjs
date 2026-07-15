@@ -13,10 +13,16 @@ await fs.writeFile(
   path.join(testRoot, ".codex", "config.toml"),
   [
     'model = "gpt-5.5"',
+    `notify = ["${path.join(testRoot, ".codex", "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient")}", "turn-ended"]`,
     "",
     "[mcp_servers.example]",
     'command = "node"',
     'args = ["server.js"]',
+    "",
+    "[mcp_servers.node_repl.env]",
+    `NODE_REPL_TRUSTED_CODE_PATHS = "${path.join(testRoot, ".codex")}"`,
+    `CODEX_HOME = "${path.join(testRoot, ".codex")}"`,
+    `SKY_CUA_SERVICE_PATH = "${path.join(testRoot, ".codex", "plugins", "cache", "openai-bundled", "computer-use", "1.0.1000387", "Codex Computer Use.app")}"`,
     "",
     "[features]",
     "multi_agent = true",
@@ -29,6 +35,74 @@ await fs.writeFile(path.join(testRoot, ".codex", "skills", "sample-skill", "SKIL
 await fs.mkdir(path.join(testRoot, ".codex", "plugins", "sample-plugin", ".codex-plugin"), { recursive: true });
 await fs.writeFile(path.join(testRoot, ".codex", "plugins", "sample-plugin", ".codex-plugin", "plugin.json"), "{\"name\":\"sample-plugin\"}\n", { mode: 0o600 });
 await fs.writeFile(path.join(testRoot, ".codex", "AGENTS.md"), "Default instructions\n", { mode: 0o600 });
+const syncedProjectPath = path.join(testRoot, "Projects", "SyncedProject");
+const otherProjectPath = path.join(testRoot, "Projects", "OtherProject");
+const syncedSessionId = "019f-test-synced-session";
+const otherSessionId = "019f-test-other-session";
+const syncedSessionPath = path.join(testRoot, ".codex", "sessions", "2026", "07", "15", `rollout-2026-07-15T10-00-00-${syncedSessionId}.jsonl`);
+const otherSessionPath = path.join(testRoot, ".codex", "sessions", "2026", "07", "15", `rollout-2026-07-15T11-00-00-${otherSessionId}.jsonl`);
+const archivedSessionPath = path.join(testRoot, ".codex", "archived_sessions", `rollout-2026-07-15T12-00-00-${syncedSessionId}.jsonl`);
+await Promise.all([
+  fs.mkdir(path.dirname(syncedSessionPath), { recursive: true }),
+  fs.mkdir(path.dirname(archivedSessionPath), { recursive: true }),
+  fs.mkdir(syncedProjectPath, { recursive: true }),
+  fs.mkdir(otherProjectPath, { recursive: true })
+]);
+await fs.writeFile(syncedSessionPath, `${JSON.stringify({
+  timestamp: "2026-07-15T02:00:00.000Z",
+  type: "session_meta",
+  payload: {
+    session_id: syncedSessionId,
+    id: syncedSessionId,
+    cwd: syncedProjectPath
+  }
+})}\n{"type":"event_msg","payload":{"message":"synced project history"}}\n`, { mode: 0o600 });
+await fs.writeFile(otherSessionPath, `${JSON.stringify({
+  timestamp: "2026-07-15T03:00:00.000Z",
+  type: "session_meta",
+  payload: {
+    session_id: otherSessionId,
+    id: otherSessionId,
+    cwd: otherProjectPath
+  }
+})}\n{"type":"event_msg","payload":{"message":"other project history"}}\n`, { mode: 0o600 });
+await fs.writeFile(archivedSessionPath, `${JSON.stringify({
+  timestamp: "2026-07-15T04:00:00.000Z",
+  type: "session_meta",
+  payload: {
+    id: syncedSessionId,
+    cwd: path.join(syncedProjectPath, "subdir")
+  }
+})}\n{"type":"event_msg","payload":{"message":"archived synced project history"}}\n`, { mode: 0o600 });
+await fs.writeFile(
+  path.join(testRoot, ".codex", "session_index.jsonl"),
+  [
+    JSON.stringify({ id: syncedSessionId, thread_name: "Synced project history", updated_at: "2026-07-15T02:00:00.000Z" }),
+    JSON.stringify({ id: otherSessionId, thread_name: "Other project history", updated_at: "2026-07-15T03:00:00.000Z" }),
+    ""
+  ].join("\n"),
+  { mode: 0o600 }
+);
+await fs.writeFile(
+  path.join(testRoot, ".codex", "history.jsonl"),
+  [
+    JSON.stringify({ session_id: syncedSessionId, ts: 1784109600, text: "synced prompt" }),
+    JSON.stringify({ session_id: otherSessionId, ts: 1784113200, text: "other prompt" }),
+    ""
+  ].join("\n"),
+  { mode: 0o600 }
+);
+await fs.writeFile(
+  path.join(testRoot, ".codex", ".codex-global-state.json"),
+  `${JSON.stringify({
+    "electron-saved-workspace-roots": [syncedProjectPath],
+    "project-order": [syncedProjectPath],
+    "thread-workspace-root-hints": {
+      [syncedSessionId]: syncedProjectPath
+    }
+  })}\n`,
+  { mode: 0o600 }
+);
 
 const { createProfile, deleteProfile, listConfigBackups, listProfiles, permanentlyDeleteProfile, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
@@ -60,6 +134,10 @@ const fakeKey = "sk-test-verify-profile-generation";
 const result = await createProfile({
   name: "E2E Sandbox",
   inheritDefaultConfig: true,
+  syncHistory: {
+    enabled: true,
+    scope: "projects"
+  },
   provider: {
     type: "third_party_responses",
     displayName: "E2E Proxy",
@@ -87,8 +165,13 @@ const launcherScript = path.join(result.profile.paths.launcherPath, "Contents", 
 const inheritedSkillPath = path.join(result.profile.paths.codexHome, "skills", "sample-skill", "SKILL.md");
 const inheritedPluginManifestPath = path.join(result.profile.paths.codexHome, "plugins", "sample-plugin", ".codex-plugin", "plugin.json");
 const inheritedAgentsPath = path.join(result.profile.paths.codexHome, "AGENTS.md");
+const inheritedSyncedSessionPath = path.join(result.profile.paths.codexHome, "sessions", "2026", "07", "15", path.basename(syncedSessionPath));
+const inheritedOtherSessionPath = path.join(result.profile.paths.codexHome, "sessions", "2026", "07", "15", path.basename(otherSessionPath));
+const inheritedArchivedSessionPath = path.join(result.profile.paths.codexHome, "archived_sessions", path.basename(archivedSessionPath));
+const inheritedSessionIndexPath = path.join(result.profile.paths.codexHome, "session_index.jsonl");
+const inheritedHistoryPath = path.join(result.profile.paths.codexHome, "history.jsonl");
 
-const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat, inheritedSkillRaw, inheritedPluginRaw, inheritedAgentsRaw] = await Promise.all([
+const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat, inheritedSkillRaw, inheritedPluginRaw, inheritedAgentsRaw, inheritedSyncedSessionRaw, inheritedArchivedSessionRaw, inheritedSessionIndexRaw, inheritedHistoryRaw] = await Promise.all([
   fs.readFile(appPaths.profilesFile, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8"),
   fs.readFile(configPath, "utf8"),
@@ -102,7 +185,11 @@ const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRa
   fs.stat(launcherIconPath),
   fs.readFile(inheritedSkillPath, "utf8"),
   fs.readFile(inheritedPluginManifestPath, "utf8"),
-  fs.readFile(inheritedAgentsPath, "utf8")
+  fs.readFile(inheritedAgentsPath, "utf8"),
+  fs.readFile(inheritedSyncedSessionPath, "utf8"),
+  fs.readFile(inheritedArchivedSessionPath, "utf8"),
+  fs.readFile(inheritedSessionIndexPath, "utf8"),
+  fs.readFile(inheritedHistoryPath, "utf8")
 ]);
 
 assert(registryRaw.includes("E2E Sandbox"), "registry should contain profile name");
@@ -115,10 +202,23 @@ assert(configRaw.includes("CODEX_PROFILE_E2E_SANDBOX_API_KEY"), "config should r
 assert(configRaw.includes('temp_env_key = "CODEX_PROFILE_E2E_SANDBOX_API_KEY"'), "config should include Codex temp env key");
 assert((configRaw.match(/\[model_providers\.proxy\]/g) ?? []).length === 1, "config should contain one proxy provider table");
 assert(configRaw.includes("[mcp_servers.example]"), "config should inherit default MCP server settings");
+assert(configRaw.includes(`CODEX_HOME = "${result.profile.paths.codexHome}"`), "config should rewrite inherited CODEX_HOME to the profile home");
+assert(configRaw.includes(`NODE_REPL_TRUSTED_CODE_PATHS = "${result.profile.paths.codexHome}"`), "config should rewrite inherited trusted code paths to the profile home");
+assert(configRaw.includes(`notify = ["${path.join(result.profile.paths.codexHome, "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient")}", "turn-ended"]`), "config should rewrite inherited notify path to the profile home");
+assert(configRaw.includes(`SKY_CUA_SERVICE_PATH = "${path.join(result.profile.paths.codexHome, "plugins", "cache", "openai-bundled", "computer-use", "1.0.1000387", "Codex Computer Use.app")}"`), "config should rewrite inherited computer-use service path to the profile home");
+assert(!configRaw.includes(`${path.join(testRoot, ".codex")}/`), "config should not keep source CODEX_HOME paths");
+assert(!configRaw.includes("codex-home-profiles"), "config should not contain duplicated profile-home fragments");
 assert(configRaw.includes("[features]"), "config should inherit default feature settings");
 assert(inheritedSkillRaw.includes("Sample skill"), "profile should inherit default CODEX_HOME skills");
 assert(inheritedPluginRaw.includes("sample-plugin"), "profile should inherit default CODEX_HOME plugins");
 assert(inheritedAgentsRaw.includes("Default instructions"), "profile should inherit default CODEX_HOME instructions");
+assert(inheritedSyncedSessionRaw.includes("synced project history"), "profile should inherit matching project session history");
+assert(inheritedArchivedSessionRaw.includes("archived synced project history"), "profile should inherit matching archived project session history");
+assert(!(await fileExists(inheritedOtherSessionPath)), "profile should not inherit session history from another project");
+assert(inheritedSessionIndexRaw.includes("Synced project history"), "profile should inherit matching session index rows");
+assert(!inheritedSessionIndexRaw.includes("Other project history"), "profile should not inherit session index rows from another project");
+assert(inheritedHistoryRaw.includes("synced prompt"), "profile should inherit matching prompt history rows");
+assert(!inheritedHistoryRaw.includes("other prompt"), "profile should not inherit prompt history rows from another project");
 assert(configRaw.includes("Codex Profile Manager managed settings"), "config should mark appended managed settings");
 assert(!configRaw.includes('model = "gpt-5.5"'), "profile config should remove inherited root model to avoid duplicate TOML keys");
 assert(configRaw.indexOf('model_provider = "proxy"') < configRaw.indexOf("[mcp_servers.example]"), "profile provider selector should be written before inherited tables");

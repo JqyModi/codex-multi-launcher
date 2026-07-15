@@ -117,6 +117,14 @@ const TEXT: Record<Language, Record<string, string>> = {
     profileColorReview: "图标颜色",
     inheritConfig: "沿用当前 Codex 设置",
     inheritConfigDesc: "保留已有插件、服务、可信项目和功能开关。",
+    syncHistory: "同步已有对话记录",
+    syncHistoryDesc: "把源 App 里的项目对话或临时任务带到新配置中。",
+    syncHistoryScope: "同步范围",
+    syncHistoryProjects: "仅项目对话",
+    syncHistoryTasks: "仅临时任务",
+    syncHistoryAll: "全部对话",
+    syncHistoryReview: "对话记录",
+    syncHistoryOff: "不同步",
     profileNameNote: "这个名称会显示在左侧列表和生成的启动器 App 上。",
     providerType: "服务接口类型",
     thirdPartyResponses: "第三方兼容接口",
@@ -279,6 +287,14 @@ const TEXT: Record<Language, Record<string, string>> = {
     profileColorReview: "Icon color",
     inheritConfig: "Inherit my default Codex config",
     inheritConfigDesc: "Keep existing plugins, MCP servers, trusted projects, and feature flags.",
+    syncHistory: "Bring over existing chats",
+    syncHistoryDesc: "Copy project chats or temporary tasks from the source app into this profile.",
+    syncHistoryScope: "Chat scope",
+    syncHistoryProjects: "Projects only",
+    syncHistoryTasks: "Tasks only",
+    syncHistoryAll: "All chats",
+    syncHistoryReview: "Chat history",
+    syncHistoryOff: "Do not sync",
     profileNameNote: "This name is used for the dashboard row and generated launcher app.",
     providerType: "Provider type",
     thirdPartyResponses: "Third-party Responses-compatible",
@@ -387,6 +403,8 @@ const DEFAULT_FORM = {
   model: "gpt-5.2",
   apiKey: "",
   inheritDefaultConfig: true,
+  syncHistory: false,
+  syncHistoryScope: "projects" as "projects" | "tasks" | "all",
   iconBackgroundColor: DEFAULT_PROFILE_COLOR,
   codexAppPath: "",
   launcherDirectory: ""
@@ -555,6 +573,10 @@ export function App() {
         name: form.name,
         codexAppPath: form.codexAppPath || undefined,
         inheritDefaultConfig: form.inheritDefaultConfig,
+        syncHistory: {
+          enabled: form.syncHistory,
+          scope: form.syncHistoryScope
+        },
         launcherDirectory: form.launcherDirectory || undefined,
         appearance: {
           iconBackgroundColor: sanitizeProfileColor(form.iconBackgroundColor)
@@ -1196,48 +1218,64 @@ export function App() {
         )}
       </section>
       {isCreateProfileOpen ? (
-        <Modal title={t.createProfileTitle} subtitle={t.createProfileSubtitle} onClose={() => setIsCreateProfileOpen(false)}>
-          <div className="modal-badge-row">
-            <span className="badge success">{t.apiKeyEncrypted}</span>
-          </div>
-          <WizardNav current={wizardStep} t={t} />
-          <WizardBody
-            form={form}
-            providerTest={providerTest}
-            isTestingProvider={isTestingProvider}
-            isFetchingProviderModels={isFetchingProviderModels}
-            providerModels={providerModels}
-            wizardStep={wizardStep}
-            t={t}
-            onChange={(nextForm) => {
-              setForm(nextForm);
-              if (nextForm.baseUrl !== form.baseUrl || nextForm.apiKey !== form.apiKey || nextForm.providerType !== form.providerType) {
-                setProviderModels(null);
-              }
-            }}
-            onFetchModels={() => void fetchProviderModels()}
-            onPickCodexAppPath={() => void pickCodexAppPath()}
-            onPickLauncherDirectory={() => void pickLauncherDirectory()}
-            onTestProvider={() => void testProvider()}
-          />
-          <div className="wizard-actions">
-            <button className="button secondary" disabled={!canGoBack} onClick={previousStep} type="button">
-              <ChevronLeft size={15} />
-              {t.back}
-            </button>
-            {wizardStep === "generate" ? (
-              <button className="button primary" disabled={isCreating || !isCurrentStepValid(wizardStep, form)} onClick={() => void createProfile()} type="button">
-                <Plus size={16} />
-                {isCreating ? t.generating : t.generate}
+        <div className="modal-backdrop" role="presentation">
+          <section aria-modal="true" className="modal create-profile-modal" role="dialog">
+            <header className="modal-header">
+              <div className="modal-title">
+                <span className="modal-icon"><Info size={18} /></span>
+                <div>
+                  <h3>{t.createProfileTitle}</h3>
+                  <p>{t.createProfileSubtitle}</p>
+                </div>
+              </div>
+              <button aria-label="Close" className="icon-button" onClick={() => setIsCreateProfileOpen(false)} type="button">
+                <X size={16} />
               </button>
-            ) : (
-              <button className="button primary" disabled={!canGoNext} onClick={nextStep} type="button">
-                {t.next}
-                <ChevronRight size={15} />
+            </header>
+            <div className="create-modal-body">
+              <div className="modal-badge-row">
+                <span className="badge success">{t.apiKeyEncrypted}</span>
+              </div>
+              <WizardNav current={wizardStep} t={t} />
+              <WizardBody
+                form={form}
+                providerTest={providerTest}
+                isTestingProvider={isTestingProvider}
+                isFetchingProviderModels={isFetchingProviderModels}
+                providerModels={providerModels}
+                wizardStep={wizardStep}
+                t={t}
+                onChange={(nextForm) => {
+                  setForm(nextForm);
+                  if (nextForm.baseUrl !== form.baseUrl || nextForm.apiKey !== form.apiKey || nextForm.providerType !== form.providerType) {
+                    setProviderModels(null);
+                  }
+                }}
+                onFetchModels={() => void fetchProviderModels()}
+                onPickCodexAppPath={() => void pickCodexAppPath()}
+                onPickLauncherDirectory={() => void pickLauncherDirectory()}
+                onTestProvider={() => void testProvider()}
+              />
+            </div>
+            <footer className="wizard-actions">
+              <button className="button secondary" disabled={!canGoBack} onClick={previousStep} type="button">
+                <ChevronLeft size={15} />
+                {t.back}
               </button>
-            )}
-          </div>
-        </Modal>
+              {wizardStep === "generate" ? (
+                <button className="button primary" disabled={isCreating || !isCurrentStepValid(wizardStep, form)} onClick={() => void createProfile()} type="button">
+                  <Plus size={16} />
+                  {isCreating ? t.generating : t.generate}
+                </button>
+              ) : (
+                <button className="button primary" disabled={!canGoNext} onClick={nextStep} type="button">
+                  {t.next}
+                  <ChevronRight size={15} />
+                </button>
+              )}
+            </footer>
+          </section>
+        </div>
       ) : null}
       {isUpdateModalOpen && updateCheck?.status === "update_available" ? (
         <UpdateModal
@@ -1331,7 +1369,7 @@ function UpdateModal({
           <div className="update-notes-heading">
             <strong>{t.updateContent}</strong>
           </div>
-          <pre>{updateCheck.changelog?.trim() || t.noReleaseNotes}</pre>
+          <ReleaseNotes content={updateCheck.changelog?.trim() || t.noReleaseNotes} />
         </div>
         <footer className="update-modal-footer">
           {isInstalled ? (
@@ -1618,7 +1656,7 @@ function AboutPage({
           </div>
           {updateCheck?.releaseName ? <span className="badge">{updateCheck.releaseName}</span> : null}
         </div>
-        <pre>{changelog}</pre>
+        <ReleaseNotes content={changelog} />
         {updateCheck?.status === "error" ? <p className="update-error">{t.updateCheckFailed}</p> : null}
       </section>
     </div>
@@ -1640,6 +1678,58 @@ function updateCheckStatusLabel(updateCheck: UpdateCheckResult | null, t: Record
   if (updateCheck.status === "update_available") return t.updateAvailable;
   if (updateCheck.status === "up_to_date") return t.upToDate;
   return t.updateCheckFailed;
+}
+
+function ReleaseNotes({ content }: { content: string }) {
+  return <div className="release-notes" dangerouslySetInnerHTML={{ __html: sanitizeReleaseNotes(content) }} />;
+}
+
+function sanitizeReleaseNotes(content: string): string {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (!/[<][a-zA-Z][\s\S]*[>]/.test(trimmed)) {
+    return escapeHtml(trimmed).replace(/\n/g, "<br>");
+  }
+
+  const parser = new DOMParser();
+  const document = parser.parseFromString(`<div>${trimmed}</div>`, "text/html");
+  const allowedTags = new Set(["A", "B", "BLOCKQUOTE", "BR", "CODE", "EM", "H1", "H2", "H3", "H4", "H5", "H6", "HR", "I", "LI", "OL", "P", "PRE", "STRONG", "UL"]);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+  const elements: Element[] = [];
+  while (walker.nextNode()) {
+    elements.push(walker.currentNode as Element);
+  }
+
+  for (const element of elements) {
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(...Array.from(element.childNodes));
+      continue;
+    }
+
+    for (const attribute of Array.from(element.attributes)) {
+      const name = attribute.name.toLowerCase();
+      if (element.tagName === "A" && name === "href" && /^https?:\/\//i.test(attribute.value)) {
+        element.setAttribute("target", "_blank");
+        element.setAttribute("rel", "noreferrer");
+        continue;
+      }
+      element.removeAttribute(attribute.name);
+    }
+  }
+
+  return document.body.firstElementChild?.innerHTML ?? "";
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function isSkippedUpdate(version: string | null): boolean {
@@ -1735,6 +1825,35 @@ function WizardBody({
           </span>
           <span className="switch-track" aria-hidden="true"><span /></span>
         </label>
+        <label className="toggle-card">
+          <input checked={form.syncHistory} onChange={(event) => onChange({ ...form, syncHistory: event.target.checked })} type="checkbox" />
+          <span className="toggle-copy">
+            <strong>{t.syncHistory}</strong>
+            <small>{t.syncHistoryDesc}</small>
+          </span>
+          <span className="switch-track" aria-hidden="true"><span /></span>
+        </label>
+        {form.syncHistory ? (
+          <div className="history-scope-row">
+            <span>{t.syncHistoryScope}</span>
+            <div className="segmented-control">
+              {([
+                ["projects", t.syncHistoryProjects],
+                ["tasks", t.syncHistoryTasks],
+                ["all", t.syncHistoryAll]
+              ] as const).map(([scope, label]) => (
+                <button
+                  className={form.syncHistoryScope === scope ? "selected" : ""}
+                  key={scope}
+                  onClick={() => onChange({ ...form, syncHistoryScope: scope })}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <p className="field-note">{t.profileNameNote}</p>
       </div>
     );
@@ -1843,6 +1962,12 @@ function WizardBody({
       <PathRow label={t.codexAppPath} value={form.codexAppPath || t.codexAppPlaceholder} />
       <PathRow label={t.launcherDirectory} value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
       <PathRow label={t.inheritConfigReview} value={form.inheritDefaultConfig ? t.yes : t.no} />
+      <PathRow
+        label={t.syncHistoryReview}
+        value={form.syncHistory
+          ? (form.syncHistoryScope === "projects" ? t.syncHistoryProjects : form.syncHistoryScope === "tasks" ? t.syncHistoryTasks : t.syncHistoryAll)
+          : t.syncHistoryOff}
+      />
       <PathRow label={t.providerTestReview} value={providerTest ? providerTest.summary : t.notTested} />
     </div>
   );

@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
-import { inheritDefaultCodexHomeResources, listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
+import { inheritDefaultCodexHomeResources, listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, syncSessionHistory, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
 import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, repairProfileCodexAppPath, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
 import { codexExecutablePath, findWindowsCodexAppxDesktopApp, getRuntimePlatform, isWindowsAppsPath, isWindowsCodexGuiExecutable } from "./paths.js";
@@ -43,6 +43,9 @@ export async function createProfile(input: CreateProfileInput): Promise<CreatePr
   await writeCodexAuth(profile, input.provider.apiKey);
   if (input.inheritDefaultConfig) {
     await inheritDefaultCodexHomeResources(profile);
+  }
+  if (input.syncHistory?.enabled) {
+    await syncSessionHistory(profile, input.syncHistory);
   }
   const configPath = await writeCodexConfig(profile, { inheritDefaultConfig: input.inheritDefaultConfig });
   const launcher = await generateLauncher(profile);

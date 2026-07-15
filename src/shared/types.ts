@@ -116,10 +116,18 @@ export interface ProfileRegistry {
   profiles: ManagedProfile[];
 }
 
+export type SessionHistorySyncScope = "projects" | "tasks" | "all";
+
+export interface SessionHistorySyncInput {
+  enabled: boolean;
+  scope: SessionHistorySyncScope;
+}
+
 export interface CreateProfileInput {
   name: string;
   codexAppPath?: string;
   inheritDefaultConfig?: boolean;
+  syncHistory?: SessionHistorySyncInput;
   launcherDirectory?: string;
   appearance?: Partial<ProfileAppearance>;
   provider: {

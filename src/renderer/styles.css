@@ -869,6 +869,23 @@ code {
   line-height: 18px;
 }
 
+.history-scope-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #e8edf4;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.history-scope-row > span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .toggle-copy small {
   color: #667085;
   font-size: 12px;
@@ -1299,9 +1316,9 @@ code {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 14px;
   border-top: 1px solid #eef2f7;
-  padding-top: 14px;
+  padding: 16px 20px;
+  background: rgb(248 251 255 / 92%);
 }
 
 .button-row .button {
@@ -1780,7 +1797,7 @@ code {
   line-height: 18px;
 }
 
-.about-release-panel pre {
+.about-release-panel .release-notes {
   max-height: 260px;
   overflow: auto;
   margin: 0;
@@ -1791,7 +1808,6 @@ code {
   background: #f8fafc;
   font-size: 12px;
   line-height: 18px;
-  white-space: pre-wrap;
 }
 
 @media (max-width: 1120px) {
@@ -1875,6 +1891,16 @@ code {
   border-radius: 22px;
   background: linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(250 252 255 / 94%));
   box-shadow: 0 26px 90px rgb(15 23 42 / 22%);
+}
+
+.create-profile-modal {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.create-modal-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 20px 20px;
 }
 
 .update-backdrop {
@@ -1979,14 +2005,67 @@ code {
   margin-bottom: 10px;
 }
 
-.update-modal-body pre {
+.update-modal-body .release-notes {
   max-height: 220px;
   overflow: auto;
   margin: 0;
   color: #334155;
   font-size: 13px;
   line-height: 20px;
+}
+
+.release-notes :first-child {
+  margin-top: 0;
+}
+
+.release-notes :last-child {
+  margin-bottom: 0;
+}
+
+.release-notes p,
+.release-notes ul,
+.release-notes ol,
+.release-notes blockquote,
+.release-notes pre {
+  margin: 0 0 10px;
+}
+
+.release-notes ul,
+.release-notes ol {
+  padding-left: 20px;
+}
+
+.release-notes li + li {
+  margin-top: 4px;
+}
+
+.release-notes code,
+.release-notes pre {
+  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+}
+
+.release-notes code {
+  border-radius: 5px;
+  padding: 1px 4px;
+  background: #e8eef6;
+  font-size: 0.95em;
+}
+
+.release-notes pre {
+  overflow: auto;
+  border-radius: 8px;
+  padding: 10px;
+  background: #eef3f8;
   white-space: pre-wrap;
+}
+
+.release-notes a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.release-notes a:hover {
+  text-decoration: underline;
 }
 
 .update-modal-footer {
