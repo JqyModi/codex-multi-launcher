@@ -2,19 +2,21 @@
   "version": 1,
   "items": [
     {
-      "id": "windows-appx-launch-fix-0-1-3",
+      "id": "windows-appx-launch-fix-0-1-4",
       "enabled": true,
       "priority": 100,
       "placement": "dashboard_top",
       "type": "success",
       "label": "Windows 修复",
       "title": "Windows Store 版 Codex 打开 Profile 的问题已修复",
-      "description": "v0.1.3 已修复 Windows 上创建和打开 Profile 时遇到的权限问题。请更新到最新版后再尝试打开你的 Profile。",
+      "description": "v0.1.4 已修复 Windows 上创建和打开 Profile 时遇到的权限问题，并补充已有对话记录同步能力。请更新到最新版后再尝试打开你的 Profile。",
       "ctaText": "下载更新",
       "ctaUrl": "https://github.com/JqyModi/codex-multi-launcher/releases/latest",
-      "startAt": "2026-07-15T00:00:00+08:00",
-      "endAt": "2026-07-16T00:00:00+08:00",
-      "platforms": ["win32"],
+      "startAt": "2026-07-16T00:00:00+08:00",
+      "endAt": "2026-07-17T00:00:00+08:00",
+      "platforms": [
+        "win32"
+      ],
       "minAppVersion": "0.0.0",
       "maxAppVersion": null,
       "dismissible": true

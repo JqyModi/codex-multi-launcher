@@ -1,6 +1,6 @@
 {
   "name": "codex-profile-manager",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Desktop utility for creating isolated Codex App windows with separate API provider profiles.",
   "main": "dist-electron/main/index.js",
