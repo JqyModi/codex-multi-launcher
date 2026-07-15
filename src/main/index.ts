@@ -59,6 +59,8 @@ if (process.platform === "win32") {
   app.disableHardwareAcceleration();
   app.commandLine.appendSwitch("disable-gpu");
   app.commandLine.appendSwitch("disable-gpu-compositing");
+  app.commandLine.appendSwitch("disable-software-rasterizer");
+  app.commandLine.appendSwitch("in-process-gpu");
 }
 
 function createWindow(): void {
