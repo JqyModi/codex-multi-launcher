@@ -1,8 +1,12 @@
 import fs from "node:fs/promises";
+import { execFile } from "node:child_process";
 import path from "node:path";
+import { promisify } from "node:util";
 import { ensureDir, pathExists } from "./fs-utils.js";
 import { getDefaultCodexHome, getRuntimePlatform } from "./paths.js";
-import type { ConfigBackupInfo, ManagedProfile, RestoreConfigBackupResult } from "../shared/types.js";
+import type { ConfigBackupInfo, ManagedProfile, RestoreConfigBackupResult, SessionHistorySyncInput, SessionHistorySyncScope } from "../shared/types.js";
+
+const execFileAsync = promisify(execFile);
 
 const INHERITED_CODEX_HOME_ENTRIES = [
   "AGENTS.md",
@@ -22,6 +26,36 @@ const SESSION_HISTORY_INDEX_FILES = [
   "session_index.jsonl",
   "history.jsonl"
 ];
+
+const GLOBAL_STATE_FILE = ".codex-global-state.json";
+const DESKTOP_CATALOG_DB = path.join("sqlite", "codex-dev.db");
+const THREAD_STATE_DATABASE_PATHS = [
+  "state_5.sqlite",
+  path.join("sqlite", "state_5.sqlite")
+];
+
+const SOURCE_KIND_SQL = `
+CASE
+  WHEN source IN ('cli', 'vscode', 'exec', 'appServer', 'unknown') THEN source
+  WHEN source LIKE '{"subagent":%' THEN 'subAgent'
+  ELSE 'unknown'
+END
+`;
+
+interface NodeSqliteDatabase {
+  exec(sql: string): void;
+  prepare(sql: string): {
+    all(): Record<string, unknown>[];
+    get(): Record<string, unknown> | undefined;
+  };
+  close(): void;
+}
+
+interface NodeSqliteModule {
+  DatabaseSync: new (databasePath: string) => NodeSqliteDatabase;
+}
+
+let nodeSqliteModulePromise: Promise<NodeSqliteModule | null> | null = null;
 
 function tomlString(value: string): string {
   return JSON.stringify(value);
@@ -97,17 +131,39 @@ export async function inheritDefaultCodexHomeResources(profile: ManagedProfile):
 
   await ensureDir(profile.paths.codexHome);
   await Promise.all(INHERITED_CODEX_HOME_ENTRIES.map((entry) => copyIfExists(path.join(defaultCodexHome, entry), path.join(profileCodexHome, entry))));
-  await inheritProjectSessionHistoryIfRequested(defaultCodexHome, profileCodexHome);
 }
 
-async function inheritProjectSessionHistoryIfRequested(defaultCodexHome: string, profileCodexHome: string): Promise<void> {
-  const projectPath = process.env.CODEX_PROFILE_MANAGER_SESSION_SYNC_PROJECT?.trim();
-  if (!projectPath) {
+export async function syncSessionHistory(profile: ManagedProfile, historySync: SessionHistorySyncInput): Promise<void> {
+  const defaultCodexHome = path.resolve(getDefaultCodexHome());
+  const profileCodexHome = path.resolve(profile.paths.codexHome);
+
+  if (defaultCodexHome === profileCodexHome || !(await pathExists(defaultCodexHome))) {
     return;
   }
 
-  const normalizedProjectPath = path.resolve(projectPath);
+  await ensureDir(profile.paths.codexHome);
+  await syncSessionHistoryIfRequested(defaultCodexHome, profileCodexHome, profile.provider.id, historySync);
+}
+
+async function syncSessionHistoryIfRequested(defaultCodexHome: string, profileCodexHome: string, profileProviderId: string, historySync?: SessionHistorySyncInput): Promise<void> {
+  const legacyProjectPath = process.env.CODEX_PROFILE_MANAGER_SESSION_SYNC_PROJECT?.trim();
+  const shouldSync = historySync?.enabled || Boolean(legacyProjectPath);
+  if (!shouldSync) {
+    return;
+  }
+
+  const syncScope = historySync?.scope ?? "projects";
+  const projectPaths = await getProjectHistoryRoots(defaultCodexHome, legacyProjectPath);
   const inheritedSessionIds = new Set<string>();
+  const selectors: HistorySyncSelectors = {
+    scope: syncScope,
+    projectPaths,
+    sourceTaskRoot: path.join(path.dirname(defaultCodexHome), "Documents", "Codex")
+  };
+  const threadReferences = await collectSourceThreadReferencesIfPossible(path.join(defaultCodexHome, "state_5.sqlite"), selectors);
+  for (const threadReference of threadReferences) {
+    inheritedSessionIds.add(threadReference.id);
+  }
 
   for (const entry of SESSION_HISTORY_DIRECTORIES) {
     const sourceRoot = path.join(defaultCodexHome, entry);
@@ -115,24 +171,62 @@ async function inheritProjectSessionHistoryIfRequested(defaultCodexHome: string,
       continue;
     }
 
-    await copyProjectSessionDirectory(sourceRoot, path.join(profileCodexHome, entry), normalizedProjectPath, inheritedSessionIds);
+    await copySessionHistoryDirectory(sourceRoot, path.join(profileCodexHome, entry), selectors, profileProviderId, inheritedSessionIds);
   }
+  await copyReferencedSessionRollouts(threadReferences, defaultCodexHome, profileCodexHome, profileProviderId);
 
   await Promise.all(SESSION_HISTORY_INDEX_FILES.map((entry) => copyFilteredSessionIndexFile(
     path.join(defaultCodexHome, entry),
     path.join(profileCodexHome, entry),
     inheritedSessionIds
   )));
+  const sourceStateDb = path.join(defaultCodexHome, "state_5.sqlite");
+  await Promise.all(THREAD_STATE_DATABASE_PATHS.map((entry) => syncProjectThreadStateIfPossible(
+    sourceStateDb,
+    path.join(profileCodexHome, entry),
+    defaultCodexHome,
+    profileCodexHome,
+    selectors,
+    profileProviderId,
+    inheritedSessionIds
+  )));
+  await syncProjectDesktopCatalogIfPossible(defaultCodexHome, profileCodexHome, selectors, profileProviderId, inheritedSessionIds);
+  await syncProjectGlobalStateIfPossible(defaultCodexHome, profileCodexHome, projectPaths, inheritedSessionIds);
 }
 
-async function copyProjectSessionDirectory(sourceRoot: string, destinationRoot: string, projectPath: string, inheritedSessionIds: Set<string>): Promise<void> {
+interface HistorySyncSelectors {
+  scope: SessionHistorySyncScope;
+  projectPaths: string[];
+  sourceTaskRoot: string;
+}
+
+interface ThreadReference {
+  id: string;
+  rolloutPath: string;
+}
+
+async function getProjectHistoryRoots(defaultCodexHome: string, legacyProjectPath?: string): Promise<string[]> {
+  if (legacyProjectPath) {
+    return [path.resolve(legacyProjectPath)];
+  }
+
+  const statePath = path.join(defaultCodexHome, GLOBAL_STATE_FILE);
+  const state = await readJsonObject(statePath);
+  const roots = [
+    ...asStringArray(state["project-order"]),
+    ...asStringArray(state["electron-saved-workspace-roots"])
+  ].map((entry) => path.resolve(entry));
+  return Array.from(new Set(roots));
+}
+
+async function copySessionHistoryDirectory(sourceRoot: string, destinationRoot: string, selectors: HistorySyncSelectors, profileProviderId: string, inheritedSessionIds: Set<string>): Promise<void> {
   const entries = await fs.readdir(sourceRoot, { withFileTypes: true });
   await Promise.all(entries.map(async (entry) => {
     const sourcePath = path.join(sourceRoot, entry.name);
     const destinationPath = path.join(destinationRoot, entry.name);
 
     if (entry.isDirectory()) {
-      await copyProjectSessionDirectory(sourcePath, destinationPath, projectPath, inheritedSessionIds);
+      await copySessionHistoryDirectory(sourcePath, destinationPath, selectors, profileProviderId, inheritedSessionIds);
       return;
     }
 
@@ -141,14 +235,40 @@ async function copyProjectSessionDirectory(sourceRoot: string, destinationRoot: 
     }
 
     const metadata = await readSessionMetadata(sourcePath);
-    if (!metadata || !isProjectSession(metadata.cwd, projectPath)) {
+    if (!metadata || !shouldSyncSessionMetadata(metadata, selectors)) {
       return;
     }
 
     await ensureDir(path.dirname(destinationPath));
-    await fs.copyFile(sourcePath, destinationPath);
+    await copySessionWithProfileProvider(sourcePath, destinationPath, profileProviderId);
     inheritedSessionIds.add(metadata.sessionId);
   }));
+}
+
+async function copySessionWithProfileProvider(sourcePath: string, destinationPath: string, profileProviderId: string): Promise<void> {
+  const source = await fs.readFile(sourcePath, "utf8");
+  const newlineIndex = source.indexOf("\n");
+  const firstLine = newlineIndex === -1 ? source : source.slice(0, newlineIndex);
+  const remainder = newlineIndex === -1 ? "" : source.slice(newlineIndex);
+
+  try {
+    const event = JSON.parse(firstLine) as {
+      type?: string;
+      payload?: {
+        model_provider?: string;
+      };
+    };
+
+    if (event.type === "session_meta" && event.payload) {
+      event.payload.model_provider = profileProviderId;
+      await fs.writeFile(destinationPath, `${JSON.stringify(event)}${remainder}`, { mode: 0o600 });
+      return;
+    }
+  } catch {
+    // Fall back to a byte-for-byte copy if this is not a normal rollout file.
+  }
+
+  await fs.copyFile(sourcePath, destinationPath);
 }
 
 async function readSessionMetadata(sessionPath: string): Promise<{ sessionId: string; cwd: string } | null> {
@@ -212,6 +332,86 @@ function isProjectSession(cwd: string, projectPath: string): boolean {
   return normalizedCwd === projectPath || normalizedCwd.startsWith(`${projectPath}${path.sep}`);
 }
 
+function isProjectHistorySession(cwd: string, projectPaths: string[]): boolean {
+  return projectPaths.some((projectPath) => isProjectSession(cwd, projectPath));
+}
+
+function isTaskHistorySession(cwd: string, selectors: HistorySyncSelectors): boolean {
+  const normalizedCwd = path.resolve(cwd);
+  return normalizedCwd === selectors.sourceTaskRoot
+    || normalizedCwd.startsWith(`${selectors.sourceTaskRoot}${path.sep}`);
+}
+
+function shouldSyncSessionMetadata(metadata: { cwd: string }, selectors: HistorySyncSelectors): boolean {
+  const isProject = isProjectHistorySession(metadata.cwd, selectors.projectPaths);
+  const isTask = isTaskHistorySession(metadata.cwd, selectors);
+  if (selectors.scope === "projects") {
+    return isProject;
+  }
+  if (selectors.scope === "tasks") {
+    return isTask && !isProject;
+  }
+  return isProject || isTask;
+}
+
+function renderHistoryWhereClause(selectors: HistorySyncSelectors, inheritedSessionIds: Set<string>): string {
+  const clauses: string[] = [];
+  if (inheritedSessionIds.size > 0) {
+    clauses.push(`id IN (${Array.from(inheritedSessionIds).map(sqlString).join(",")})`);
+  }
+
+  if (selectors.scope === "projects" || selectors.scope === "all") {
+    clauses.push(...selectors.projectPaths.map((projectPath) => cwdWhereClause(projectPath)));
+  }
+
+  if (selectors.scope === "tasks" || selectors.scope === "all") {
+    clauses.push(`(${cwdWhereClause(selectors.sourceTaskRoot)} AND ${renderNotProjectWhereClause(selectors.projectPaths)})`);
+  }
+
+  return clauses.length > 0 ? clauses.join(" OR ") : "0";
+}
+
+async function collectSourceThreadReferencesIfPossible(sourceDb: string, selectors: HistorySyncSelectors): Promise<ThreadReference[]> {
+  if (!(await pathExists(sourceDb))) {
+    return [];
+  }
+
+  const historyWhere = renderHistoryWhereClause(selectors, new Set());
+  const rows = await querySqliteRows(sourceDb, `SELECT id, rollout_path AS rolloutPath FROM threads WHERE ${historyWhere};`);
+  return rows
+    .map((row) => ({
+      id: typeof row.id === "string" ? row.id : "",
+      rolloutPath: typeof row.rolloutPath === "string" ? row.rolloutPath : ""
+    }))
+    .filter((item): item is ThreadReference => Boolean(item.id && item.rolloutPath));
+}
+
+async function copyReferencedSessionRollouts(threadReferences: ThreadReference[], defaultCodexHome: string, profileCodexHome: string, profileProviderId: string): Promise<void> {
+  await Promise.all(threadReferences.map(async (threadReference) => {
+    const sourcePath = threadReference.rolloutPath;
+    if (!sourcePath.startsWith(`${defaultCodexHome}${path.sep}`) || !(await pathExists(sourcePath))) {
+      return;
+    }
+
+    const destinationPath = path.join(profileCodexHome, path.relative(defaultCodexHome, sourcePath));
+    await ensureDir(path.dirname(destinationPath));
+    await copySessionWithProfileProvider(sourcePath, destinationPath, profileProviderId);
+  }));
+}
+
+function cwdWhereClause(rootPath: string): string {
+  const root = path.resolve(rootPath);
+  return `(cwd = ${sqlString(root)} OR cwd LIKE ${sqlString(`${root}${path.sep}%`)})`;
+}
+
+function renderNotProjectWhereClause(projectPaths: string[]): string {
+  if (projectPaths.length === 0) {
+    return "1";
+  }
+
+  return projectPaths.map((projectPath) => `NOT ${cwdWhereClause(projectPath)}`).join(" AND ");
+}
+
 async function copyFilteredSessionIndexFile(sourcePath: string, destinationPath: string, inheritedSessionIds: Set<string>): Promise<void> {
   if (inheritedSessionIds.size === 0 || !(await pathExists(sourcePath))) {
     return;
@@ -227,7 +427,11 @@ async function copyFilteredSessionIndexFile(sourcePath: string, destinationPath:
   }
 
   await ensureDir(path.dirname(destinationPath));
-  await fs.writeFile(destinationPath, `${filteredLines.join("\n")}\n`, { mode: 0o600 });
+  const existingLines = await pathExists(destinationPath)
+    ? (await fs.readFile(destinationPath, "utf8")).split("\n").filter(Boolean)
+    : [];
+  const mergedLines = Array.from(new Set([...existingLines, ...filteredLines]));
+  await fs.writeFile(destinationPath, `${mergedLines.join("\n")}\n`, { mode: 0o600 });
 }
 
 function shouldKeepSessionIndexLine(line: string, inheritedSessionIds: Set<string>): boolean {
@@ -244,25 +448,308 @@ function shouldKeepSessionIndexLine(line: string, inheritedSessionIds: Set<strin
   }
 }
 
+async function syncProjectThreadStateIfPossible(
+  sourceDb: string,
+  destinationDb: string,
+  defaultCodexHome: string,
+  profileCodexHome: string,
+  selectors: HistorySyncSelectors,
+  profileProviderId: string,
+  inheritedSessionIds: Set<string>
+): Promise<void> {
+  if (inheritedSessionIds.size === 0 || !(await pathExists(sourceDb))) {
+    return;
+  }
+
+  await ensureDir(path.dirname(destinationDb));
+  await ensureThreadStateDatabase(sourceDb, destinationDb);
+
+  const selectedSessionIdsSql = renderSelectedSessionIdsSql(inheritedSessionIds);
+  const sql = `
+PRAGMA busy_timeout = 10000;
+ATTACH DATABASE ${sqlString(sourceDb)} AS source;
+CREATE TEMP TABLE selected_history_ids (id TEXT PRIMARY KEY);
+${selectedSessionIdsSql}
+INSERT OR IGNORE INTO _sqlx_migrations SELECT * FROM source._sqlx_migrations;
+INSERT OR REPLACE INTO threads SELECT * FROM source.threads WHERE id IN (SELECT id FROM selected_history_ids);
+UPDATE threads
+SET rollout_path = replace(rollout_path, ${sqlString(defaultCodexHome)}, ${sqlString(profileCodexHome)}),
+    model_provider = ${sqlString(profileProviderId)}
+WHERE id IN (SELECT id FROM selected_history_ids);
+INSERT OR REPLACE INTO thread_dynamic_tools
+  SELECT * FROM source.thread_dynamic_tools
+  WHERE thread_id IN (SELECT id FROM selected_history_ids);
+INSERT OR REPLACE INTO thread_spawn_edges
+  SELECT * FROM source.thread_spawn_edges
+  WHERE parent_thread_id IN (SELECT id FROM selected_history_ids) OR child_thread_id IN (SELECT id FROM selected_history_ids);
+DETACH DATABASE source;
+DELETE FROM thread_dynamic_tools WHERE thread_id NOT IN (SELECT id FROM selected_history_ids);
+DELETE FROM thread_spawn_edges WHERE parent_thread_id NOT IN (SELECT id FROM threads) AND child_thread_id NOT IN (SELECT id FROM threads);
+DELETE FROM threads WHERE id NOT IN (SELECT id FROM selected_history_ids);
+DROP TABLE selected_history_ids;
+`;
+
+  await runSqlite(destinationDb, sql);
+}
+
+async function ensureThreadStateDatabase(sourceDb: string, destinationDb: string): Promise<void> {
+  if (await pathExists(destinationDb) && await sqliteTableExists(destinationDb, "threads")) {
+    return;
+  }
+
+  await fs.rm(destinationDb, { force: true });
+  await fs.copyFile(sourceDb, destinationDb);
+}
+
+async function runSqlite(databasePath: string, sql: string): Promise<void> {
+  const sqlite = await loadNodeSqliteModule();
+  if (sqlite) {
+    const database = new sqlite.DatabaseSync(databasePath);
+    try {
+      database.exec(sql);
+    } finally {
+      database.close();
+    }
+    return;
+  }
+
+  await execFileAsync("sqlite3", [databasePath, sql], { maxBuffer: 1024 * 1024 * 10 });
+}
+
+async function sqliteTableExists(databasePath: string, tableName: string): Promise<boolean> {
+  try {
+    const row = await querySqliteOne(databasePath, `SELECT name FROM sqlite_master WHERE type='table' AND name=${sqlString(tableName)};`);
+    return row?.name === tableName;
+  } catch {
+    return false;
+  }
+}
+
+async function querySqliteRows(databasePath: string, sql: string): Promise<Record<string, unknown>[]> {
+  const sqlite = await loadNodeSqliteModule();
+  if (sqlite) {
+    const database = new sqlite.DatabaseSync(databasePath);
+    try {
+      return database.prepare(sql).all();
+    } finally {
+      database.close();
+    }
+  }
+
+  const { stdout } = await execFileAsync("sqlite3", ["-json", databasePath, sql], { maxBuffer: 1024 * 1024 * 10 });
+  return stdout.trim() ? JSON.parse(stdout) as Record<string, unknown>[] : [];
+}
+
+async function querySqliteOne(databasePath: string, sql: string): Promise<Record<string, unknown> | undefined> {
+  const rows = await querySqliteRows(databasePath, sql);
+  return rows[0];
+}
+
+async function loadNodeSqliteModule(): Promise<NodeSqliteModule | null> {
+  nodeSqliteModulePromise ??= import("node:sqlite")
+    .then((module) => module as unknown as NodeSqliteModule)
+    .catch(() => null);
+  return nodeSqliteModulePromise;
+}
+
+function renderSelectedSessionIdsSql(sessionIds: Set<string>): string {
+  if (sessionIds.size === 0) {
+    return "";
+  }
+
+  return `INSERT OR IGNORE INTO selected_history_ids (id) VALUES ${Array.from(sessionIds).map((id) => `(${sqlString(id)})`).join(",")};`;
+}
+
+function sqlString(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+async function syncProjectDesktopCatalogIfPossible(
+  defaultCodexHome: string,
+  profileCodexHome: string,
+  selectors: HistorySyncSelectors,
+  profileProviderId: string,
+  inheritedSessionIds: Set<string>
+): Promise<void> {
+  const destinationStateDb = path.join(profileCodexHome, "state_5.sqlite");
+  const sourceCatalogDb = path.join(defaultCodexHome, DESKTOP_CATALOG_DB);
+  const destinationCatalogDb = path.join(profileCodexHome, DESKTOP_CATALOG_DB);
+
+  if (!(await pathExists(destinationStateDb)) || !(await pathExists(sourceCatalogDb))) {
+    return;
+  }
+
+  await ensureDir(path.dirname(destinationCatalogDb));
+  if (!(await pathExists(destinationCatalogDb))) {
+    await fs.copyFile(sourceCatalogDb, destinationCatalogDb);
+  }
+
+  const selectedSessionIdsSql = renderSelectedSessionIdsSql(inheritedSessionIds);
+  const sql = `
+PRAGMA busy_timeout = 10000;
+ATTACH DATABASE ${sqlString(destinationStateDb)} AS state;
+CREATE TEMP TABLE selected_history_ids (id TEXT PRIMARY KEY);
+${selectedSessionIdsSql}
+DELETE FROM local_thread_catalog;
+INSERT OR IGNORE INTO local_thread_catalog_hosts (host_id, host_kind) VALUES ('local', 'local');
+INSERT OR REPLACE INTO local_thread_catalog (
+  host_id,
+  thread_id,
+  display_title,
+  source_created_at,
+  source_updated_at,
+  cwd,
+  source_kind,
+  source_detail,
+  model_provider,
+  git_branch,
+  observation_sequence,
+  missing_candidate
+)
+SELECT
+  'local',
+  id,
+  title,
+  COALESCE(created_at_ms, created_at * 1000) / 1000.0,
+  COALESCE(NULLIF(recency_at_ms, 0), updated_at_ms, updated_at * 1000) / 1000.0,
+  cwd,
+  ${SOURCE_KIND_SQL},
+  NULL,
+  ${sqlString(profileProviderId)},
+  git_branch,
+  1,
+  0
+FROM state.threads
+WHERE archived = 0
+  AND preview <> ''
+  AND id IN (SELECT id FROM selected_history_ids);
+INSERT OR REPLACE INTO local_thread_catalog_sync_state (host_id, watermark_updated_at, initial_build_complete, observation_sequence)
+VALUES ('local', NULL, 1, 1);
+INSERT OR REPLACE INTO local_thread_catalog_metadata (id, catalog_revision) VALUES (1, 1);
+DETACH DATABASE state;
+DROP TABLE selected_history_ids;
+`;
+
+  await runSqlite(destinationCatalogDb, sql);
+}
+
+async function syncProjectGlobalStateIfPossible(defaultCodexHome: string, profileCodexHome: string, projectPaths: string[], inheritedSessionIds: Set<string>): Promise<void> {
+  const sourcePath = path.join(defaultCodexHome, GLOBAL_STATE_FILE);
+  const destinationPath = path.join(profileCodexHome, GLOBAL_STATE_FILE);
+  if (inheritedSessionIds.size === 0 || !(await pathExists(sourcePath))) {
+    return;
+  }
+
+  const sourceState = await readJsonObject(sourcePath);
+  const destinationState = await readJsonObject(destinationPath);
+  const mergedState = mergeProjectGlobalState(sourceState, destinationState, projectPaths, inheritedSessionIds);
+
+  await ensureDir(path.dirname(destinationPath));
+  await fs.writeFile(destinationPath, `${JSON.stringify(mergedState)}\n`, { mode: 0o600 });
+}
+
+async function readJsonObject(filePath: string): Promise<Record<string, unknown>> {
+  if (!(await pathExists(filePath))) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(await fs.readFile(filePath, "utf8")) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+}
+
+function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinationState: Record<string, unknown>, projectPaths: string[], inheritedSessionIds: Set<string>): Record<string, unknown> {
+  const merged = { ...destinationState };
+  mergeStringArrayProjects(merged, sourceState, "electron-saved-workspace-roots", projectPaths);
+  mergeStringArrayProjects(merged, sourceState, "project-order", projectPaths);
+  mergeStringArrayProjects(merged, sourceState, "active-workspace-roots", projectPaths);
+
+  const sourceHints = asStringRecord(sourceState["thread-workspace-root-hints"]);
+  const destinationHints = asStringRecord(merged["thread-workspace-root-hints"]);
+  for (const sessionId of inheritedSessionIds) {
+    const hint = sourceHints[sessionId];
+    if (hint) {
+      destinationHints[sessionId] = hint;
+    }
+  }
+  if (Object.keys(destinationHints).length > 0) {
+    merged["thread-workspace-root-hints"] = destinationHints;
+  }
+
+  const sourcePersisted = asObject(sourceState["electron-persisted-atom-state"]);
+  const destinationPersisted = asObject(merged["electron-persisted-atom-state"]);
+  for (const projectPath of projectPaths) {
+    const projectExpandedKey = `sidebar-project-expanded-v1-codex:${projectPath}`;
+    if (projectExpandedKey in sourcePersisted) {
+      destinationPersisted[projectExpandedKey] = sourcePersisted[projectExpandedKey];
+    }
+  }
+  if ("flat-project-sidebar-preferences-v1" in sourcePersisted) {
+    destinationPersisted["flat-project-sidebar-preferences-v1"] = sourcePersisted["flat-project-sidebar-preferences-v1"];
+  }
+  if (Object.keys(destinationPersisted).length > 0) {
+    merged["electron-persisted-atom-state"] = destinationPersisted;
+  }
+
+  return merged;
+}
+
+function mergeStringArrayProjects(destination: Record<string, unknown>, source: Record<string, unknown>, key: string, projectPaths: string[]): void {
+  if (projectPaths.length === 0) {
+    return;
+  }
+
+  const values = asStringArray(destination[key]);
+  const sourceValues = asStringArray(source[key]).filter((value) => isProjectHistorySession(value, projectPaths));
+  for (const value of sourceValues.length > 0 ? sourceValues : projectPaths) {
+    if (!values.includes(value)) {
+      values.push(value);
+    }
+  }
+  destination[key] = values;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? { ...value as Record<string, unknown> } : {};
+}
+
+function asStringRecord(value: unknown): Record<string, string> {
+  const object = asObject(value);
+  return Object.fromEntries(Object.entries(object).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+}
+
 function renderManagedConfig(profile: ManagedProfile): string {
-  return [
-    "",
+  const body = [
     "# --- Codex Profile Manager managed settings ---",
     "# These settings are managed so this profile can override inherited defaults.",
     renderRootConfig(profile),
     renderProviderConfig(profile),
-    "# --- End Codex Profile Manager managed settings ---",
-    ""
+    "# --- End Codex Profile Manager managed settings ---"
   ].filter(Boolean).join("\n");
+  return `\n${body}\n`;
 }
 
 function stripManagedConfig(config: string): string {
-  return config
+  const normalizedConfig = normalizeManagedConfigBoundaries(config);
+  return normalizedConfig
     .replace(
       /\n?# --- Codex Profile Manager managed settings ---[\s\S]*?# --- End Codex Profile Manager managed settings ---\n?/g,
       "\n"
     )
     .trimEnd();
+}
+
+function normalizeManagedConfigBoundaries(config: string): string {
+  return config
+    .replace(/([^\n])(# --- Codex Profile Manager managed settings ---)/g, "$1\n$2")
+    .replace(/(# --- End Codex Profile Manager managed settings ---)([^\n])/g, "$1\n$2");
 }
 
 function removeInheritedRootOverrides(config: string): string {
@@ -296,17 +783,45 @@ function removeProviderOverride(config: string, providerId: string): string {
     .trimEnd();
 }
 
+function rewriteInheritedProfilePaths(config: string, profile: ManagedProfile): string {
+  const defaultCodexHome = getDefaultCodexHome();
+  const escapedDefaultCodexHome = escapeRegExp(defaultCodexHome);
+  return normalizeProfileSpecificConfig(config
+    .replace(new RegExp(`${escapedDefaultCodexHome}(?=$|/)`, "g"), profile.paths.codexHome)
+    .replace(new RegExp(`${escapeRegExp(profile.paths.codexHome)}(?:-profiles/[^/]+/codex-home)+(?=$|/)`, "g"), profile.paths.codexHome), profile);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeProfileSpecificConfig(config: string, profile: ManagedProfile): string {
+  const computerUseClientPath = path.join(profile.paths.codexHome, "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient");
+  const computerUseServicePath = path.join(profile.paths.codexHome, "plugins", "cache", "openai-bundled", "computer-use", "1.0.1000387", "Codex Computer Use.app");
+  return config
+    .replace(/^notify = \[[^\n]*"turn-ended"\][ \t]*$/m, `notify = [${tomlString(computerUseClientPath)}, "turn-ended"]`)
+    .replace(/^NODE_REPL_TRUSTED_CODE_PATHS = .+$/m, `NODE_REPL_TRUSTED_CODE_PATHS = ${tomlString(profile.paths.codexHome)}`)
+    .replace(/^CODEX_HOME = .+$/m, `CODEX_HOME = ${tomlString(profile.paths.codexHome)}`)
+    .replace(/^SKY_CUA_SERVICE_PATH = .+$/m, `SKY_CUA_SERVICE_PATH = ${tomlString(computerUseServicePath)}`);
+}
+
 function mergeManagedConfig(config: string, profile: ManagedProfile): string {
-  const cleanedConfig = removeProviderOverride(removeInheritedRootOverrides(stripManagedConfig(config)), profile.provider.id);
+  const cleanedConfig = rewriteInheritedProfilePaths(removeProviderOverride(removeInheritedRootOverrides(stripManagedConfig(config)), profile.provider.id), profile);
   const firstTableIndex = cleanedConfig.search(/^\s*\[[^\]]+\]/m);
+  const managedConfig = renderManagedConfig(profile).trim();
 
   if (firstTableIndex === -1) {
-    return `${cleanedConfig}${renderManagedConfig(profile)}`;
+    const rootConfig = cleanedConfig.trimEnd();
+    return rootConfig ? `${rootConfig}\n\n${managedConfig}\n` : `${managedConfig}\n`;
   }
 
   const rootConfig = cleanedConfig.slice(0, firstTableIndex).trimEnd();
   const tableConfig = cleanedConfig.slice(firstTableIndex).trimStart();
-  return `${rootConfig}${renderManagedConfig(profile)}${tableConfig ? `${tableConfig}\n` : ""}`;
+  return [
+    rootConfig,
+    managedConfig,
+    tableConfig.trimEnd()
+  ].filter(Boolean).join("\n\n") + "\n";
 }
 
 export async function backupCodexConfig(profile: ManagedProfile, reason: string): Promise<string | null> {

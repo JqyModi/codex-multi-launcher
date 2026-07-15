@@ -13,10 +13,16 @@ await fs.writeFile(
   path.join(testRoot, ".codex", "config.toml"),
   [
     'model = "gpt-5.5"',
+    `notify = ["${path.join(testRoot, ".codex", "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient")}", "turn-ended"]`,
     "",
     "[mcp_servers.example]",
     'command = "node"',
     'args = ["server.js"]',
+    "",
+    "[mcp_servers.node_repl.env]",
+    `NODE_REPL_TRUSTED_CODE_PATHS = "${path.join(testRoot, ".codex")}"`,
+    `CODEX_HOME = "${path.join(testRoot, ".codex")}"`,
+    `SKY_CUA_SERVICE_PATH = "${path.join(testRoot, ".codex", "plugins", "cache", "openai-bundled", "computer-use", "1.0.1000387", "Codex Computer Use.app")}"`,
     "",
     "[features]",
     "multi_agent = true",
@@ -86,7 +92,17 @@ await fs.writeFile(
   ].join("\n"),
   { mode: 0o600 }
 );
-process.env.CODEX_PROFILE_MANAGER_SESSION_SYNC_PROJECT = syncedProjectPath;
+await fs.writeFile(
+  path.join(testRoot, ".codex", ".codex-global-state.json"),
+  `${JSON.stringify({
+    "electron-saved-workspace-roots": [syncedProjectPath],
+    "project-order": [syncedProjectPath],
+    "thread-workspace-root-hints": {
+      [syncedSessionId]: syncedProjectPath
+    }
+  })}\n`,
+  { mode: 0o600 }
+);
 
 const { createProfile, deleteProfile, listConfigBackups, listProfiles, permanentlyDeleteProfile, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
@@ -118,6 +134,10 @@ const fakeKey = "sk-test-verify-profile-generation";
 const result = await createProfile({
   name: "E2E Sandbox",
   inheritDefaultConfig: true,
+  syncHistory: {
+    enabled: true,
+    scope: "projects"
+  },
   provider: {
     type: "third_party_responses",
     displayName: "E2E Proxy",
@@ -182,6 +202,12 @@ assert(configRaw.includes("CODEX_PROFILE_E2E_SANDBOX_API_KEY"), "config should r
 assert(configRaw.includes('temp_env_key = "CODEX_PROFILE_E2E_SANDBOX_API_KEY"'), "config should include Codex temp env key");
 assert((configRaw.match(/\[model_providers\.proxy\]/g) ?? []).length === 1, "config should contain one proxy provider table");
 assert(configRaw.includes("[mcp_servers.example]"), "config should inherit default MCP server settings");
+assert(configRaw.includes(`CODEX_HOME = "${result.profile.paths.codexHome}"`), "config should rewrite inherited CODEX_HOME to the profile home");
+assert(configRaw.includes(`NODE_REPL_TRUSTED_CODE_PATHS = "${result.profile.paths.codexHome}"`), "config should rewrite inherited trusted code paths to the profile home");
+assert(configRaw.includes(`notify = ["${path.join(result.profile.paths.codexHome, "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient")}", "turn-ended"]`), "config should rewrite inherited notify path to the profile home");
+assert(configRaw.includes(`SKY_CUA_SERVICE_PATH = "${path.join(result.profile.paths.codexHome, "plugins", "cache", "openai-bundled", "computer-use", "1.0.1000387", "Codex Computer Use.app")}"`), "config should rewrite inherited computer-use service path to the profile home");
+assert(!configRaw.includes(`${path.join(testRoot, ".codex")}/`), "config should not keep source CODEX_HOME paths");
+assert(!configRaw.includes("codex-home-profiles"), "config should not contain duplicated profile-home fragments");
 assert(configRaw.includes("[features]"), "config should inherit default feature settings");
 assert(inheritedSkillRaw.includes("Sample skill"), "profile should inherit default CODEX_HOME skills");
 assert(inheritedPluginRaw.includes("sample-plugin"), "profile should inherit default CODEX_HOME plugins");
