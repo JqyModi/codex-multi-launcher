@@ -41,6 +41,8 @@ const syncedSessionId = "019f-test-synced-session";
 const otherSessionId = "019f-test-other-session";
 const sourceProfileProjectPath = path.join(testRoot, "Projects", "SourceProfileProject");
 const sourceProfileSessionId = "019f-test-source-profile-session";
+const sourceProfileTaskPath = path.join(testRoot, ".codex-profiles", "source-history", "Documents", "Codex", "2026-07-16", "quick-task");
+const sourceProfileTaskSessionId = "019f-test-source-profile-task-session";
 const syncedSessionPath = path.join(testRoot, ".codex", "sessions", "2026", "07", "15", `rollout-2026-07-15T10-00-00-${syncedSessionId}.jsonl`);
 const otherSessionPath = path.join(testRoot, ".codex", "sessions", "2026", "07", "15", `rollout-2026-07-15T11-00-00-${otherSessionId}.jsonl`);
 const archivedSessionPath = path.join(testRoot, ".codex", "archived_sessions", `rollout-2026-07-15T12-00-00-${syncedSessionId}.jsonl`);
@@ -49,7 +51,8 @@ await Promise.all([
     fs.mkdir(path.dirname(archivedSessionPath), { recursive: true }),
     fs.mkdir(syncedProjectPath, { recursive: true }),
     fs.mkdir(otherProjectPath, { recursive: true }),
-    fs.mkdir(sourceProfileProjectPath, { recursive: true })
+    fs.mkdir(sourceProfileProjectPath, { recursive: true }),
+    fs.mkdir(sourceProfileTaskPath, { recursive: true })
   ]);
 await fs.writeFile(syncedSessionPath, `${JSON.stringify({
   timestamp: "2026-07-15T02:00:00.000Z",
@@ -147,6 +150,7 @@ const sourceProfileResult = await createProfile({
   }
 });
 const sourceProfileSessionPath = path.join(sourceProfileResult.profile.paths.codexHome, "sessions", "2026", "07", "16", `rollout-2026-07-16T10-00-00-${sourceProfileSessionId}.jsonl`);
+const sourceProfileTaskSessionPath = path.join(sourceProfileResult.profile.paths.codexHome, "sessions", "2026", "07", "16", `rollout-2026-07-16T11-00-00-${sourceProfileTaskSessionId}.jsonl`);
 await fs.mkdir(path.dirname(sourceProfileSessionPath), { recursive: true });
 await fs.writeFile(sourceProfileSessionPath, `${JSON.stringify({
   timestamp: "2026-07-16T02:00:00.000Z",
@@ -157,14 +161,31 @@ await fs.writeFile(sourceProfileSessionPath, `${JSON.stringify({
     cwd: sourceProfileProjectPath
   }
 })}\n{"type":"event_msg","payload":{"message":"source profile project history"}}\n`, { mode: 0o600 });
+await fs.writeFile(sourceProfileTaskSessionPath, `${JSON.stringify({
+  timestamp: "2026-07-16T03:00:00.000Z",
+  type: "session_meta",
+  payload: {
+    session_id: sourceProfileTaskSessionId,
+    id: sourceProfileTaskSessionId,
+    cwd: sourceProfileTaskPath
+  }
+})}\n{"type":"event_msg","payload":{"message":"source profile task history"}}\n`, { mode: 0o600 });
 await fs.writeFile(
   path.join(sourceProfileResult.profile.paths.codexHome, "session_index.jsonl"),
-  `${JSON.stringify({ id: sourceProfileSessionId, thread_name: "Source profile project history", updated_at: "2026-07-16T02:00:00.000Z" })}\n`,
+  [
+    JSON.stringify({ id: sourceProfileSessionId, thread_name: "Source profile project history", updated_at: "2026-07-16T02:00:00.000Z" }),
+    JSON.stringify({ id: sourceProfileTaskSessionId, thread_name: "Source profile task history", updated_at: "2026-07-16T03:00:00.000Z" }),
+    ""
+  ].join("\n"),
   { mode: 0o600 }
 );
 await fs.writeFile(
   path.join(sourceProfileResult.profile.paths.codexHome, "history.jsonl"),
-  `${JSON.stringify({ session_id: sourceProfileSessionId, ts: 1784196000, text: "source profile prompt" })}\n`,
+  [
+    JSON.stringify({ session_id: sourceProfileSessionId, ts: 1784196000, text: "source profile prompt" }),
+    JSON.stringify({ session_id: sourceProfileTaskSessionId, ts: 1784199600, text: "source profile task prompt" }),
+    ""
+  ].join("\n"),
   { mode: 0o600 }
 );
 await fs.writeFile(
@@ -178,6 +199,45 @@ await fs.writeFile(
   })}\n`,
   { mode: 0o600 }
 );
+
+const taskOnlyResult = await createProfile({
+  name: "Task Only Sync",
+  inheritDefaultConfig: false,
+  syncHistory: {
+    enabled: true,
+    scope: "tasks",
+    sources: [
+      { type: "profile", profileId: sourceProfileResult.profile.id }
+    ]
+  },
+  provider: {
+    type: "third_party_responses",
+    displayName: "Task Proxy",
+    baseUrl: "https://task.example.com/v1",
+    model: "gpt-5.2",
+    apiKey: "sk-test-task-only",
+    reasoningEffort: "medium"
+  }
+});
+const taskOnlyGlobalStatePath = path.join(taskOnlyResult.profile.paths.codexHome, ".codex-global-state.json");
+const taskOnlySessionPath = path.join(taskOnlyResult.profile.paths.codexHome, "sessions", "2026", "07", "16", path.basename(sourceProfileTaskSessionPath));
+const taskOnlyProjectSessionPath = path.join(taskOnlyResult.profile.paths.codexHome, "sessions", "2026", "07", "16", path.basename(sourceProfileSessionPath));
+const [taskOnlyGlobalStateRaw, taskOnlySessionRaw, taskOnlyIndexRaw, taskOnlyHistoryRaw] = await Promise.all([
+  fs.readFile(taskOnlyGlobalStatePath, "utf8"),
+  fs.readFile(taskOnlySessionPath, "utf8"),
+  fs.readFile(path.join(taskOnlyResult.profile.paths.codexHome, "session_index.jsonl"), "utf8"),
+  fs.readFile(path.join(taskOnlyResult.profile.paths.codexHome, "history.jsonl"), "utf8")
+]);
+const taskOnlyGlobalState = JSON.parse(taskOnlyGlobalStateRaw);
+assert(!("electron-saved-workspace-roots" in taskOnlyGlobalState), "task-only sync should not create project workspace roots");
+assert(!("project-order" in taskOnlyGlobalState), "task-only sync should not create project ordering");
+assert(!("active-workspace-roots" in taskOnlyGlobalState), "task-only sync should not create active project roots");
+assert(!taskOnlyGlobalStateRaw.includes(sourceProfileProjectPath), "task-only sync should not keep source project roots in global state");
+assert(taskOnlySessionRaw.includes("source profile task history"), "task-only sync should copy task session history");
+assert(taskOnlyIndexRaw.includes("Source profile task history"), "task-only sync should copy task session index rows");
+assert(taskOnlyHistoryRaw.includes("source profile task prompt"), "task-only sync should copy task prompt history");
+assert(!(await fileExists(taskOnlyProjectSessionPath)), "task-only sync should not copy project session history");
+await permanentlyDeleteProfile(taskOnlyResult.profile.id);
 const result = await createProfile({
   name: "E2E Sandbox",
   inheritDefaultConfig: true,

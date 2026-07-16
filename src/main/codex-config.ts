@@ -213,7 +213,7 @@ async function syncSessionHistoryIfRequested(sourceCodexHome: string, profileCod
     retainedSessionIds
   )));
   await syncProjectDesktopCatalogIfPossible(sourceCodexHome, profileCodexHome, profileProviderId, retainedSessionIds);
-  await syncProjectGlobalStateIfPossible(sourceCodexHome, profileCodexHome, projectPaths, sourceSessionIds);
+  await syncProjectGlobalStateIfPossible(sourceCodexHome, profileCodexHome, projectPaths, syncScope, sourceSessionIds);
 }
 
 interface HistorySyncSelectors {
@@ -664,7 +664,7 @@ DROP TABLE selected_history_ids;
   await runSqlite(destinationCatalogDb, sql);
 }
 
-async function syncProjectGlobalStateIfPossible(defaultCodexHome: string, profileCodexHome: string, projectPaths: string[], inheritedSessionIds: Set<string>): Promise<void> {
+async function syncProjectGlobalStateIfPossible(defaultCodexHome: string, profileCodexHome: string, projectPaths: string[], syncScope: SessionHistorySyncScope, inheritedSessionIds: Set<string>): Promise<void> {
   const sourcePath = path.join(defaultCodexHome, GLOBAL_STATE_FILE);
   const destinationPath = path.join(profileCodexHome, GLOBAL_STATE_FILE);
   if (inheritedSessionIds.size === 0 || !(await pathExists(sourcePath))) {
@@ -673,7 +673,7 @@ async function syncProjectGlobalStateIfPossible(defaultCodexHome: string, profil
 
   const sourceState = await readJsonObject(sourcePath);
   const destinationState = await readJsonObject(destinationPath);
-  const mergedState = mergeProjectGlobalState(sourceState, destinationState, projectPaths, inheritedSessionIds);
+  const mergedState = mergeProjectGlobalState(sourceState, destinationState, projectPaths, syncScope, inheritedSessionIds);
 
   await ensureDir(path.dirname(destinationPath));
   await fs.writeFile(destinationPath, `${JSON.stringify(mergedState)}\n`, { mode: 0o600 });
@@ -692,11 +692,18 @@ async function readJsonObject(filePath: string): Promise<Record<string, unknown>
   }
 }
 
-function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinationState: Record<string, unknown>, projectPaths: string[], inheritedSessionIds: Set<string>): Record<string, unknown> {
+function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinationState: Record<string, unknown>, projectPaths: string[], syncScope: SessionHistorySyncScope, inheritedSessionIds: Set<string>): Record<string, unknown> {
   const merged = sanitizeCodexGlobalState(destinationState);
-  mergeStringArrayProjects(merged, sourceState, "electron-saved-workspace-roots", projectPaths);
-  mergeStringArrayProjects(merged, sourceState, "project-order", projectPaths);
-  mergeStringArrayProjects(merged, sourceState, "active-workspace-roots", projectPaths);
+  const shouldSyncProjectShells = syncScope !== "tasks";
+  if (shouldSyncProjectShells) {
+    mergeStringArrayProjects(merged, sourceState, "electron-saved-workspace-roots", projectPaths);
+    mergeStringArrayProjects(merged, sourceState, "project-order", projectPaths);
+    mergeStringArrayProjects(merged, sourceState, "active-workspace-roots", projectPaths);
+  } else {
+    delete merged["electron-saved-workspace-roots"];
+    delete merged["project-order"];
+    delete merged["active-workspace-roots"];
+  }
 
   const sourceHints = asStringRecord(sourceState["thread-workspace-root-hints"]);
   const destinationHints = asStringRecord(merged["thread-workspace-root-hints"]);
@@ -710,16 +717,24 @@ function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinati
     merged["thread-workspace-root-hints"] = destinationHints;
   }
 
-  const sourcePersisted = asObject(sourceState["electron-persisted-atom-state"]);
   const destinationPersisted = asObject(merged["electron-persisted-atom-state"]);
-  for (const projectPath of projectPaths) {
-    const projectExpandedKey = `sidebar-project-expanded-v1-codex:${projectPath}`;
-    if (projectExpandedKey in sourcePersisted) {
-      destinationPersisted[projectExpandedKey] = sourcePersisted[projectExpandedKey];
+  if (shouldSyncProjectShells) {
+    const sourcePersisted = asObject(sourceState["electron-persisted-atom-state"]);
+    for (const projectPath of projectPaths) {
+      const projectExpandedKey = `sidebar-project-expanded-v1-codex:${projectPath}`;
+      if (projectExpandedKey in sourcePersisted) {
+        destinationPersisted[projectExpandedKey] = sourcePersisted[projectExpandedKey];
+      }
     }
-  }
-  if ("flat-project-sidebar-preferences-v1" in sourcePersisted) {
-    destinationPersisted["flat-project-sidebar-preferences-v1"] = sourcePersisted["flat-project-sidebar-preferences-v1"];
+    if ("flat-project-sidebar-preferences-v1" in sourcePersisted) {
+      destinationPersisted["flat-project-sidebar-preferences-v1"] = sourcePersisted["flat-project-sidebar-preferences-v1"];
+    }
+  } else {
+    for (const key of Object.keys(destinationPersisted)) {
+      if (key.startsWith("sidebar-project-expanded-v1-codex:")) {
+        delete destinationPersisted[key];
+      }
+    }
   }
   if (Object.keys(destinationPersisted).length > 0) {
     merged["electron-persisted-atom-state"] = destinationPersisted;
