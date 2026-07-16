@@ -16,6 +16,7 @@ import {
   listProfiles,
   openProfile,
   permanentlyDeleteProfile,
+  refreshActiveProfileLaunchers,
   restoreProfile,
   restoreConfigBackup,
   testProfileProvider,
@@ -493,6 +494,9 @@ void app.whenReady().then(() => {
     userData: () => app.getPath("userData")
   });
   registerIpc();
+  void refreshActiveProfileLaunchers().catch((error) => {
+    console.warn("[launchers] Failed to refresh active profile launchers", error);
+  });
   createWindow();
 
   app.on("activate", () => {

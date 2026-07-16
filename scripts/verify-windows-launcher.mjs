@@ -41,9 +41,16 @@ assert(!launcherPath.endsWith(".app"), "Windows launcher should not use .app bun
 assert(launcherRaw.startsWith("@echo off"), "Windows launcher should be a cmd script");
 assert(launcherRaw.includes("set \"CODEX_HOME="), "Windows launcher should set CODEX_HOME");
 assert(launcherRaw.includes("set \"USER_DATA_DIR="), "Windows launcher should set USER_DATA_DIR");
-assert(launcherRaw.includes("node -e "), "Windows launcher should use Node to decrypt the saved API key");
+assert(launcherRaw.includes("set \"NODE_EXE="), "Windows launcher should configure a Node runtime");
+assert(launcherRaw.includes("resources\\cua_node\\bin\\node.exe"), "Windows launcher should prefer the Codex-bundled Node runtime");
+assert(launcherRaw.includes("set \"DECRYPT_SCRIPT_B64="), "Windows launcher should store the decrypt script without nested cmd quotes");
+assert(launcherRaw.includes("process.env.DECRYPT_SCRIPT_B64"), "Windows launcher should read the decrypt script from the environment");
+assert(launcherRaw.includes("set \"API_KEY_FILE=%TEMP%\\"), "Windows launcher should decrypt the saved API key through a temp file");
+assert(launcherRaw.includes("set /p API_KEY=<\"%API_KEY_FILE%\""), "Windows launcher should read the decrypted API key from the temp file");
 assert(launcherRaw.includes("CODEX_PROFILE_WINDOWS_SANDBOX_API_KEY"), "Windows launcher should export the provider env key");
 assert(launcherRaw.includes("--user-data-dir=\"%USER_DATA_DIR%\""), "Windows launcher should pass user-data-dir");
+assert(launcherRaw.includes("start \"\" \"%CODEX_EXE%\""), "Windows launcher should start the GUI app in a separate window");
+assert(!launcherRaw.includes("start \"\" /b"), "Windows launcher should not use /b because the manager opens it with ignored stdio");
 assert(launcherRaw.includes("ChatGPT.exe"), "Windows launcher should reference ChatGPT.exe");
 assert(!launcherRaw.includes(fakeKey), "Windows launcher must not contain plaintext API key");
 assert(!configRaw.includes(fakeKey), "Windows profile config must not contain plaintext API key");

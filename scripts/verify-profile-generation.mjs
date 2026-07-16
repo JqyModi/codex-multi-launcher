@@ -39,15 +39,18 @@ const syncedProjectPath = path.join(testRoot, "Projects", "SyncedProject");
 const otherProjectPath = path.join(testRoot, "Projects", "OtherProject");
 const syncedSessionId = "019f-test-synced-session";
 const otherSessionId = "019f-test-other-session";
+const sourceProfileProjectPath = path.join(testRoot, "Projects", "SourceProfileProject");
+const sourceProfileSessionId = "019f-test-source-profile-session";
 const syncedSessionPath = path.join(testRoot, ".codex", "sessions", "2026", "07", "15", `rollout-2026-07-15T10-00-00-${syncedSessionId}.jsonl`);
 const otherSessionPath = path.join(testRoot, ".codex", "sessions", "2026", "07", "15", `rollout-2026-07-15T11-00-00-${otherSessionId}.jsonl`);
 const archivedSessionPath = path.join(testRoot, ".codex", "archived_sessions", `rollout-2026-07-15T12-00-00-${syncedSessionId}.jsonl`);
 await Promise.all([
   fs.mkdir(path.dirname(syncedSessionPath), { recursive: true }),
-  fs.mkdir(path.dirname(archivedSessionPath), { recursive: true }),
-  fs.mkdir(syncedProjectPath, { recursive: true }),
-  fs.mkdir(otherProjectPath, { recursive: true })
-]);
+    fs.mkdir(path.dirname(archivedSessionPath), { recursive: true }),
+    fs.mkdir(syncedProjectPath, { recursive: true }),
+    fs.mkdir(otherProjectPath, { recursive: true }),
+    fs.mkdir(sourceProfileProjectPath, { recursive: true })
+  ]);
 await fs.writeFile(syncedSessionPath, `${JSON.stringify({
   timestamp: "2026-07-15T02:00:00.000Z",
   type: "session_meta",
@@ -131,12 +134,60 @@ assertExtractedModels({ nested: { data: [{ id: "deep-model" }, { id: 123 }] } },
 assertExtractedModels({ data: [{ name: "missing-id" }] }, [], "responses without id strings should not produce models");
 
 const fakeKey = "sk-test-verify-profile-generation";
+const sourceProfileResult = await createProfile({
+  name: "Source History",
+  inheritDefaultConfig: false,
+  provider: {
+    type: "third_party_responses",
+    displayName: "Source Proxy",
+    baseUrl: "https://source.example.com/v1",
+    model: "gpt-5.2",
+    apiKey: "sk-test-source-profile",
+    reasoningEffort: "medium"
+  }
+});
+const sourceProfileSessionPath = path.join(sourceProfileResult.profile.paths.codexHome, "sessions", "2026", "07", "16", `rollout-2026-07-16T10-00-00-${sourceProfileSessionId}.jsonl`);
+await fs.mkdir(path.dirname(sourceProfileSessionPath), { recursive: true });
+await fs.writeFile(sourceProfileSessionPath, `${JSON.stringify({
+  timestamp: "2026-07-16T02:00:00.000Z",
+  type: "session_meta",
+  payload: {
+    session_id: sourceProfileSessionId,
+    id: sourceProfileSessionId,
+    cwd: sourceProfileProjectPath
+  }
+})}\n{"type":"event_msg","payload":{"message":"source profile project history"}}\n`, { mode: 0o600 });
+await fs.writeFile(
+  path.join(sourceProfileResult.profile.paths.codexHome, "session_index.jsonl"),
+  `${JSON.stringify({ id: sourceProfileSessionId, thread_name: "Source profile project history", updated_at: "2026-07-16T02:00:00.000Z" })}\n`,
+  { mode: 0o600 }
+);
+await fs.writeFile(
+  path.join(sourceProfileResult.profile.paths.codexHome, "history.jsonl"),
+  `${JSON.stringify({ session_id: sourceProfileSessionId, ts: 1784196000, text: "source profile prompt" })}\n`,
+  { mode: 0o600 }
+);
+await fs.writeFile(
+  path.join(sourceProfileResult.profile.paths.codexHome, ".codex-global-state.json"),
+  `${JSON.stringify({
+    "electron-saved-workspace-roots": [sourceProfileProjectPath],
+    "project-order": [sourceProfileProjectPath],
+    "thread-workspace-root-hints": {
+      [sourceProfileSessionId]: sourceProfileProjectPath
+    }
+  })}\n`,
+  { mode: 0o600 }
+);
 const result = await createProfile({
   name: "E2E Sandbox",
   inheritDefaultConfig: true,
   syncHistory: {
     enabled: true,
-    scope: "projects"
+    scope: "projects",
+    sources: [
+      { type: "default" },
+      { type: "profile", profileId: sourceProfileResult.profile.id }
+    ]
   },
   provider: {
     type: "third_party_responses",
@@ -151,7 +202,7 @@ const result = await createProfile({
 const appPaths = getAppPaths();
 const profiles = await listProfiles();
 
-assert(profiles.length === 1, "expected one profile in registry");
+assert(profiles.length === 2, "expected source and target profiles in registry");
 assert(result.profile.id === "e2e-sandbox", "expected stable slug profile id");
 
 const configPath = path.join(result.profile.paths.codexHome, "config.toml");
@@ -168,10 +219,11 @@ const inheritedAgentsPath = path.join(result.profile.paths.codexHome, "AGENTS.md
 const inheritedSyncedSessionPath = path.join(result.profile.paths.codexHome, "sessions", "2026", "07", "15", path.basename(syncedSessionPath));
 const inheritedOtherSessionPath = path.join(result.profile.paths.codexHome, "sessions", "2026", "07", "15", path.basename(otherSessionPath));
 const inheritedArchivedSessionPath = path.join(result.profile.paths.codexHome, "archived_sessions", path.basename(archivedSessionPath));
+const inheritedSourceProfileSessionPath = path.join(result.profile.paths.codexHome, "sessions", "2026", "07", "16", path.basename(sourceProfileSessionPath));
 const inheritedSessionIndexPath = path.join(result.profile.paths.codexHome, "session_index.jsonl");
 const inheritedHistoryPath = path.join(result.profile.paths.codexHome, "history.jsonl");
 
-const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat, inheritedSkillRaw, inheritedPluginRaw, inheritedAgentsRaw, inheritedSyncedSessionRaw, inheritedArchivedSessionRaw, inheritedSessionIndexRaw, inheritedHistoryRaw] = await Promise.all([
+const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat, inheritedSkillRaw, inheritedPluginRaw, inheritedAgentsRaw, inheritedSyncedSessionRaw, inheritedArchivedSessionRaw, inheritedSourceProfileSessionRaw, inheritedSessionIndexRaw, inheritedHistoryRaw] = await Promise.all([
   fs.readFile(appPaths.profilesFile, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8"),
   fs.readFile(configPath, "utf8"),
@@ -188,11 +240,13 @@ const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRa
   fs.readFile(inheritedAgentsPath, "utf8"),
   fs.readFile(inheritedSyncedSessionPath, "utf8"),
   fs.readFile(inheritedArchivedSessionPath, "utf8"),
+  fs.readFile(inheritedSourceProfileSessionPath, "utf8"),
   fs.readFile(inheritedSessionIndexPath, "utf8"),
   fs.readFile(inheritedHistoryPath, "utf8")
 ]);
 
 assert(registryRaw.includes("E2E Sandbox"), "registry should contain profile name");
+assert(registryRaw.includes("Source History"), "registry should contain source profile name");
 assert(result.profile.appearance.iconBackgroundColor === "#34C759", "profile should default to the standard identity color");
 assert(registryRaw.includes('"iconBackgroundColor": "#34C759"'), "registry should persist profile appearance color");
 assert(configRaw.includes('model_provider = "proxy"'), "config should select proxy provider");
@@ -214,10 +268,13 @@ assert(inheritedPluginRaw.includes("sample-plugin"), "profile should inherit def
 assert(inheritedAgentsRaw.includes("Default instructions"), "profile should inherit default CODEX_HOME instructions");
 assert(inheritedSyncedSessionRaw.includes("synced project history"), "profile should inherit matching project session history");
 assert(inheritedArchivedSessionRaw.includes("archived synced project history"), "profile should inherit matching archived project session history");
+assert(inheritedSourceProfileSessionRaw.includes("source profile project history"), "profile should inherit project session history from selected profile source");
 assert(!(await fileExists(inheritedOtherSessionPath)), "profile should not inherit session history from another project");
 assert(inheritedSessionIndexRaw.includes("Synced project history"), "profile should inherit matching session index rows");
+assert(inheritedSessionIndexRaw.includes("Source profile project history"), "profile should inherit matching session index rows from selected profile source");
 assert(!inheritedSessionIndexRaw.includes("Other project history"), "profile should not inherit session index rows from another project");
 assert(inheritedHistoryRaw.includes("synced prompt"), "profile should inherit matching prompt history rows");
+assert(inheritedHistoryRaw.includes("source profile prompt"), "profile should inherit matching prompt history rows from selected profile source");
 assert(!inheritedHistoryRaw.includes("other prompt"), "profile should not inherit prompt history rows from another project");
 assert(configRaw.includes("Codex Profile Manager managed settings"), "config should mark appended managed settings");
 assert(!configRaw.includes('model = "gpt-5.5"'), "profile config should remove inherited root model to avoid duplicate TOML keys");
@@ -247,6 +304,7 @@ assert(launcherRaw.includes("set -euo pipefail"), "launcher should use strict sh
 assert(launcherRaw.includes(appPaths.masterKeyFile), "launcher should reference encrypted secret master key");
 assert(launcherRaw.includes(appPaths.secretsFile), "launcher should reference encrypted secrets file");
 await execFileAsync("zsh", ["-n", launcherScript]);
+await permanentlyDeleteProfile(sourceProfileResult.profile.id);
 
 const updatedKey = "sk-test-verify-profile-update";
 await updateProfile({

@@ -118,9 +118,24 @@ export interface ProfileRegistry {
 
 export type SessionHistorySyncScope = "projects" | "tasks" | "all";
 
+export type SessionHistorySyncSourceType = "default" | "profile";
+
+export interface SessionHistorySyncSourceInput {
+  type: SessionHistorySyncSourceType;
+  profileId?: string;
+}
+
 export interface SessionHistorySyncInput {
   enabled: boolean;
   scope: SessionHistorySyncScope;
+  sources?: SessionHistorySyncSourceInput[];
+}
+
+export interface SessionHistorySyncResolvedSource {
+  type: SessionHistorySyncSourceType;
+  label: string;
+  codexHome: string;
+  profileId?: string;
 }
 
 export interface CreateProfileInput {

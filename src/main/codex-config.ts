@@ -4,7 +4,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { ensureDir, pathExists } from "./fs-utils.js";
 import { getDefaultCodexHome, getRuntimePlatform } from "./paths.js";
-import type { ConfigBackupInfo, ManagedProfile, RestoreConfigBackupResult, SessionHistorySyncInput, SessionHistorySyncScope } from "../shared/types.js";
+import type { ConfigBackupInfo, ManagedProfile, RestoreConfigBackupResult, SessionHistorySyncInput, SessionHistorySyncResolvedSource, SessionHistorySyncScope } from "../shared/types.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -133,19 +133,37 @@ export async function inheritDefaultCodexHomeResources(profile: ManagedProfile):
   await Promise.all(INHERITED_CODEX_HOME_ENTRIES.map((entry) => copyIfExists(path.join(defaultCodexHome, entry), path.join(profileCodexHome, entry))));
 }
 
-export async function syncSessionHistory(profile: ManagedProfile, historySync: SessionHistorySyncInput): Promise<void> {
+export async function syncSessionHistory(profile: ManagedProfile, historySync: SessionHistorySyncInput, resolvedSources?: SessionHistorySyncResolvedSource[]): Promise<void> {
   const defaultCodexHome = path.resolve(getDefaultCodexHome());
   const profileCodexHome = path.resolve(profile.paths.codexHome);
+  const sources = resolvedSources?.length
+    ? resolvedSources
+    : [{ type: "default" as const, label: "Current Codex / ChatGPT", codexHome: defaultCodexHome }];
 
-  if (defaultCodexHome === profileCodexHome || !(await pathExists(defaultCodexHome))) {
+  const retainedSessionIds = new Set<string>();
+
+  await ensureDir(profile.paths.codexHome);
+  for (const source of sources) {
+    const sourceCodexHome = path.resolve(source.codexHome);
+    if (sourceCodexHome === profileCodexHome || !(await pathExists(sourceCodexHome))) {
+      continue;
+    }
+    await syncSessionHistoryIfRequested(sourceCodexHome, profileCodexHome, profile.provider.id, historySync, retainedSessionIds);
+  }
+}
+
+export async function repairProfileGlobalState(profile: ManagedProfile): Promise<void> {
+  const statePath = path.join(profile.paths.codexHome, GLOBAL_STATE_FILE);
+  if (!(await pathExists(statePath))) {
     return;
   }
 
-  await ensureDir(profile.paths.codexHome);
-  await syncSessionHistoryIfRequested(defaultCodexHome, profileCodexHome, profile.provider.id, historySync);
+  const currentState = await readJsonObject(statePath);
+  const repairedState = sanitizeCodexGlobalState(currentState);
+  await fs.writeFile(statePath, `${JSON.stringify(repairedState)}\n`, { mode: 0o600 });
 }
 
-async function syncSessionHistoryIfRequested(defaultCodexHome: string, profileCodexHome: string, profileProviderId: string, historySync?: SessionHistorySyncInput): Promise<void> {
+async function syncSessionHistoryIfRequested(sourceCodexHome: string, profileCodexHome: string, profileProviderId: string, historySync: SessionHistorySyncInput | undefined, retainedSessionIds: Set<string>): Promise<void> {
   const legacyProjectPath = process.env.CODEX_PROFILE_MANAGER_SESSION_SYNC_PROJECT?.trim();
   const shouldSync = historySync?.enabled || Boolean(legacyProjectPath);
   if (!shouldSync) {
@@ -153,51 +171,55 @@ async function syncSessionHistoryIfRequested(defaultCodexHome: string, profileCo
   }
 
   const syncScope = historySync?.scope ?? "projects";
-  const projectPaths = await getProjectHistoryRoots(defaultCodexHome, legacyProjectPath);
-  const inheritedSessionIds = new Set<string>();
+  const projectPaths = await getProjectHistoryRoots(sourceCodexHome, legacyProjectPath);
+  const sourceSessionIds = new Set<string>();
   const selectors: HistorySyncSelectors = {
     scope: syncScope,
     projectPaths,
-    sourceTaskRoot: path.join(path.dirname(defaultCodexHome), "Documents", "Codex")
+    sourceTaskRoots: getTaskHistoryRoots(sourceCodexHome)
   };
-  const threadReferences = await collectSourceThreadReferencesIfPossible(path.join(defaultCodexHome, "state_5.sqlite"), selectors);
+  const threadReferences = await collectSourceThreadReferencesIfPossible(path.join(sourceCodexHome, "state_5.sqlite"), selectors);
   for (const threadReference of threadReferences) {
-    inheritedSessionIds.add(threadReference.id);
+    sourceSessionIds.add(threadReference.id);
+    retainedSessionIds.add(threadReference.id);
   }
 
   for (const entry of SESSION_HISTORY_DIRECTORIES) {
-    const sourceRoot = path.join(defaultCodexHome, entry);
+    const sourceRoot = path.join(sourceCodexHome, entry);
     if (!(await pathExists(sourceRoot))) {
       continue;
     }
 
-    await copySessionHistoryDirectory(sourceRoot, path.join(profileCodexHome, entry), selectors, profileProviderId, inheritedSessionIds);
+    await copySessionHistoryDirectory(sourceRoot, path.join(profileCodexHome, entry), selectors, profileProviderId, sourceSessionIds);
   }
-  await copyReferencedSessionRollouts(threadReferences, defaultCodexHome, profileCodexHome, profileProviderId);
+  for (const sessionId of sourceSessionIds) {
+    retainedSessionIds.add(sessionId);
+  }
+  await copyReferencedSessionRollouts(threadReferences, sourceCodexHome, profileCodexHome, profileProviderId);
 
   await Promise.all(SESSION_HISTORY_INDEX_FILES.map((entry) => copyFilteredSessionIndexFile(
-    path.join(defaultCodexHome, entry),
+    path.join(sourceCodexHome, entry),
     path.join(profileCodexHome, entry),
-    inheritedSessionIds
+    sourceSessionIds
   )));
-  const sourceStateDb = path.join(defaultCodexHome, "state_5.sqlite");
+  const sourceStateDb = path.join(sourceCodexHome, "state_5.sqlite");
   await Promise.all(THREAD_STATE_DATABASE_PATHS.map((entry) => syncProjectThreadStateIfPossible(
     sourceStateDb,
     path.join(profileCodexHome, entry),
-    defaultCodexHome,
+    sourceCodexHome,
     profileCodexHome,
-    selectors,
     profileProviderId,
-    inheritedSessionIds
+    sourceSessionIds,
+    retainedSessionIds
   )));
-  await syncProjectDesktopCatalogIfPossible(defaultCodexHome, profileCodexHome, selectors, profileProviderId, inheritedSessionIds);
-  await syncProjectGlobalStateIfPossible(defaultCodexHome, profileCodexHome, projectPaths, inheritedSessionIds);
+  await syncProjectDesktopCatalogIfPossible(sourceCodexHome, profileCodexHome, profileProviderId, retainedSessionIds);
+  await syncProjectGlobalStateIfPossible(sourceCodexHome, profileCodexHome, projectPaths, sourceSessionIds);
 }
 
 interface HistorySyncSelectors {
   scope: SessionHistorySyncScope;
   projectPaths: string[];
-  sourceTaskRoot: string;
+  sourceTaskRoots: string[];
 }
 
 interface ThreadReference {
@@ -217,6 +239,13 @@ async function getProjectHistoryRoots(defaultCodexHome: string, legacyProjectPat
     ...asStringArray(state["electron-saved-workspace-roots"])
   ].map((entry) => path.resolve(entry));
   return Array.from(new Set(roots));
+}
+
+function getTaskHistoryRoots(sourceCodexHome: string): string[] {
+  return Array.from(new Set([
+    path.join(path.dirname(getDefaultCodexHome()), "Documents", "Codex"),
+    path.join(path.dirname(sourceCodexHome), "Documents", "Codex")
+  ].map((entry) => path.resolve(entry))));
 }
 
 async function copySessionHistoryDirectory(sourceRoot: string, destinationRoot: string, selectors: HistorySyncSelectors, profileProviderId: string, inheritedSessionIds: Set<string>): Promise<void> {
@@ -338,8 +367,8 @@ function isProjectHistorySession(cwd: string, projectPaths: string[]): boolean {
 
 function isTaskHistorySession(cwd: string, selectors: HistorySyncSelectors): boolean {
   const normalizedCwd = path.resolve(cwd);
-  return normalizedCwd === selectors.sourceTaskRoot
-    || normalizedCwd.startsWith(`${selectors.sourceTaskRoot}${path.sep}`);
+  return selectors.sourceTaskRoots.some((sourceTaskRoot) => normalizedCwd === sourceTaskRoot
+    || normalizedCwd.startsWith(`${sourceTaskRoot}${path.sep}`));
 }
 
 function shouldSyncSessionMetadata(metadata: { cwd: string }, selectors: HistorySyncSelectors): boolean {
@@ -365,7 +394,7 @@ function renderHistoryWhereClause(selectors: HistorySyncSelectors, inheritedSess
   }
 
   if (selectors.scope === "tasks" || selectors.scope === "all") {
-    clauses.push(`(${cwdWhereClause(selectors.sourceTaskRoot)} AND ${renderNotProjectWhereClause(selectors.projectPaths)})`);
+    clauses.push(`((${selectors.sourceTaskRoots.map(cwdWhereClause).join(" OR ")}) AND ${renderNotProjectWhereClause(selectors.projectPaths)})`);
   }
 
   return clauses.length > 0 ? clauses.join(" OR ") : "0";
@@ -453,18 +482,19 @@ async function syncProjectThreadStateIfPossible(
   destinationDb: string,
   defaultCodexHome: string,
   profileCodexHome: string,
-  selectors: HistorySyncSelectors,
   profileProviderId: string,
-  inheritedSessionIds: Set<string>
+  sourceSessionIds: Set<string>,
+  retainedSessionIds: Set<string>
 ): Promise<void> {
-  if (inheritedSessionIds.size === 0 || !(await pathExists(sourceDb))) {
+  if (sourceSessionIds.size === 0 || retainedSessionIds.size === 0 || !(await pathExists(sourceDb))) {
     return;
   }
 
   await ensureDir(path.dirname(destinationDb));
   await ensureThreadStateDatabase(sourceDb, destinationDb);
 
-  const selectedSessionIdsSql = renderSelectedSessionIdsSql(inheritedSessionIds);
+  const selectedSessionIdsSql = renderSelectedSessionIdsSql(sourceSessionIds);
+  const retainedSessionIdsSql = renderSelectedSessionIdsSql(retainedSessionIds);
   const sql = `
 PRAGMA busy_timeout = 10000;
 ATTACH DATABASE ${sqlString(sourceDb)} AS source;
@@ -483,6 +513,8 @@ INSERT OR REPLACE INTO thread_spawn_edges
   SELECT * FROM source.thread_spawn_edges
   WHERE parent_thread_id IN (SELECT id FROM selected_history_ids) OR child_thread_id IN (SELECT id FROM selected_history_ids);
 DETACH DATABASE source;
+DELETE FROM selected_history_ids;
+${retainedSessionIdsSql}
 DELETE FROM thread_dynamic_tools WHERE thread_id NOT IN (SELECT id FROM selected_history_ids);
 DELETE FROM thread_spawn_edges WHERE parent_thread_id NOT IN (SELECT id FROM threads) AND child_thread_id NOT IN (SELECT id FROM threads);
 DELETE FROM threads WHERE id NOT IN (SELECT id FROM selected_history_ids);
@@ -567,9 +599,8 @@ function sqlString(value: string): string {
 async function syncProjectDesktopCatalogIfPossible(
   defaultCodexHome: string,
   profileCodexHome: string,
-  selectors: HistorySyncSelectors,
   profileProviderId: string,
-  inheritedSessionIds: Set<string>
+  retainedSessionIds: Set<string>
 ): Promise<void> {
   const destinationStateDb = path.join(profileCodexHome, "state_5.sqlite");
   const sourceCatalogDb = path.join(defaultCodexHome, DESKTOP_CATALOG_DB);
@@ -584,7 +615,7 @@ async function syncProjectDesktopCatalogIfPossible(
     await fs.copyFile(sourceCatalogDb, destinationCatalogDb);
   }
 
-  const selectedSessionIdsSql = renderSelectedSessionIdsSql(inheritedSessionIds);
+  const selectedSessionIdsSql = renderSelectedSessionIdsSql(retainedSessionIds);
   const sql = `
 PRAGMA busy_timeout = 10000;
 ATTACH DATABASE ${sqlString(destinationStateDb)} AS state;
@@ -662,7 +693,7 @@ async function readJsonObject(filePath: string): Promise<Record<string, unknown>
 }
 
 function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinationState: Record<string, unknown>, projectPaths: string[], inheritedSessionIds: Set<string>): Record<string, unknown> {
-  const merged = { ...destinationState };
+  const merged = sanitizeCodexGlobalState(destinationState);
   mergeStringArrayProjects(merged, sourceState, "electron-saved-workspace-roots", projectPaths);
   mergeStringArrayProjects(merged, sourceState, "project-order", projectPaths);
   mergeStringArrayProjects(merged, sourceState, "active-workspace-roots", projectPaths);
@@ -671,7 +702,7 @@ function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinati
   const destinationHints = asStringRecord(merged["thread-workspace-root-hints"]);
   for (const sessionId of inheritedSessionIds) {
     const hint = sourceHints[sessionId];
-    if (hint) {
+    if (hint && isSafeGlobalWorkspaceRoot(hint)) {
       destinationHints[sessionId] = hint;
     }
   }
@@ -697,14 +728,62 @@ function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinati
   return merged;
 }
 
+function sanitizeCodexGlobalState(state: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+  copyStringArrayState(sanitized, state, "electron-saved-workspace-roots");
+  copyStringArrayState(sanitized, state, "project-order");
+  copyStringArrayState(sanitized, state, "active-workspace-roots");
+
+  const hints = Object.fromEntries(
+    Object.entries(asStringRecord(state["thread-workspace-root-hints"]))
+      .filter((entry) => isSafeGlobalWorkspaceRoot(entry[1]))
+  );
+  if (Object.keys(hints).length > 0) {
+    sanitized["thread-workspace-root-hints"] = hints;
+  }
+
+  const persisted = sanitizePersistedAtomState(asObject(state["electron-persisted-atom-state"]));
+  if (Object.keys(persisted).length > 0) {
+    sanitized["electron-persisted-atom-state"] = persisted;
+  }
+
+  return sanitized;
+}
+
+function copyStringArrayState(destination: Record<string, unknown>, source: Record<string, unknown>, key: string): void {
+  const values = asStringArray(source[key]).filter(isSafeGlobalWorkspaceRoot);
+  if (values.length > 0) {
+    destination[key] = values;
+  }
+}
+
+function sanitizePersistedAtomState(state: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+  const preferences = asObject(state["flat-project-sidebar-preferences-v1"]);
+  if (Object.keys(preferences).length > 0) {
+    sanitized["flat-project-sidebar-preferences-v1"] = preferences;
+  }
+
+  for (const [key, value] of Object.entries(state)) {
+    if (key.startsWith("sidebar-project-expanded-v1-codex:")) {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
 function mergeStringArrayProjects(destination: Record<string, unknown>, source: Record<string, unknown>, key: string, projectPaths: string[]): void {
-  if (projectPaths.length === 0) {
+  const safeProjectPaths = projectPaths.filter(isSafeGlobalWorkspaceRoot);
+  if (safeProjectPaths.length === 0) {
     return;
   }
 
   const values = asStringArray(destination[key]);
-  const sourceValues = asStringArray(source[key]).filter((value) => isProjectHistorySession(value, projectPaths));
-  for (const value of sourceValues.length > 0 ? sourceValues : projectPaths) {
+  const sourceValues = asStringArray(source[key])
+    .filter(isSafeGlobalWorkspaceRoot)
+    .filter((value) => isProjectHistorySession(value, safeProjectPaths));
+  for (const value of sourceValues.length > 0 ? sourceValues : safeProjectPaths) {
     if (!values.includes(value)) {
       values.push(value);
     }
@@ -723,6 +802,17 @@ function asObject(value: unknown): Record<string, unknown> {
 function asStringRecord(value: unknown): Record<string, string> {
   const object = asObject(value);
   return Object.fromEntries(Object.entries(object).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+}
+
+function isSafeGlobalWorkspaceRoot(value: string): boolean {
+  if (getRuntimePlatform() !== "win32") {
+    return true;
+  }
+
+  const normalized = value.replace(/\\/g, "/").toLowerCase();
+  return !normalized.startsWith("c:/mac/")
+    && !normalized.startsWith("//mac/")
+    && !normalized.startsWith("//?/unc/mac/");
 }
 
 function renderManagedConfig(profile: ManagedProfile): string {

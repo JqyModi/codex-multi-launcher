@@ -1,21 +1,24 @@
-import { spawn } from "node:child_process";
+import { spawn, type SpawnOptions } from "node:child_process";
+import nodeFs from "node:fs";
 import fs from "node:fs/promises";
-import { inheritDefaultCodexHomeResources, listConfigBackups as listProfileConfigBackups, restoreConfigBackup as restoreProfileConfigBackup, syncSessionHistory, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
+import path from "node:path";
+import { inheritDefaultCodexHomeResources, listConfigBackups as listProfileConfigBackups, repairProfileGlobalState, restoreConfigBackup as restoreProfileConfigBackup, syncSessionHistory, writeCodexAuth, writeCodexConfig } from "./codex-config.js";
 import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, repairProfileCodexAppPath, restoreProfileRecord, softDeleteProfile, updateProfileLaunchMetadata, updateProfileRecord } from "./registry.js";
 import { generateLauncher } from "./launcher.js";
-import { codexExecutablePath, findWindowsCodexAppxDesktopApp, getRuntimePlatform, isWindowsAppsPath, isWindowsCodexGuiExecutable } from "./paths.js";
+import { codexExecutablePath, findWindowsCodexAppxDesktopApp, getDefaultCodexHome, getRuntimePlatform, isWindowsAppsPath, isWindowsCodexGuiExecutable } from "./paths.js";
 import { pathExists } from "./fs-utils.js";
 import { ensureWindowsAppxDesktopCache } from "./windows-appx-cache.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
-import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderModelsInput, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderModelsResult, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
+import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderModelsInput, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderModelsResult, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, SessionHistorySyncResolvedSource, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
 export { listProfiles };
 
 interface LaunchCommand {
   command: string;
   args: string[];
+  cwd?: string;
   env?: NodeJS.ProcessEnv;
 }
 
@@ -45,7 +48,7 @@ export async function createProfile(input: CreateProfileInput): Promise<CreatePr
     await inheritDefaultCodexHomeResources(profile);
   }
   if (input.syncHistory?.enabled) {
-    await syncSessionHistory(profile, input.syncHistory);
+    await syncSessionHistory(profile, input.syncHistory, await resolveSessionHistorySources(input, profile));
   }
   const configPath = await writeCodexConfig(profile, { inheritDefaultConfig: input.inheritDefaultConfig });
   const launcher = await generateLauncher(profile);
@@ -57,9 +60,69 @@ export async function createProfile(input: CreateProfileInput): Promise<CreatePr
   };
 }
 
+async function resolveSessionHistorySources(input: CreateProfileInput, targetProfile: ManagedProfile): Promise<SessionHistorySyncResolvedSource[]> {
+  const requestedSources = input.syncHistory?.sources?.length ? input.syncHistory.sources : [{ type: "default" as const }];
+  const profiles = await listProfiles(true);
+  const resolvedSources: SessionHistorySyncResolvedSource[] = [];
+
+  for (const source of requestedSources) {
+    if (source.type === "default") {
+      resolvedSources.push({
+        type: "default",
+        label: "Current Codex / ChatGPT",
+        codexHome: getDefaultCodexHome()
+      });
+      continue;
+    }
+
+    if (!source.profileId || source.profileId === targetProfile.id) {
+      continue;
+    }
+
+    const sourceProfile = profiles.find((profile) => profile.id === source.profileId && profile.status !== "deleted");
+    if (!sourceProfile) {
+      continue;
+    }
+
+    resolvedSources.push({
+      type: "profile",
+      profileId: sourceProfile.id,
+      label: sourceProfile.name,
+      codexHome: sourceProfile.paths.codexHome
+    });
+  }
+
+  return dedupeSessionHistorySources(resolvedSources, targetProfile.paths.codexHome);
+}
+
+function dedupeSessionHistorySources(sources: SessionHistorySyncResolvedSource[], targetCodexHome: string): SessionHistorySyncResolvedSource[] {
+  const seen = new Set<string>();
+  const targetPath = path.resolve(targetCodexHome);
+  const dedupedSources: SessionHistorySyncResolvedSource[] = [];
+
+  for (const source of sources) {
+    const sourcePath = path.resolve(source.codexHome);
+    if (sourcePath === targetPath || seen.has(sourcePath)) {
+      continue;
+    }
+    seen.add(sourcePath);
+    dedupedSources.push({
+      ...source,
+      codexHome: sourcePath
+    });
+  }
+
+  return dedupedSources;
+}
+
 export async function generateProfileLauncher(profileId: string): Promise<LauncherResult> {
   const profile = await mustFindProfile(profileId);
   return generateLauncher(profile);
+}
+
+export async function refreshActiveProfileLaunchers(): Promise<void> {
+  const profiles = await listProfiles();
+  await Promise.all(profiles.map((profile) => generateLauncher(profile)));
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult> {
@@ -154,6 +217,7 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
   if (apiKey) {
     await writeCodexAuth(profile, apiKey);
   }
+  await repairProfileGlobalState(profile);
   let codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
   const shouldUseAppxCache = getRuntimePlatform() === "win32" && (!(await pathExists(codexExecutable)) || isWindowsAppsPath(codexExecutable));
   if (shouldUseAppxCache) {
@@ -183,11 +247,14 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
   const launchCommand = getRuntimePlatform() === "win32"
     ? profileLaunchCommand(profile, codexExecutable, apiKey)
     : launcherOpenCommand(profile.paths.launcherPath);
-  const child = spawn(launchCommand.command, launchCommand.args, {
-    detached: true,
-    stdio: "ignore",
-    ...(launchCommand.env ? { env: launchCommand.env } : {})
-  });
+  const spawnOptions = getRuntimePlatform() === "win32"
+    ? await windowsDetachedSpawnOptions(profile, launchCommand)
+    : {
+        detached: true,
+        stdio: "ignore" as const,
+        ...(launchCommand.env ? { env: launchCommand.env } : {})
+      };
+  const child = spawn(launchCommand.command, launchCommand.args, spawnOptions);
 
   child.unref();
   await updateProfileLaunchMetadata(profile.id, child.pid ?? null);
@@ -209,13 +276,26 @@ function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, 
   return {
     command: codexExecutable,
     args: [`--user-data-dir=${profile.paths.userDataDir}`],
+    cwd: path.dirname(codexExecutable),
     env
+  };
+}
+
+async function windowsDetachedSpawnOptions(profile: ManagedProfile, launchCommand: LaunchCommand): Promise<SpawnOptions> {
+  const logDir = path.join(profile.paths.codexHome, "logs");
+  await fs.mkdir(logDir, { recursive: true });
+  const output = nodeFs.openSync(path.join(logDir, "desktop-launch.log"), "a");
+  return {
+    detached: true,
+    cwd: launchCommand.cwd,
+    env: launchCommand.env,
+    stdio: ["ignore", output, output]
   };
 }
 
 function launcherOpenCommand(launcherPath: string): LaunchCommand {
   if (getRuntimePlatform() === "win32") {
-    return { command: "cmd.exe", args: ["/c", launcherPath] };
+    return { command: "cmd.exe", args: ["/d", "/c", "call", launcherPath] };
   }
 
   return { command: "/usr/bin/open", args: [launcherPath] };

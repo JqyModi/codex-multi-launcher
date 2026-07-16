@@ -2,6 +2,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Circle,
   Copy,
   Download,
   ExternalLink,
@@ -118,13 +119,20 @@ const TEXT: Record<Language, Record<string, string>> = {
     inheritConfig: "沿用当前 Codex 设置",
     inheritConfigDesc: "保留已有插件、服务、可信项目和功能开关。",
     syncHistory: "同步已有对话记录",
-    syncHistoryDesc: "把源 App 里的项目对话或临时任务带到新配置中。",
-    syncHistoryScope: "同步范围",
+    syncHistoryDesc: "从当前 App 或已创建配置里复制历史对话，新配置后续仍独立使用。",
+    syncHistorySource: "从哪里同步",
+    syncHistoryDefaultSource: "当前 Codex / ChatGPT",
+    syncHistoryDefaultSourceDesc: "同步源 App 里已有的项目和临时任务对话。",
+    syncHistoryProfileSourceDesc: "同步这个配置里已有的历史对话。",
+    syncHistoryNoProfiles: "还没有其它配置可选。",
+    syncHistorySelectedCount: "已选择 {count} 个来源",
+    syncHistoryScope: "同步哪些对话",
     syncHistoryProjects: "仅项目对话",
     syncHistoryTasks: "仅临时任务",
     syncHistoryAll: "全部对话",
     syncHistoryReview: "对话记录",
     syncHistoryOff: "不同步",
+    syncHistorySourcesReview: "同步来源",
     profileNameNote: "这个名称会显示在左侧列表和生成的启动器 App 上。",
     providerType: "服务接口类型",
     thirdPartyResponses: "第三方兼容接口",
@@ -288,13 +296,20 @@ const TEXT: Record<Language, Record<string, string>> = {
     inheritConfig: "Inherit my default Codex config",
     inheritConfigDesc: "Keep existing plugins, MCP servers, trusted projects, and feature flags.",
     syncHistory: "Bring over existing chats",
-    syncHistoryDesc: "Copy project chats or temporary tasks from the source app into this profile.",
-    syncHistoryScope: "Chat scope",
+    syncHistoryDesc: "Copy chats from the current app or existing profiles while keeping this profile independent.",
+    syncHistorySource: "Sync from",
+    syncHistoryDefaultSource: "Current Codex / ChatGPT",
+    syncHistoryDefaultSourceDesc: "Copy project and temporary task chats from the source app.",
+    syncHistoryProfileSourceDesc: "Copy existing chats from this profile.",
+    syncHistoryNoProfiles: "No other profiles available yet.",
+    syncHistorySelectedCount: "{count} sources selected",
+    syncHistoryScope: "Which chats",
     syncHistoryProjects: "Projects only",
     syncHistoryTasks: "Tasks only",
     syncHistoryAll: "All chats",
     syncHistoryReview: "Chat history",
     syncHistoryOff: "Do not sync",
+    syncHistorySourcesReview: "Chat sources",
     profileNameNote: "This name is used for the dashboard row and generated launcher app.",
     providerType: "Provider type",
     thirdPartyResponses: "Third-party Responses-compatible",
@@ -404,6 +419,7 @@ const DEFAULT_FORM = {
   apiKey: "",
   inheritDefaultConfig: true,
   syncHistory: false,
+  syncHistorySources: ["default"] as string[],
   syncHistoryScope: "projects" as "projects" | "tasks" | "all",
   iconBackgroundColor: DEFAULT_PROFILE_COLOR,
   codexAppPath: "",
@@ -575,7 +591,8 @@ export function App() {
         inheritDefaultConfig: form.inheritDefaultConfig,
         syncHistory: {
           enabled: form.syncHistory,
-          scope: form.syncHistoryScope
+          scope: form.syncHistoryScope,
+          sources: getHistorySyncSourceInput(form.syncHistorySources)
         },
         launcherDirectory: form.launcherDirectory || undefined,
         appearance: {
@@ -1243,6 +1260,7 @@ export function App() {
                 isTestingProvider={isTestingProvider}
                 isFetchingProviderModels={isFetchingProviderModels}
                 providerModels={providerModels}
+                availableHistoryProfiles={activeProfiles}
                 wizardStep={wizardStep}
                 t={t}
                 onChange={(nextForm) => {
@@ -1783,6 +1801,7 @@ function WizardBody({
   isTestingProvider,
   isFetchingProviderModels,
   providerModels,
+  availableHistoryProfiles,
   wizardStep,
   t,
   onChange,
@@ -1796,6 +1815,7 @@ function WizardBody({
   isTestingProvider: boolean;
   isFetchingProviderModels: boolean;
   providerModels: ProviderModelsResult | null;
+  availableHistoryProfiles: ManagedProfile[];
   wizardStep: WizardStep;
   t: Record<string, string>;
   onChange: (nextForm: typeof DEFAULT_FORM) => void;
@@ -1834,25 +1854,12 @@ function WizardBody({
           <span className="switch-track" aria-hidden="true"><span /></span>
         </label>
         {form.syncHistory ? (
-          <div className="history-scope-row">
-            <span>{t.syncHistoryScope}</span>
-            <div className="segmented-control">
-              {([
-                ["projects", t.syncHistoryProjects],
-                ["tasks", t.syncHistoryTasks],
-                ["all", t.syncHistoryAll]
-              ] as const).map(([scope, label]) => (
-                <button
-                  className={form.syncHistoryScope === scope ? "selected" : ""}
-                  key={scope}
-                  onClick={() => onChange({ ...form, syncHistoryScope: scope })}
-                  type="button"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <HistorySyncOptions
+            availableProfiles={availableHistoryProfiles}
+            form={form}
+            t={t}
+            onChange={onChange}
+          />
         ) : null}
         <p className="field-note">{t.profileNameNote}</p>
       </div>
@@ -1951,6 +1958,8 @@ function WizardBody({
     );
   }
 
+  const historySourceSummary = getHistorySourceSummary(form, availableHistoryProfiles, t);
+
   return (
     <div className="review-box">
       <PathRow label={t.profile} value={form.name || t.missing} />
@@ -1968,9 +1977,129 @@ function WizardBody({
           ? (form.syncHistoryScope === "projects" ? t.syncHistoryProjects : form.syncHistoryScope === "tasks" ? t.syncHistoryTasks : t.syncHistoryAll)
           : t.syncHistoryOff}
       />
+      {form.syncHistory ? <PathRow label={t.syncHistorySourcesReview} value={historySourceSummary} /> : null}
       <PathRow label={t.providerTestReview} value={providerTest ? providerTest.summary : t.notTested} />
     </div>
   );
+}
+
+function HistorySyncOptions({
+  availableProfiles,
+  form,
+  onChange,
+  t
+}: {
+  availableProfiles: ManagedProfile[];
+  form: typeof DEFAULT_FORM;
+  onChange: (nextForm: typeof DEFAULT_FORM) => void;
+  t: Record<string, string>;
+}) {
+  const selectedSources = form.syncHistorySources.length > 0 ? form.syncHistorySources : ["default"];
+  const selectedCount = selectedSources.length;
+
+  function toggleSource(sourceId: string) {
+    const nextSources = selectedSources.includes(sourceId)
+      ? selectedSources.filter((item) => item !== sourceId)
+      : [...selectedSources, sourceId];
+    onChange({ ...form, syncHistorySources: nextSources.length > 0 ? nextSources : ["default"] });
+  }
+
+  return (
+    <div className="history-sync-panel">
+      <div className="history-section">
+        <div className="history-section-heading">
+          <span>{t.syncHistorySource}</span>
+          <small>{t.syncHistorySelectedCount.replace("{count}", String(selectedCount))}</small>
+        </div>
+        <div className="history-source-list">
+          <HistorySourceOption
+            checked={selectedSources.includes("default")}
+            color="#2563eb"
+            description={t.syncHistoryDefaultSourceDesc}
+            title={t.syncHistoryDefaultSource}
+            onToggle={() => toggleSource("default")}
+          />
+          {availableProfiles.length > 0 ? availableProfiles.map((profile) => (
+            <HistorySourceOption
+              checked={selectedSources.includes(profile.id)}
+              color={getProfileColor(profile)}
+              description={`${profile.provider.displayName} · ${t.syncHistoryProfileSourceDesc}`}
+              key={profile.id}
+              title={profile.name}
+              onToggle={() => toggleSource(profile.id)}
+            />
+          )) : <p className="history-empty-note">{t.syncHistoryNoProfiles}</p>}
+        </div>
+      </div>
+      <div className="history-scope-row">
+        <span>{t.syncHistoryScope}</span>
+        <div className="segmented-control">
+          {([
+            ["projects", t.syncHistoryProjects],
+            ["tasks", t.syncHistoryTasks],
+            ["all", t.syncHistoryAll]
+          ] as const).map(([scope, label]) => (
+            <button
+              className={form.syncHistoryScope === scope ? "selected" : ""}
+              key={scope}
+              onClick={() => onChange({ ...form, syncHistoryScope: scope })}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HistorySourceOption({
+  checked,
+  color,
+  description,
+  onToggle,
+  title
+}: {
+  checked: boolean;
+  color: string;
+  description: string;
+  onToggle: () => void;
+  title: string;
+}) {
+  return (
+    <button className={`history-source-option ${checked ? "selected" : ""}`} onClick={onToggle} type="button">
+      <span className="profile-dot" style={{ background: color }} />
+      <span className="history-source-copy">
+        <strong>{title}</strong>
+        <small>{description}</small>
+      </span>
+      <span className="history-check" aria-hidden="true">
+        {checked ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+      </span>
+    </button>
+  );
+}
+
+function getHistorySourceSummary(form: typeof DEFAULT_FORM, availableProfiles: ManagedProfile[], t: Record<string, string>): string {
+  if (!form.syncHistory) {
+    return t.syncHistoryOff;
+  }
+
+  const sourceNames = (form.syncHistorySources.length > 0 ? form.syncHistorySources : ["default"]).map((sourceId) => {
+    if (sourceId === "default") {
+      return t.syncHistoryDefaultSource;
+    }
+    return availableProfiles.find((profile) => profile.id === sourceId)?.name ?? sourceId;
+  });
+  return sourceNames.join(", ");
+}
+
+function getHistorySyncSourceInput(sourceIds: string[]): NonNullable<CreateProfileInput["syncHistory"]>["sources"] {
+  const normalizedSourceIds = sourceIds.length > 0 ? sourceIds : ["default"];
+  return normalizedSourceIds.map((sourceId) => sourceId === "default"
+    ? { type: "default" }
+    : { type: "profile", profileId: sourceId });
 }
 
 function ModelPicker({ modelsResult, onSelect, selectedModel, t }: { modelsResult: ProviderModelsResult | null; onSelect: (model: string) => void; selectedModel: string; t: Record<string, string> }) {
