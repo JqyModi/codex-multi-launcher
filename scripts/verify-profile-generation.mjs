@@ -111,6 +111,7 @@ await fs.writeFile(
 );
 
 const { createProfile, deleteProfile, listConfigBackups, listProfiles, permanentlyDeleteProfile, restoreConfigBackup, restoreProfile, updateProfile } = await import("../dist-electron/main/profile-service.js");
+const { repairProfileGlobalState } = await import("../dist-electron/main/codex-config.js");
 const { getAppPaths } = await import("../dist-electron/main/paths.js");
 const { getApiKey } = await import("../dist-electron/main/secrets.js");
 const { getDiagnosticsReport } = await import("../dist-electron/main/diagnostics.js");
@@ -191,14 +192,45 @@ await fs.writeFile(
 await fs.writeFile(
   path.join(sourceProfileResult.profile.paths.codexHome, ".codex-global-state.json"),
   `${JSON.stringify({
+    "chatgpt-migration-announcement-completed-v1": true,
+    "local-projects": {
+      "local-source-project": {
+        id: "local-source-project",
+        name: "Source Project",
+        rootPaths: [sourceProfileProjectPath],
+        createdAt: 1784196000000,
+        updatedAt: 1784196000000
+      }
+    },
+    "selected-project": {
+      type: "local",
+      projectId: "local-source-project"
+    },
+    "projectless-thread-ids": [sourceProfileTaskSessionId],
     "electron-saved-workspace-roots": [sourceProfileProjectPath],
     "project-order": [sourceProfileProjectPath],
     "thread-workspace-root-hints": {
       [sourceProfileSessionId]: sourceProfileProjectPath
+    },
+    "electron-persisted-atom-state": {
+      "chatgpt-migration-announcement-completed-v1": true,
+      "electron:onboarding-welcome-pending": false,
+      "unread-thread-ids-by-host-v1": {
+        local: [sourceProfileTaskSessionId]
+      },
+      [`sidebar-project-expanded-v1-codex:${sourceProfileProjectPath}`]: true
     }
   })}\n`,
   { mode: 0o600 }
 );
+await repairProfileGlobalState(sourceProfileResult.profile);
+const repairedSourceGlobalState = JSON.parse(await fs.readFile(path.join(sourceProfileResult.profile.paths.codexHome, ".codex-global-state.json"), "utf8"));
+assert(repairedSourceGlobalState["chatgpt-migration-announcement-completed-v1"] === true, "global state repair should preserve ChatGPT migration completion flags");
+assert(repairedSourceGlobalState["local-projects"]?.["local-source-project"]?.rootPaths?.[0] === sourceProfileProjectPath, "global state repair should preserve Codex local project metadata");
+assert(repairedSourceGlobalState["selected-project"]?.projectId === "local-source-project", "global state repair should preserve selected project state");
+assert(repairedSourceGlobalState["projectless-thread-ids"]?.includes(sourceProfileTaskSessionId), "global state repair should preserve projectless thread state");
+assert(repairedSourceGlobalState["electron-persisted-atom-state"]?.["chatgpt-migration-announcement-completed-v1"] === true, "global state repair should preserve persisted ChatGPT migration flags");
+assert(repairedSourceGlobalState["electron-persisted-atom-state"]?.["electron:onboarding-welcome-pending"] === false, "global state repair should preserve onboarding flags");
 
 const taskOnlyResult = await createProfile({
   name: "Task Only Sync",

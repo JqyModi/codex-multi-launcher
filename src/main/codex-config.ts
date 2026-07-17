@@ -744,10 +744,12 @@ function mergeProjectGlobalState(sourceState: Record<string, unknown>, destinati
 }
 
 function sanitizeCodexGlobalState(state: Record<string, unknown>): Record<string, unknown> {
-  const sanitized: Record<string, unknown> = {};
-  copyStringArrayState(sanitized, state, "electron-saved-workspace-roots");
-  copyStringArrayState(sanitized, state, "project-order");
-  copyStringArrayState(sanitized, state, "active-workspace-roots");
+  const sanitized: Record<string, unknown> = { ...state };
+  sanitizeStringArrayState(sanitized, "electron-saved-workspace-roots");
+  sanitizeStringArrayState(sanitized, "project-order");
+  sanitizeStringArrayState(sanitized, "active-workspace-roots");
+  sanitizeStringRecordState(sanitized, "thread-projectless-output-directories");
+  sanitizeLocalProjectsState(sanitized);
 
   const hints = Object.fromEntries(
     Object.entries(asStringRecord(state["thread-workspace-root-hints"]))
@@ -755,33 +757,88 @@ function sanitizeCodexGlobalState(state: Record<string, unknown>): Record<string
   );
   if (Object.keys(hints).length > 0) {
     sanitized["thread-workspace-root-hints"] = hints;
+  } else {
+    delete sanitized["thread-workspace-root-hints"];
   }
 
   const persisted = sanitizePersistedAtomState(asObject(state["electron-persisted-atom-state"]));
   if (Object.keys(persisted).length > 0) {
     sanitized["electron-persisted-atom-state"] = persisted;
+  } else {
+    delete sanitized["electron-persisted-atom-state"];
   }
 
   return sanitized;
 }
 
-function copyStringArrayState(destination: Record<string, unknown>, source: Record<string, unknown>, key: string): void {
-  const values = asStringArray(source[key]).filter(isSafeGlobalWorkspaceRoot);
+function sanitizeStringArrayState(state: Record<string, unknown>, key: string): void {
+  if (!(key in state)) {
+    return;
+  }
+
+  const values = asStringArray(state[key]).filter(isSafeGlobalWorkspaceRoot);
   if (values.length > 0) {
-    destination[key] = values;
+    state[key] = values;
+  } else {
+    delete state[key];
+  }
+}
+
+function sanitizeStringRecordState(state: Record<string, unknown>, key: string): void {
+  if (!(key in state)) {
+    return;
+  }
+
+  const values = Object.fromEntries(
+    Object.entries(asStringRecord(state[key]))
+      .filter((entry) => isSafeGlobalWorkspaceRoot(entry[1]))
+  );
+  if (Object.keys(values).length > 0) {
+    state[key] = values;
+  } else {
+    delete state[key];
+  }
+}
+
+function sanitizeLocalProjectsState(state: Record<string, unknown>): void {
+  if (!("local-projects" in state)) {
+    return;
+  }
+
+  const projects = asObject(state["local-projects"]);
+  const sanitizedProjects: Record<string, unknown> = {};
+  for (const [projectId, project] of Object.entries(projects)) {
+    const projectObject = asObject(project);
+    if (Object.keys(projectObject).length === 0) {
+      continue;
+    }
+
+    if ("rootPaths" in projectObject) {
+      const rootPaths = asStringArray(projectObject.rootPaths).filter(isSafeGlobalWorkspaceRoot);
+      if (rootPaths.length === 0) {
+        continue;
+      }
+      projectObject.rootPaths = rootPaths;
+    }
+    sanitizedProjects[projectId] = projectObject;
+  }
+
+  if (Object.keys(sanitizedProjects).length > 0) {
+    state["local-projects"] = sanitizedProjects;
+  } else {
+    delete state["local-projects"];
   }
 }
 
 function sanitizePersistedAtomState(state: Record<string, unknown>): Record<string, unknown> {
-  const sanitized: Record<string, unknown> = {};
-  const preferences = asObject(state["flat-project-sidebar-preferences-v1"]);
-  if (Object.keys(preferences).length > 0) {
-    sanitized["flat-project-sidebar-preferences-v1"] = preferences;
-  }
+  const sanitized: Record<string, unknown> = { ...state };
 
-  for (const [key, value] of Object.entries(state)) {
+  for (const key of Object.keys(sanitized)) {
     if (key.startsWith("sidebar-project-expanded-v1-codex:")) {
-      sanitized[key] = value;
+      const projectPath = key.slice("sidebar-project-expanded-v1-codex:".length);
+      if (!isSafeGlobalWorkspaceRoot(projectPath)) {
+        delete sanitized[key];
+      }
     }
   }
 
