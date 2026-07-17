@@ -36,14 +36,20 @@ export async function restoreConfigBackup(input: RestoreConfigBackupInput): Prom
 
 export async function createProfile(input: CreateProfileInput): Promise<CreateProfileResult> {
   const profile = await createProfileRecord(input);
-  await upsertApiKey({
-    profileId: profile.id,
-    providerId: profile.provider.id,
-    envKeyName: profile.provider.envKeyName,
-    secretType: "api_key",
-    value: input.provider.apiKey
-  });
-  await writeCodexAuth(profile, input.provider.apiKey);
+  if (isApiKeyProfile(profile)) {
+    const apiKey = input.provider.apiKey?.trim();
+    if (!apiKey) {
+      throw new Error("API key is required for API Key profiles.");
+    }
+    await upsertApiKey({
+      profileId: profile.id,
+      providerId: profile.provider.id,
+      envKeyName: profile.provider.envKeyName,
+      secretType: "api_key",
+      value: apiKey
+    });
+    await writeCodexAuth(profile, apiKey);
+  }
   if (input.inheritDefaultConfig) {
     await inheritDefaultCodexHomeResources(profile);
   }
@@ -128,7 +134,7 @@ export async function refreshActiveProfileLaunchers(): Promise<void> {
 export async function updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult> {
   const profile = await updateProfileRecord(input);
 
-  if (input.provider.apiKey) {
+  if (isApiKeyProfile(profile) && input.provider.apiKey) {
     await upsertApiKey({
       profileId: profile.id,
       providerId: profile.provider.id,
@@ -151,6 +157,16 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
 
 export async function testProfileProvider(input: ProfileProviderTestInput): Promise<ProviderTestResult> {
   const profile = await mustFindProfile(input.profileId);
+  if (!isApiKeyProfile(profile)) {
+    return {
+      status: "unknown_error",
+      ok: false,
+      summary: "Account login profile",
+      details: "This profile uses ChatGPT account login and does not have an API key provider to test.",
+      testedModelsEndpoint: false,
+      testedResponsesEndpoint: false
+    };
+  }
   const apiKey = input.apiKey || await getApiKey(profile.id, profile.provider.id);
   if (!apiKey) {
     return {
@@ -172,6 +188,15 @@ export async function testProfileProvider(input: ProfileProviderTestInput): Prom
 
 export async function listProfileProviderModels(input: ProfileProviderModelsInput): Promise<ProviderModelsResult> {
   const profile = await mustFindProfile(input.profileId);
+  if (!isApiKeyProfile(profile)) {
+    return {
+      status: "auth_failed",
+      ok: false,
+      summary: "Account login profile",
+      details: "This profile uses ChatGPT account login and does not have an API key provider to fetch models.",
+      models: []
+    };
+  }
   const apiKey = input.apiKey || await getApiKey(profile.id, profile.provider.id);
   if (!apiKey) {
     return {
@@ -212,9 +237,9 @@ export async function restoreProfile(profileId: string): Promise<{ ok: true }> {
 
 export async function openProfile(profileId: string): Promise<{ pid: number | null }> {
   const profile = await repairProfileCodexAppPath(await mustFindProfile(profileId));
-  const apiKey = await getApiKey(profile.id, profile.provider.id);
+  const apiKey = isApiKeyProfile(profile) ? await getApiKey(profile.id, profile.provider.id) : null;
   await writeCodexConfig(profile, { preserveExistingConfig: true });
-  if (apiKey) {
+  if (isApiKeyProfile(profile) && apiKey) {
     await writeCodexAuth(profile, apiKey);
   }
   await repairProfileGlobalState(profile);
@@ -259,6 +284,10 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
   child.unref();
   await updateProfileLaunchMetadata(profile.id, child.pid ?? null);
   return { pid: child.pid ?? null };
+}
+
+function isApiKeyProfile(profile: ManagedProfile): boolean {
+  return (profile.auth?.mode ?? "api_key") === "api_key";
 }
 
 function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, apiKey: string | null): LaunchCommand {

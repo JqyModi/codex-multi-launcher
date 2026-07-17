@@ -23,14 +23,14 @@ export async function saveRegistry(registry: ProfileRegistry): Promise<void> {
 
 export async function listProfiles(includeDeleted = false): Promise<ManagedProfile[]> {
   const registry = await loadRegistry();
-  registry.profiles = registry.profiles.map(normalizeProfileAppearance);
+  registry.profiles = registry.profiles.map(normalizeProfile);
   return includeDeleted ? registry.profiles : registry.profiles.filter((profile) => profile.status !== "deleted");
 }
 
 export async function findProfile(profileId: string): Promise<ManagedProfile | null> {
   const registry = await loadRegistry();
   const profile = registry.profiles.find((item) => item.id === profileId);
-  return profile ? normalizeProfileAppearance(profile) : null;
+  return profile ? normalizeProfile(profile) : null;
 }
 
 export async function createProfileRecord(input: CreateProfileInput): Promise<ManagedProfile> {
@@ -75,6 +75,9 @@ export async function createProfileRecord(input: CreateProfileInput): Promise<Ma
       envKeyName,
       model: input.provider.model,
       reasoningEffort: input.provider.reasoningEffort ?? "medium"
+    },
+    auth: {
+      mode: input.authMode ?? "api_key"
     },
     appearance: {
       iconBackgroundColor: normalizeHexColor(input.appearance?.iconBackgroundColor)
@@ -146,7 +149,7 @@ export async function updateProfileRecord(input: UpdateProfileInput): Promise<Ma
   profile.provider.model = input.provider.model;
   profile.provider.reasoningEffort = input.provider.reasoningEffort ?? profile.provider.reasoningEffort;
   profile.appearance = {
-    ...normalizeProfileAppearance(profile).appearance,
+    ...normalizeProfile(profile).appearance,
     ...(input.appearance?.iconBackgroundColor ? { iconBackgroundColor: normalizeHexColor(input.appearance.iconBackgroundColor) } : {})
   };
   profile.timestamps.updatedAt = new Date().toISOString();
@@ -194,7 +197,10 @@ export async function updateProfileLaunchMetadata(profileId: string, pid: number
   await saveRegistry(registry);
 }
 
-function normalizeProfileAppearance(profile: ManagedProfile): ManagedProfile {
+function normalizeProfile(profile: ManagedProfile): ManagedProfile {
+  profile.auth = {
+    mode: profile.auth?.mode ?? "api_key"
+  };
   profile.appearance = {
     iconBackgroundColor: normalizeHexColor(profile.appearance?.iconBackgroundColor)
   };

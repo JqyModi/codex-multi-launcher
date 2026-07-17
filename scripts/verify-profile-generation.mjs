@@ -529,6 +529,37 @@ assert(!(await fileExists(officialResult.profile.paths.launcherPath)), "permanen
 assert(await getApiKey(officialResult.profile.id, officialResult.profile.provider.id) === null, "permanent delete should remove stored API key");
 assert(!(await listProfiles(true)).some((profile) => profile.id === officialResult.profile.id), "permanent delete should remove registry record");
 
+const accountResult = await createProfile({
+  name: "ChatGPT Account",
+  authMode: "chatgpt_account",
+  inheritDefaultConfig: false,
+  provider: {
+    type: "official_openai",
+    displayName: "ChatGPT Account",
+    model: "gpt-5.2",
+    reasoningEffort: "medium"
+  }
+});
+const accountConfigPath = path.join(accountResult.profile.paths.codexHome, "config.toml");
+const accountAuthPath = path.join(accountResult.profile.paths.codexHome, "auth.json");
+const accountLauncherScript = path.join(accountResult.profile.paths.launcherPath, "Contents", "MacOS", "launcher");
+const [accountConfigRaw, accountLauncherRaw] = await Promise.all([
+  fs.readFile(accountConfigPath, "utf8"),
+  fs.readFile(accountLauncherScript, "utf8")
+]);
+const accountStoredKey = await getApiKey(accountResult.profile.id, accountResult.profile.provider.id);
+
+assert(accountResult.profile.auth.mode === "chatgpt_account", "account profile should persist account auth mode");
+assert(accountResult.profile.provider.envKeyName === "OPENAI_API_KEY", "account profile should keep official provider metadata");
+assert(accountConfigRaw.includes('model = "gpt-5.2"'), "account profile should still write basic model config");
+assert(!(await fileExists(accountAuthPath)), "account profile should not bootstrap API key auth.json");
+assert(accountStoredKey === null, "account profile should not store an API key");
+assert(!accountLauncherRaw.includes("API_KEY="), "account launcher should not decrypt an API key");
+assert(!accountLauncherRaw.includes("OPENAI_API_KEY"), "account launcher should not export OPENAI_API_KEY");
+assert(accountLauncherRaw.includes("CODEX_HOME="), "account launcher should still isolate CODEX_HOME");
+assert(accountLauncherRaw.includes("--user-data-dir="), "account launcher should still isolate user-data-dir");
+await permanentlyDeleteProfile(accountResult.profile.id);
+
 await fs.rm(testRoot, { force: true, recursive: true });
 
 console.log("Profile generation verification passed.");

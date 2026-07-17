@@ -109,17 +109,21 @@ async function launcherScript(profile: ManagedProfile): Promise<string> {
     `export PATH=${shellQuote(defaultExecutablePathEnv())}`,
     `export CODEX_HOME=${shellQuote(profile.paths.codexHome)}`
   ];
+  const apiKeySnippet = isApiKeyProfile(profile)
+    ? `API_KEY=$(${nodeCommand} <<'NODE'
+${decryptSnippet(profile)}
+NODE
+)
+export ${profile.provider.envKeyName}="$API_KEY"
+`
+    : "";
 
   return `#!/bin/zsh
 set -euo pipefail
 
 ${envLines.join("\n")}
 USER_DATA_DIR=${shellQuote(profile.paths.userDataDir)}
-API_KEY=$(${nodeCommand} <<'NODE'
-${decryptSnippet(profile)}
-NODE
-)
-export ${profile.provider.envKeyName}="$API_KEY"
+${apiKeySnippet}
 
 mkdir -p "$CODEX_HOME" "$USER_DATA_DIR"
 
@@ -140,14 +144,15 @@ setlocal
 set "CODEX_HOME=${profile.paths.codexHome}"
 set "USER_DATA_DIR=${profile.paths.userDataDir}"
 set "CODEX_EXE=${executablePath}"
-set "NODE_EXE=${windowsBundledNodePath(executablePath)}"
+${isApiKeyProfile(profile) ? `set "NODE_EXE=${windowsBundledNodePath(executablePath)}"
 set "DECRYPT_SCRIPT_B64=${windowsDecryptScriptBase64(profile)}"
-set "API_KEY_FILE=%TEMP%\\codex-profile-%RANDOM%-%RANDOM%.key"
+set "API_KEY_FILE=%TEMP%\\codex-profile-%RANDOM%-%RANDOM%.key"` : ""}
 if not exist "%CODEX_EXE%" (
   echo Codex executable was not found: %CODEX_EXE%
   pause
   exit /b 1
 )
+${isApiKeyProfile(profile) ? `
 if not exist "%NODE_EXE%" set "NODE_EXE=node"
 "%NODE_EXE%" -e "eval(Buffer.from(process.env.DECRYPT_SCRIPT_B64, 'base64').toString('utf8'))" > "%API_KEY_FILE%"
 if errorlevel 1 (
@@ -159,7 +164,7 @@ if errorlevel 1 (
 set /p API_KEY=<"%API_KEY_FILE%"
 if exist "%API_KEY_FILE%" del "%API_KEY_FILE%"
 if not defined API_KEY exit /b 2
-set "${profile.provider.envKeyName}=%API_KEY%"
+set "${profile.provider.envKeyName}=%API_KEY%"` : ""}
 if not exist "%CODEX_HOME%" mkdir "%CODEX_HOME%"
 if not exist "%USER_DATA_DIR%" mkdir "%USER_DATA_DIR%"
 start "" "%CODEX_EXE%" --user-data-dir="%USER_DATA_DIR%"
@@ -197,4 +202,8 @@ async function generateWindowsLauncher(profile: ManagedProfile): Promise<Launche
 
 export async function generateLauncher(profile: ManagedProfile): Promise<LauncherResult> {
   return getRuntimePlatform() === "win32" ? generateWindowsLauncher(profile) : generateMacLauncher(profile);
+}
+
+function isApiKeyProfile(profile: ManagedProfile): boolean {
+  return (profile.auth?.mode ?? "api_key") === "api_key";
 }

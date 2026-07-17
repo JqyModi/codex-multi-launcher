@@ -75,6 +75,27 @@ const legacyResult = await createProfile({
 const legacyLauncherRaw = await fs.readFile(legacyResult.profile.paths.launcherPath, "utf8");
 assert(legacyLauncherRaw.includes("Codex.exe"), "Windows launcher should still support legacy Codex.exe paths");
 await permanentlyDeleteProfile(legacyResult.profile.id);
+
+const accountResult = await createProfile({
+  name: "Windows Account",
+  authMode: "chatgpt_account",
+  codexAppPath: "C:\\Users\\Tester\\AppData\\Local\\Programs\\ChatGPT\\ChatGPT.exe",
+  inheritDefaultConfig: false,
+  provider: {
+    type: "official_openai",
+    displayName: "ChatGPT Account",
+    model: "gpt-5.2",
+    reasoningEffort: "medium"
+  }
+});
+const accountLauncherRaw = await fs.readFile(accountResult.profile.paths.launcherPath, "utf8");
+assert(accountResult.profile.auth.mode === "chatgpt_account", "Windows account profile should persist account auth mode");
+assert(accountLauncherRaw.includes("set \"CODEX_HOME="), "Windows account launcher should set CODEX_HOME");
+assert(accountLauncherRaw.includes("--user-data-dir=\"%USER_DATA_DIR%\""), "Windows account launcher should pass user-data-dir");
+assert(!accountLauncherRaw.includes("DECRYPT_SCRIPT_B64"), "Windows account launcher should not decrypt an API key");
+assert(!accountLauncherRaw.includes("API_KEY_FILE"), "Windows account launcher should not create an API key temp file");
+assert(!accountLauncherRaw.includes("OPENAI_API_KEY"), "Windows account launcher should not export OPENAI_API_KEY");
+await permanentlyDeleteProfile(accountResult.profile.id);
 await fs.rm(testRoot, { force: true, recursive: true });
 
 console.log("Windows launcher verification passed.");

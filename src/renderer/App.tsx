@@ -13,6 +13,7 @@ import {
   Heart,
   Home,
   Info,
+  KeyRound,
   Languages,
   MessageSquare,
   Megaphone,
@@ -134,6 +135,14 @@ const TEXT: Record<Language, Record<string, string>> = {
     syncHistoryOff: "不同步",
     syncHistorySourcesReview: "同步来源",
     profileNameNote: "这个名称会显示在左侧列表和生成的启动器 App 上。",
+    authMode: "使用方式",
+    authModeApiKey: "API Key 配置",
+    authModeApiKeyDesc: "适合代理接口、第三方兼容服务，或只想用密钥隔离不同模型服务。",
+    authModeAccount: "ChatGPT 账号登录",
+    authModeAccountDesc: "适合 Plus / Pro 官方账号。生成后在分身窗口里登录，账号状态不应被密钥配置覆盖。",
+    authModeAccountPending: "账号登录",
+    authModeAccountPreview: "生成后打开分身窗口，在 ChatGPT/Codex 中登录官方账号。应用不会写入 API Key，也不会覆盖这个分身里的登录状态。",
+    authModeReview: "登录方式",
     providerType: "服务接口类型",
     thirdPartyResponses: "第三方兼容接口",
     officialOpenAI: "官方 OpenAI 密钥",
@@ -311,6 +320,14 @@ const TEXT: Record<Language, Record<string, string>> = {
     syncHistoryOff: "Do not sync",
     syncHistorySourcesReview: "Chat sources",
     profileNameNote: "This name is used for the dashboard row and generated launcher app.",
+    authMode: "Usage mode",
+    authModeApiKey: "API key profile",
+    authModeApiKeyDesc: "For proxy endpoints, third-party compatible services, or separate model providers.",
+    authModeAccount: "ChatGPT account login",
+    authModeAccountDesc: "For Plus / Pro accounts. Sign in inside the isolated app window without API key overwrite.",
+    authModeAccountPending: "Account",
+    authModeAccountPreview: "After generation, open the isolated app window and sign in with your ChatGPT account. The manager will not write an API key or overwrite that login state.",
+    authModeReview: "Login mode",
     providerType: "Provider type",
     thirdPartyResponses: "Third-party Responses-compatible",
     officialOpenAI: "Official OpenAI API key",
@@ -412,6 +429,7 @@ const TEXT: Record<Language, Record<string, string>> = {
 
 const DEFAULT_FORM = {
   name: "Codex Sandbox",
+  authMode: "api_key" as "api_key" | "chatgpt_account",
   providerType: "third_party_responses" as "official_openai" | "third_party_responses",
   providerName: "Proxy",
   baseUrl: "https://example.com/v1",
@@ -587,6 +605,7 @@ export function App() {
     try {
       const input: CreateProfileInput = {
         name: form.name,
+        authMode: form.authMode,
         codexAppPath: form.codexAppPath || undefined,
         inheritDefaultConfig: form.inheritDefaultConfig,
         syncHistory: {
@@ -599,11 +618,11 @@ export function App() {
           iconBackgroundColor: sanitizeProfileColor(form.iconBackgroundColor)
         },
         provider: {
-          type: form.providerType,
-          displayName: form.providerName,
-          baseUrl: form.providerType === "third_party_responses" ? form.baseUrl : undefined,
+          type: form.authMode === "chatgpt_account" ? "official_openai" : form.providerType,
+          displayName: form.authMode === "chatgpt_account" ? "ChatGPT Account" : form.providerName,
+          baseUrl: form.authMode === "api_key" && form.providerType === "third_party_responses" ? form.baseUrl : undefined,
           model: form.model,
-          apiKey: form.apiKey,
+          apiKey: form.authMode === "api_key" ? form.apiKey : undefined,
           reasoningEffort: "medium"
         }
       };
@@ -1867,50 +1886,72 @@ function WizardBody({
   }
 
   if (wizardStep === "provider") {
+    const isAccountMode = form.authMode === "chatgpt_account";
     return (
       <div className="form">
-        <label>
-          {t.providerType}
-          <select value={form.providerType} onChange={(event) => onChange({ ...form, providerType: event.target.value as typeof form.providerType })}>
-            <option value="third_party_responses">{t.thirdPartyResponses}</option>
-            <option value="official_openai">{t.officialOpenAI}</option>
-          </select>
-        </label>
-        <label>
-          {t.providerName}
-          <input value={form.providerName} onChange={(event) => onChange({ ...form, providerName: event.target.value })} />
-        </label>
-        {form.providerType === "third_party_responses" ? (
-          <label>
-            {t.baseUrl}
-            <input value={form.baseUrl} onChange={(event) => onChange({ ...form, baseUrl: event.target.value })} />
-          </label>
-        ) : null}
-        <label>
-          {t.model}
-          <div className="input-action-row">
-            <input value={form.model} onChange={(event) => onChange({ ...form, model: event.target.value })} />
-            <button className="button secondary compact" disabled={isFetchingProviderModels || (form.providerType === "third_party_responses" && !form.baseUrl) || !form.apiKey} onClick={onFetchModels} type="button">
-              <RefreshCcw size={14} />
-              {isFetchingProviderModels ? t.fetchingModels : t.fetchModels}
-            </button>
+        <AuthModeOptions form={form} onChange={onChange} t={t} />
+        {isAccountMode ? (
+          <div className="account-preview-note">
+            <User size={16} />
+            <p>{t.authModeAccountPreview}</p>
           </div>
-        </label>
-        <ModelPicker
-          modelsResult={providerModels}
-          selectedModel={form.model}
-          t={t}
-          onSelect={(model) => onChange({ ...form, model })}
-        />
-        <label>
-          {t.apiKey}
-          <input type="password" value={form.apiKey} onChange={(event) => onChange({ ...form, apiKey: event.target.value })} />
-        </label>
+        ) : (
+          <>
+            <label>
+              {t.providerType}
+              <select value={form.providerType} onChange={(event) => onChange({ ...form, providerType: event.target.value as typeof form.providerType })}>
+                <option value="third_party_responses">{t.thirdPartyResponses}</option>
+                <option value="official_openai">{t.officialOpenAI}</option>
+              </select>
+            </label>
+            <label>
+              {t.providerName}
+              <input value={form.providerName} onChange={(event) => onChange({ ...form, providerName: event.target.value })} />
+            </label>
+            {form.providerType === "third_party_responses" ? (
+              <label>
+                {t.baseUrl}
+                <input value={form.baseUrl} onChange={(event) => onChange({ ...form, baseUrl: event.target.value })} />
+              </label>
+            ) : null}
+            <label>
+              {t.model}
+              <div className="input-action-row">
+                <input value={form.model} onChange={(event) => onChange({ ...form, model: event.target.value })} />
+                <button className="button secondary compact" disabled={isFetchingProviderModels || (form.providerType === "third_party_responses" && !form.baseUrl) || !form.apiKey} onClick={onFetchModels} type="button">
+                  <RefreshCcw size={14} />
+                  {isFetchingProviderModels ? t.fetchingModels : t.fetchModels}
+                </button>
+              </div>
+            </label>
+            <ModelPicker
+              modelsResult={providerModels}
+              selectedModel={form.model}
+              t={t}
+              onSelect={(model) => onChange({ ...form, model })}
+            />
+            <label>
+              {t.apiKey}
+              <input type="password" value={form.apiKey} onChange={(event) => onChange({ ...form, apiKey: event.target.value })} />
+            </label>
+          </>
+        )}
       </div>
     );
   }
 
   if (wizardStep === "test") {
+    if (form.authMode === "chatgpt_account") {
+      return (
+        <div className="form">
+          <div className="account-preview-note">
+            <User size={16} />
+            <p>{t.authModeAccountPreview}</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="form">
         <p className="field-note">{t.testNote}</p>
@@ -1964,10 +2005,15 @@ function WizardBody({
     <div className="review-box">
       <PathRow label={t.profile} value={form.name || t.missing} />
       <ColorReviewRow color={sanitizeProfileColor(form.iconBackgroundColor)} label={t.profileColorReview} />
-      <PathRow label={t.provider} value={form.providerName || t.missing} />
-      <PathRow label={t.providerTypeReview} value={form.providerType === "official_openai" ? t.officialOpenAI : t.thirdPartyResponses} />
-      <PathRow label={t.baseUrl} value={form.providerType === "third_party_responses" ? form.baseUrl || t.missing : "https://api.openai.com/v1"} />
-      <PathRow label={t.model} value={form.model || t.missing} />
+      <PathRow label={t.authModeReview} value={form.authMode === "chatgpt_account" ? `${t.authModeAccount} (${t.authModeAccountPending})` : t.authModeApiKey} />
+      {form.authMode === "api_key" ? (
+        <>
+          <PathRow label={t.provider} value={form.providerName || t.missing} />
+          <PathRow label={t.providerTypeReview} value={form.providerType === "official_openai" ? t.officialOpenAI : t.thirdPartyResponses} />
+          <PathRow label={t.baseUrl} value={form.providerType === "third_party_responses" ? form.baseUrl || t.missing : "https://api.openai.com/v1"} />
+          <PathRow label={t.model} value={form.model || t.missing} />
+        </>
+      ) : null}
       <PathRow label={t.codexAppPath} value={form.codexAppPath || t.codexAppPlaceholder} />
       <PathRow label={t.launcherDirectory} value={form.launcherDirectory || "~/Applications/Codex Profiles/"} />
       <PathRow label={t.inheritConfigReview} value={form.inheritDefaultConfig ? t.yes : t.no} />
@@ -1978,7 +2024,42 @@ function WizardBody({
           : t.syncHistoryOff}
       />
       {form.syncHistory ? <PathRow label={t.syncHistorySourcesReview} value={historySourceSummary} /> : null}
-      <PathRow label={t.providerTestReview} value={providerTest ? providerTest.summary : t.notTested} />
+      <PathRow label={t.providerTestReview} value={form.authMode === "chatgpt_account" ? t.authModeAccountPending : providerTest ? providerTest.summary : t.notTested} />
+    </div>
+  );
+}
+
+function AuthModeOptions({ form, onChange, t }: { form: typeof DEFAULT_FORM; onChange: (nextForm: typeof DEFAULT_FORM) => void; t: Record<string, string> }) {
+  return (
+    <div className="auth-mode-panel">
+      <div className="history-section-heading">
+        <span>{t.authMode}</span>
+      </div>
+      <div className="auth-mode-options">
+        <button className={`auth-mode-option ${form.authMode === "api_key" ? "selected" : ""}`} onClick={() => onChange({ ...form, authMode: "api_key" })} type="button">
+          <span className="auth-mode-icon"><KeyRound size={16} /></span>
+          <span className="auth-mode-copy">
+            <strong>{t.authModeApiKey}</strong>
+            <small>{t.authModeApiKeyDesc}</small>
+          </span>
+          <span className="history-check" aria-hidden="true">
+            {form.authMode === "api_key" ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+          </span>
+        </button>
+        <button className={`auth-mode-option ${form.authMode === "chatgpt_account" ? "selected" : ""}`} onClick={() => onChange({ ...form, authMode: "chatgpt_account" })} type="button">
+          <span className="auth-mode-icon"><User size={16} /></span>
+          <span className="auth-mode-copy">
+            <span className="auth-mode-title-row">
+              <strong>{t.authModeAccount}</strong>
+              <em>{t.authModeAccountPending}</em>
+            </span>
+            <small>{t.authModeAccountDesc}</small>
+          </span>
+          <span className="history-check" aria-hidden="true">
+            {form.authMode === "chatgpt_account" ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+          </span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -2297,6 +2378,7 @@ function sanitizeProfileColor(value: string | undefined): string {
 
 function isCurrentStepValid(step: WizardStep, form: typeof DEFAULT_FORM): boolean {
   if (step === "profile") return Boolean(form.name.trim());
+  if (form.authMode === "chatgpt_account") return true;
   if (step === "provider") return Boolean(
     form.providerName.trim()
     && (form.providerType === "official_openai" || form.baseUrl.trim())

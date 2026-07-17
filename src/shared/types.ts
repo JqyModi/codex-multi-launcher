@@ -1,5 +1,7 @@
 export type ProviderType = "official_openai" | "third_party_responses";
 
+export type ProfileAuthMode = "api_key" | "chatgpt_account";
+
 export type ProfileStatus = "active" | "disabled" | "deleted";
 
 export type RuntimeStatus = "running" | "not_running" | "unknown" | "error";
@@ -62,12 +64,17 @@ export interface ProfileAppearance {
   iconBackgroundColor: string;
 }
 
+export interface ProfileAuthConfig {
+  mode: ProfileAuthMode;
+}
+
 export interface ManagedProfile {
   id: string;
   name: string;
   status: ProfileStatus;
   paths: ProfilePaths;
   provider: ProviderConfig;
+  auth: ProfileAuthConfig;
   appearance: ProfileAppearance;
   launch: LaunchMetadata;
   timestamps: {
@@ -140,6 +147,7 @@ export interface SessionHistorySyncResolvedSource {
 
 export interface CreateProfileInput {
   name: string;
+  authMode?: ProfileAuthMode;
   codexAppPath?: string;
   inheritDefaultConfig?: boolean;
   syncHistory?: SessionHistorySyncInput;
@@ -150,7 +158,7 @@ export interface CreateProfileInput {
     displayName: string;
     baseUrl?: string;
     model: string;
-    apiKey: string;
+    apiKey?: string;
     reasoningEffort?: ProviderConfig["reasoningEffort"];
   };
 }
