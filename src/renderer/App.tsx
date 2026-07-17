@@ -143,6 +143,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     authModeAccountPending: "账号登录",
     authModeAccountPreview: "生成后打开分身窗口，在 ChatGPT/Codex 中登录官方账号。应用不会写入 API Key，也不会覆盖这个分身里的登录状态。",
     authModeReview: "登录方式",
+    accountProfileTitle: "ChatGPT 账号登录",
+    accountProfileDesc: "这个配置使用分身窗口内的官方账号授权，不使用接口地址或 API Key。需要更换账号时，请打开该配置后在 ChatGPT/Codex 窗口里退出并重新登录。",
     providerType: "服务接口类型",
     thirdPartyResponses: "第三方兼容接口",
     officialOpenAI: "官方 OpenAI 密钥",
@@ -328,6 +330,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     authModeAccountPending: "Account",
     authModeAccountPreview: "After generation, open the isolated app window and sign in with your ChatGPT account. The manager will not write an API key or overwrite that login state.",
     authModeReview: "Login mode",
+    accountProfileTitle: "ChatGPT account login",
+    accountProfileDesc: "This profile uses the official account session inside the isolated app window, without a Base URL or API key. To switch accounts, open this profile and sign out or sign in inside ChatGPT/Codex.",
     providerType: "Provider type",
     thirdPartyResponses: "Third-party Responses-compatible",
     officialOpenAI: "Official OpenAI API key",
@@ -1153,47 +1157,57 @@ export function App() {
                   onChange={(iconBackgroundColor) => setEditForm({ ...editForm, iconBackgroundColor })}
                 />
               </div>
-              <div className="edit-box">
-                <h4>{t.editProvider}</h4>
-                <label>
-                  {t.providerName}
-                  <input value={editForm.providerName} onChange={(event) => setEditForm({ ...editForm, providerName: event.target.value })} />
-                </label>
-                <label>
-                  {t.baseUrl}
-                  <input value={editForm.baseUrl} onChange={(event) => setEditForm({ ...editForm, baseUrl: event.target.value })} />
-                </label>
-                <label>
-                  {t.model}
-                  <div className="input-action-row">
-                    <input value={editForm.model} onChange={(event) => setEditForm({ ...editForm, model: event.target.value })} />
-                    <button className="button secondary compact" disabled={isFetchingEditProviderModels || !editForm.baseUrl} onClick={() => void fetchEditProviderModels()} type="button">
-                      <RefreshCcw size={14} />
-                      {isFetchingEditProviderModels ? t.fetchingModels : t.fetchModels}
+              {(selectedProfile.auth?.mode ?? "api_key") === "chatgpt_account" ? (
+                <div className="edit-box account-profile-box">
+                  <span className="auth-mode-icon"><User size={16} /></span>
+                  <div>
+                    <h4>{t.accountProfileTitle}</h4>
+                    <p>{t.accountProfileDesc}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="edit-box">
+                  <h4>{t.editProvider}</h4>
+                  <label>
+                    {t.providerName}
+                    <input value={editForm.providerName} onChange={(event) => setEditForm({ ...editForm, providerName: event.target.value })} />
+                  </label>
+                  <label>
+                    {t.baseUrl}
+                    <input value={editForm.baseUrl} onChange={(event) => setEditForm({ ...editForm, baseUrl: event.target.value })} />
+                  </label>
+                  <label>
+                    {t.model}
+                    <div className="input-action-row">
+                      <input value={editForm.model} onChange={(event) => setEditForm({ ...editForm, model: event.target.value })} />
+                      <button className="button secondary compact" disabled={isFetchingEditProviderModels || !editForm.baseUrl} onClick={() => void fetchEditProviderModels()} type="button">
+                        <RefreshCcw size={14} />
+                        {isFetchingEditProviderModels ? t.fetchingModels : t.fetchModels}
+                      </button>
+                    </div>
+                  </label>
+                  <ModelPicker
+                    modelsResult={editProviderModels}
+                    selectedModel={editForm.model}
+                    t={t}
+                    onSelect={(model) => setEditForm((current) => ({ ...current, model }))}
+                  />
+                  <label>
+                    {t.newApiKey}
+                    <input placeholder={t.keepCurrentKey} type="password" value={editForm.apiKey} onChange={(event) => setEditForm({ ...editForm, apiKey: event.target.value })} />
+                  </label>
+                  <div className="button-row">
+                    <button className="button secondary" disabled={isTestingEditProvider || !editForm.baseUrl || !editForm.model} onClick={() => void testEditProvider()} type="button">
+                      <TestTube2 size={15} />
+                      {isTestingEditProvider ? t.testing : t.test}
+                    </button>
+                    <button className="button secondary" disabled={isUpdatingProfile || !editForm.providerName || !editForm.baseUrl || !editForm.model} onClick={() => void saveSelectedProfile()} type="button">
+                      {isUpdatingProfile ? t.saving : t.saveProvider}
                     </button>
                   </div>
-                </label>
-                <ModelPicker
-                  modelsResult={editProviderModels}
-                  selectedModel={editForm.model}
-                  t={t}
-                  onSelect={(model) => setEditForm((current) => ({ ...current, model }))}
-                />
-                <label>
-                  {t.newApiKey}
-                  <input placeholder={t.keepCurrentKey} type="password" value={editForm.apiKey} onChange={(event) => setEditForm({ ...editForm, apiKey: event.target.value })} />
-                </label>
-                <div className="button-row">
-                  <button className="button secondary" disabled={isTestingEditProvider || !editForm.baseUrl || !editForm.model} onClick={() => void testEditProvider()} type="button">
-                    <TestTube2 size={15} />
-                    {isTestingEditProvider ? t.testing : t.test}
-                  </button>
-                  <button className="button secondary" disabled={isUpdatingProfile || !editForm.providerName || !editForm.baseUrl || !editForm.model} onClick={() => void saveSelectedProfile()} type="button">
-                    {isUpdatingProfile ? t.saving : t.saveProvider}
-                  </button>
+                  <ProviderTestBox providerTest={editProviderTest} t={t} />
                 </div>
-                <ProviderTestBox providerTest={editProviderTest} t={t} />
-              </div>
+              )}
               <details className="advanced-details">
                 <summary>
                   <span className="advanced-summary-icon"><ChevronRight size={15} /></span>
