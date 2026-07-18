@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="使用 Codex Multi Launcher 在 macOS 或 Windows 同时登录多个 ChatGPT / Codex 账号，每个 Profile 使用独立应用数据与登录状态。" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/features/multiple-accounts/" />
+    <meta property="og:title" content="Codex 多账号同时登录 | Codex Multi Launcher" />
+    <meta property="og:description" content="为工作、个人或不同订阅账号创建相互隔离的 Codex / ChatGPT 桌面窗口。" />
+    <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
+    <title>Codex 多账号同时登录 | 独立 ChatGPT / Codex 窗口</title>
+    <link rel="icon" href="../../assets/favicon.png" />
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../../"><img src="../../assets/app-icon.webp" alt="" width="36" height="36" /><span>Codex Multi Launcher</span></a>
+      <nav aria-label="主导航"><a href="../../">首页</a><a href="../../manual.html">手册</a><a href="../../support/">帮助</a><a class="nav-download" href="../../download/">下载</a></nav>
+    </header>
+    <main class="article-layout">
+      <aside class="article-nav"><strong>多账号隔离</strong><a href="#how">如何实现</a><a href="#create">创建步骤</a><a href="#difference">与 API Key 区别</a><a href="#faq">常见问题</a></aside>
+      <article class="article-content">
+        <header class="article-hero">
+          <p class="eyebrow">Codex 多账号 · ChatGPT 多开</p>
+          <h1>在不同窗口登录不同 ChatGPT 账号。</h1>
+          <p class="hero-lede">为工作账号、个人账号或不同订阅分别创建 Codex 配置。每个配置使用独立应用数据目录，不会因为切换一个窗口的账号而退出其他窗口。</p>
+          <div class="hero-actions"><a class="button primary" href="../../download/">下载最新版</a><a class="button secondary" href="../../guides/chatgpt-account/">查看账号登录指南</a></div>
+        </header>
+        <section class="article-section" id="how">
+          <h2>多账号隔离如何工作</h2>
+          <p>每个 Profile 都使用自己的 <code>CODEX_HOME</code> 和 <code>--user-data-dir</code>。账号登录状态、应用缓存、项目状态和 Profile 配置保存在各自目录中。</p>
+          <ul><li>官方 Codex / ChatGPT App 本身不会被替换。</li><li>不同 Profile 不共用应用数据目录。</li><li>账号凭据继续由官方 App 管理，工具不会读取或保存账号密码。</li><li>删除某个 Profile 不会删除其他 Profile 或源 App 的登录状态。</li></ul>
+          <div class="article-callout">隔离的是本地桌面应用状态。账号本身的订阅、额度和云端数据仍由对应 ChatGPT / OpenAI 账号决定。</div>
+        </section>
+        <section class="article-section" id="create">
+          <h2>创建账号登录配置</h2>
+          <ol><li>点击左侧配置列表旁的新增按钮。</li><li>填写便于识别的名称，例如“工作账号”或“个人 Plus”。</li><li>在登录方式中选择“ChatGPT 账号登录”。</li><li>按需选择是否同步已有历史对话。</li><li>生成并打开新配置，在独立窗口内完成登录。</li></ol>
+          <figure class="article-figure"><img src="../../user-manual-assets/02-create-profile.webp" alt="Codex 多开助手创建 Profile 界面" width="1180" height="760" loading="lazy" /><figcaption>创建时先明确配置名称、登录方式和历史对话范围</figcaption></figure>
+        </section>
+        <section class="article-section" id="difference">
+          <h2>账号登录与 API Key 的区别</h2>
+          <div class="platform-table">
+            <div class="platform-row platform-head"><span>方式</span><span>适合场景</span><span>需要填写</span></div>
+            <div class="platform-row"><strong>ChatGPT 账号</strong><span>Plus / Pro 等账号内使用</span><span>在窗口内完成登录</span></div>
+            <div class="platform-row"><strong>API Key</strong><span>官方 API 或兼容服务商</span><span>API Key、模型、接口地址</span></div>
+          </div>
+          <p>账号模式创建完成后，详情页不会显示接口地址和 API Key 输入框，避免用户误以为必须填写或意外覆盖登录方式。</p>
+        </section>
+        <section class="article-section" id="faq">
+          <h2>常见问题</h2>
+          <h3>一个账号可以同时打开多个 Profile 吗？</h3><p>可以尝试，但账号并发限制和服务条款由 OpenAI 决定。多开助手只负责本地目录隔离。</p>
+          <h3>修改一个 Profile 的登录账号会影响其他 Profile 吗？</h3><p>正常情况下不会，因为每个 Profile 使用不同的应用数据目录。</p>
+          <h3>重启电脑后还需要重新登录吗？</h3><p>登录状态应保存在对应 Profile 的应用数据目录中。若每次重启都丢失，请提交诊断信息和 Codex / ChatGPT 版本。</p>
+        </section>
+      </article>
+    </main>
+    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>账号凭据由官方 App 管理，本项目不会要求你提交账号密码。</p></div><nav aria-label="页脚导航"><a href="../../features/session-sync/">历史对话同步</a><a href="../../support/">问题反馈</a><a href="https://github.com/JqyModi/codex-multi-launcher">GitHub</a></nav></footer>
+  </body>
+</html>

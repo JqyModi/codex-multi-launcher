@@ -1,0 +1,16 @@
+{
+  "name": "Codex Multi Launcher",
+  "short_name": "Codex Launcher",
+  "description": "Codex / ChatGPT desktop profile manager for macOS and Windows.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#f5f7fa",
+  "icons": [
+    {
+      "src": "assets/pwa-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

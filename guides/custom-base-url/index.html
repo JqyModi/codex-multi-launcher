@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Codex 自定义 Base URL、API Key 与第三方 Responses API 配置指南，说明模型 ID、/models、401、403 和 Chat Completions 兼容边界。" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/guides/custom-base-url/" />
+    <meta property="og:title" content="Codex 自定义 Base URL 与第三方 API 配置" />
+    <meta property="og:description" content="为不同 Codex Profile 设置独立 API Key、接口地址、模型和 Responses 兼容服务商。" />
+    <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
+    <title>Codex 自定义 Base URL、API Key 与第三方 API 配置</title>
+    <link rel="icon" href="../../assets/favicon.png" />
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../../"><img src="../../assets/app-icon.webp" alt="" width="36" height="36" /><span>Codex Multi Launcher</span></a>
+      <nav aria-label="主导航"><a href="../../">首页</a><a href="../../manual.html">手册</a><a href="../../support/">帮助</a><a class="nav-download" href="../../download/">下载</a></nav>
+    </header>
+    <main class="article-layout">
+      <aside class="article-nav"><strong>API 配置</strong><a href="#requirements">兼容要求</a><a href="#fields">字段填写</a><a href="#test">测试接口</a><a href="#errors">常见错误</a></aside>
+      <article class="article-content">
+        <header class="article-hero">
+          <p class="eyebrow">Codex Base URL · Responses API</p>
+          <h1>为每个 Codex 窗口设置不同 API。</h1>
+          <p class="hero-lede">每个 Profile 可以使用独立 API Key、Base URL、模型和服务商名称，适合官方 OpenAI API、自建代理或真正兼容 Responses API 的第三方服务。</p>
+          <div class="hero-actions"><a class="button primary" href="../../download/">下载最新版</a><a class="button secondary" href="../../manual.html#provider">查看图文配置</a></div>
+        </header>
+        <section class="article-section" id="requirements">
+          <h2>最重要的兼容要求</h2>
+          <p>Codex 桌面版使用的能力不等同于普通聊天客户端。第三方服务商需要实际实现 OpenAI Responses API，仅声称“OpenAI 兼容”并不代表一定可用。</p>
+          <div class="article-callout warning">只支持 <code>/chat/completions</code> 的服务商可能无法工作。请向服务商确认是否支持 Responses API、流式响应和 Codex 所需的工具调用格式。</div>
+        </section>
+        <section class="article-section" id="fields">
+          <h2>如何填写</h2>
+          <figure class="article-figure"><img src="../../user-manual-assets/03-provider-settings.webp" alt="Codex 多开助手 API Provider 配置页面" width="1180" height="760" loading="lazy" /><figcaption>接口地址、模型和 API Key 会保存在当前 Profile 中</figcaption></figure>
+          <ul><li><strong>服务商名称：</strong>只用于本地识别，例如“公司代理”或“测试线路”。</li><li><strong>Base URL：</strong>填写服务商给出的 OpenAI 兼容入口，常见形式以 <code>/v1</code> 结尾。</li><li><strong>模型：</strong>必须是接口实际接受的模型 ID，而不是网页展示名称。</li><li><strong>API Key：</strong>填写服务商为该兼容接口签发的 Key。</li></ul>
+          <p>API Key 保存到本地加密文件中，不写入启动脚本，也不会包含在“复制诊断”结果里。</p>
+        </section>
+        <section class="article-section" id="test">
+          <h2>获取模型与测试接口</h2>
+          <p>“获取模型”会尝试读取服务商的 <code>/models</code> 返回结果。如果服务商没有提供该接口，仍可以手动填写模型 ID。</p>
+          <p>Provider 测试用于提前发现网络、鉴权和 Responses API 兼容问题。测试失败时允许继续生成，便于进一步排查，但不代表生成后一定能正常对话。</p>
+        </section>
+        <section class="article-section" id="errors">
+          <h2>常见错误</h2>
+          <h3>401 / 403</h3><p>通常表示 API Key 无效、权限不足、额度不可用，或服务商要求不同的鉴权格式。</p>
+          <h3>404</h3><p>优先检查 Base URL 是否多写或少写了 <code>/v1</code>，以及服务商是否真的提供 Responses 路由。</p>
+          <h3>能获取模型但无法对话</h3><p><code>/models</code> 可用只代表能列出模型，不代表 Responses、工具调用和流式返回均兼容。</p>
+          <h3>DeepSeek、Kimi、通义、智谱能否使用</h3><p>取决于所选服务商是否提供 OpenAI Responses 兼容入口和正确模型 ID，不能只根据模型品牌判断。</p>
+        </section>
+      </article>
+    </main>
+    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>本项目不运营 API 中转服务，也不会代服务商保证接口兼容性。</p></div><nav aria-label="页脚导航"><a href="../../manual.html">用户手册</a><a href="../../support/">反馈问题</a><a href="https://github.com/JqyModi/codex-multi-launcher/issues/9">相关 Issue</a></nav></footer>
+  </body>
+</html>

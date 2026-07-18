@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Codex Multi Launcher 的 ChatGPT 官方账号登录指南：创建独立 Profile、在窗口内登录、保留账号状态，并说明与 API Key 模式的区别。" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/guides/chatgpt-account/" />
+    <title>Codex 使用 ChatGPT 账号登录 | Codex Multi Launcher</title>
+    <link rel="icon" href="../../assets/favicon.png" />
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../../"><img src="../../assets/app-icon.webp" alt="" width="36" height="36" /><span>Codex Multi Launcher</span></a>
+      <nav aria-label="主导航"><a href="../../">首页</a><a href="../../manual.html">手册</a><a href="../../support/">帮助</a><a class="nav-download" href="../../download/">下载</a></nav>
+    </header>
+    <main class="article-layout">
+      <aside class="article-nav"><strong>账号登录</strong><a href="#create">创建步骤</a><a href="#login">登录与切换</a><a href="#history">历史对话</a><a href="#safety">账号安全</a></aside>
+      <article class="article-content">
+        <header class="article-hero"><p class="eyebrow">ChatGPT Plus / Pro · Codex 账号登录</p><h1>不填写 API Key，也能创建独立 Codex 配置。</h1><p class="hero-lede">选择“ChatGPT 账号登录”后，工具只准备独立应用环境。账号登录在官方 Codex / ChatGPT 窗口内完成。</p></header>
+        <section class="article-section" id="create">
+          <h2>创建步骤</h2>
+          <ol><li>创建新 Profile 并填写名称。</li><li>选择“ChatGPT 账号登录”。</li><li>根据需要选择历史对话同步来源和范围。</li><li>生成并打开 Profile。</li><li>在出现的官方窗口中登录对应账号。</li></ol>
+          <div class="article-callout">账号模式不写入 API Key，不生成 <code>auth.json</code> API Key 配置，也不会导出 <code>OPENAI_API_KEY</code>。</div>
+        </section>
+        <section class="article-section" id="login">
+          <h2>切换账号</h2>
+          <p>需要更换某个 Profile 的账号时，只在对应窗口中退出并重新登录。不要在 Profile 详情页填写接口地址或 API Key；账号模式下这些输入不会显示。</p>
+          <p>如果两个 Profile 登录了同一个账号，它们仍使用独立本地应用数据，但云端账号内容和额度可能来自同一个账号。</p>
+        </section>
+        <section class="article-section" id="history">
+          <h2>账号登录和历史对话是两件事</h2>
+          <p>登录账号决定当前窗口使用哪个 ChatGPT / OpenAI 身份；历史同步决定创建时复制哪些本地项目和对话记录。可以只登录新账号而不同步历史，也可以在创建时同时完成两项操作。</p>
+        </section>
+        <section class="article-section" id="safety">
+          <h2>账号安全</h2>
+          <ul><li>只在官方 Codex / ChatGPT 窗口中输入账号信息。</li><li>多开助手不会要求你提供账号密码或 Cookie。</li><li>不要把 Profile 的完整应用数据目录分享给他人。</li><li>删除 Profile 前确认其中是否有仍需保留的本地工作记录。</li></ul>
+        </section>
+      </article>
+    </main>
+    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>独立社区项目，不代理或接管 ChatGPT 账号登录。</p></div><nav aria-label="页脚导航"><a href="../../features/multiple-accounts/">多账号说明</a><a href="../../support/">问题反馈</a><a href="../../download/">下载</a></nav></footer>
+  </body>
+</html>

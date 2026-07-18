@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Codex Multi Launcher 更新记录：多账号登录、历史对话同步、Windows 兼容、自动更新与 Codex 新版适配。" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/changelog/" />
+    <title>更新记录 | Codex Multi Launcher</title>
+    <link rel="icon" href="../assets/favicon.png" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../"><img src="../assets/app-icon.webp" alt="" width="36" height="36" /><span>Codex Multi Launcher</span></a>
+      <nav aria-label="主导航"><a href="../">首页</a><a href="../manual.html">手册</a><a class="nav-download" href="../download/">下载</a></nav>
+    </header>
+    <main class="article-layout">
+      <aside class="article-nav"><strong>更新记录</strong><a href="#latest">当前版本</a><a href="#history">近期版本</a><a href="#updates">自动更新</a></aside>
+      <article class="article-content">
+        <header class="article-hero"><p class="eyebrow">Changelog</p><h1>持续跟进 Codex 桌面版变化。</h1><p class="hero-lede">这里整理影响用户使用的重要更新。完整文件列表、校验信息和所有历史版本以 GitHub Releases 为准。</p></header>
+        <section class="article-section" id="latest">
+          <h2>当前最新版</h2>
+          <p>2026 年 7 月 17 日发布的 v0.1.6 重点解决 Codex / ChatGPT 新版状态持久化与官方账号登录问题。</p>
+          <ul><li>修复每次打开都重复显示迁移或初始化提示。</li><li>修复重启后新项目和历史对话列表消失。</li><li>新增 ChatGPT 官方账号登录配置，不再强制填写 API Key。</li><li>账号登录配置隐藏接口地址和 API Key 编辑，避免误操作。</li><li>macOS 多架构包完成 Developer ID 签名与 Apple 公证。</li></ul>
+          <p><a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">查看最新版 Release</a></p>
+        </section>
+        <section class="article-section" id="history">
+          <h2>近期版本</h2>
+          <h3>v0.1.5</h3><p>完善历史对话同步范围与来源选择，并修复仅同步临时任务时出现空项目目录的问题。</p>
+          <h3>v0.1.4</h3><p>修复 Windows 创建和打开配置时的权限与路径问题，补充项目和临时任务历史同步能力。</p>
+          <h3>v0.1.2 - v0.1.3</h3><p>适配 ChatGPT 与 Codex 桌面应用合并后的可执行文件变化，加入候选 App 检测、用户指定路径和应用内更新流程。</p>
+        </section>
+        <section class="article-section" id="updates">
+          <h2>应用内自动更新</h2>
+          <p>App 冷启动时会检查新版本。检测到更新后会在首页提示，由用户决定是否查看、下载和安装；不会在没有确认的情况下强制更新。</p>
+          <div class="article-callout">Windows 当前未签名，升级时可能再次出现 SmartScreen 提示；macOS 更新包继续使用 Developer ID 签名与 Apple 公证。</div>
+        </section>
+      </article>
+    </main>
+    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>版本详情以 GitHub Releases 为准。</p></div><nav aria-label="页脚导航"><a href="../download/">下载</a><a href="../support/">反馈问题</a><a href="https://github.com/JqyModi/codex-multi-launcher/releases">全部版本</a></nav></footer>
+  </body>
+</html>

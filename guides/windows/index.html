@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Windows Codex 多开安装与排错指南，说明普通安装版、Microsoft Store / WindowsApps、权限、symlink 和可执行文件检测问题。" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/guides/windows/" />
+    <meta property="og:title" content="Windows Codex 多开安装与排错" />
+    <meta property="og:description" content="处理 Windows Codex 安装来源、WindowsApps 权限、Profile 创建和启动问题。" />
+    <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
+    <title>Windows Codex 多开安装与排错 | Codex Multi Launcher</title>
+    <link rel="icon" href="../../assets/favicon.png" />
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../../"><img src="../../assets/app-icon.webp" alt="" width="36" height="36" /><span>Codex Multi Launcher</span></a>
+      <nav aria-label="主导航"><a href="../../">首页</a><a href="../../manual.html">手册</a><a href="../../support/">帮助</a><a class="nav-download" href="../../download/">下载</a></nav>
+    </header>
+    <main class="article-layout">
+      <aside class="article-nav"><strong>Windows 指南</strong><a href="#install-source">安装来源</a><a href="#create">创建问题</a><a href="#open">打开问题</a><a href="#report">反馈信息</a></aside>
+      <article class="article-content">
+        <header class="article-hero">
+          <p class="eyebrow">Codex Windows · WindowsApps</p>
+          <h1>Windows 上的安装、创建与启动排错。</h1>
+          <p class="hero-lede">Windows 版本的主要差异来自 App 安装来源、WindowsApps 目录权限、符号链接和可执行文件路径。最新版已针对这些链路做兼容处理。</p>
+          <div class="hero-actions"><a class="button primary" href="../../download/">下载 Windows x64</a><a class="button secondary" href="https://github.com/JqyModi/codex-multi-launcher/issues/10">查看相关 Issue</a></div>
+        </header>
+        <section class="article-section" id="install-source">
+          <h2>先确认 Codex / ChatGPT 安装来源</h2>
+          <p>Windows 桌面 App 可能来自官网安装器，也可能以 Microsoft Store / AppX 包形式安装。两者最终文件位置和权限模型不同。</p>
+          <ul><li><strong>普通安装：</strong>可执行文件通常位于用户可访问的程序目录。</li><li><strong>Store / AppX：</strong>文件可能位于受保护的 <code>C:\Program Files\WindowsApps</code>。</li></ul>
+          <p>最新版会优先使用用户在设置中指定的 App 路径；未指定时再从候选桌面 App 中自动检测。</p>
+        </section>
+        <section class="article-section" id="create">
+          <h2>创建 Profile 时出现 EPERM</h2>
+          <p>典型错误是复制 Codex 插件缓存时无法创建 symlink。Windows 普通用户对符号链接和受保护目录的权限与 macOS 不同。</p>
+          <div class="article-callout">最新版在 Windows 同步插件缓存时采用 Windows 兼容处理，不要求沿用 macOS 的符号链接复制方式。</div>
+          <ol><li>升级到 Latest Release。</li><li>关闭正在运行的旧版多开助手。</li><li>重新创建 Profile，不要复用创建失败留下的不完整目录。</li><li>若仍失败，确认安全软件没有阻止用户目录写入。</li></ol>
+        </section>
+        <section class="article-section" id="open">
+          <h2>创建成功但打开失败</h2>
+          <h3>提示找不到 ChatGPT.exe</h3><p>进入设置，手动选择正确的 Codex / ChatGPT App 路径。合并后的桌面 App 可执行文件名可能发生变化。</p>
+          <h3>窗口一闪而过</h3><p>先确认官方 App 本身可以正常启动，再检查 Profile 详情中的 App 路径。虚拟机环境还可能受到图形加速、会话退出或共享目录执行限制影响。</p>
+          <h3>Store / WindowsApps 权限提示</h3><p>不要手工修改 WindowsApps 权限。优先使用官网可直接安装的桌面版本，或在 App 设置中指定可正常启动的程序路径。</p>
+        </section>
+        <section class="article-section" id="report">
+          <h2>提交问题时请附带</h2>
+          <ul><li>Windows 版本与 CPU 架构。</li><li>Codex / ChatGPT 来自官网安装器还是 Microsoft Store。</li><li>Codex Multi Launcher 版本和安装版/便携版。</li><li>错误提示全文及 App 内复制的诊断。</li><li>是否在 Parallels Desktop、VMware 等虚拟机内运行。</li></ul>
+        </section>
+      </article>
+    </main>
+    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>Windows 包当前未签名，请只从项目 GitHub Releases 下载。</p></div><nav aria-label="页脚导航"><a href="../../download/">下载</a><a href="../../support/">反馈问题</a><a href="https://github.com/JqyModi/codex-multi-launcher/issues/10">Issue #10</a></nav></footer>
+  </body>
+</html>

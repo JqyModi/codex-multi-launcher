@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Codex 历史对话同步指南：从源 App 或已有 Profile 选择项目对话、临时任务或全部历史，并复制到新的独立配置。" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/features/session-sync/" />
+    <meta property="og:title" content="Codex 历史对话同步与迁移" />
+    <meta property="og:description" content="创建新 Profile 时同步指定项目、临时任务和多个来源中的历史对话。" />
+    <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
+    <title>Codex 历史对话同步与项目迁移 | Codex Multi Launcher</title>
+    <link rel="icon" href="../../assets/favicon.png" />
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../../"><img src="../../assets/app-icon.webp" alt="" width="36" height="36" /><span>Codex Multi Launcher</span></a>
+      <nav aria-label="主导航"><a href="../../">首页</a><a href="../../manual.html">手册</a><a href="../../support/">帮助</a><a class="nav-download" href="../../download/">下载</a></nav>
+    </header>
+    <main class="article-layout">
+      <aside class="article-nav"><strong>历史对话同步</strong><a href="#scope">同步范围</a><a href="#sources">同步来源</a><a href="#behavior">同步结果</a><a href="#troubleshoot">排错</a></aside>
+      <article class="article-content">
+        <header class="article-hero">
+          <p class="eyebrow">Codex 项目迁移 · 历史对话恢复</p>
+          <h1>创建新配置时，带上需要的历史对话。</h1>
+          <p class="hero-lede">不必在“完全空白”和“复制全部数据”之间二选一。你可以从源 App 或已有多开配置中选择来源，并只同步项目、临时任务或全部支持的历史。</p>
+          <div class="hero-actions"><a class="button primary" href="../../download/">下载最新版</a><a class="button secondary" href="../../manual.html#create">查看创建流程</a></div>
+        </header>
+        <section class="article-section" id="scope">
+          <h2>三种同步范围</h2>
+          <h3>仅项目</h3><p>同步与项目目录关联的历史对话，适合继续维护已有代码仓库。</p>
+          <h3>仅临时任务</h3><p>同步不属于项目目录的临时对话。这个模式不会额外创建没有对话内容的空项目目录。</p>
+          <h3>全部</h3><p>同时同步项目对话和临时任务，适合建立一个包含现有工作记录的新独立配置。</p>
+        </section>
+        <section class="article-section" id="sources">
+          <h2>可以选择多个来源</h2>
+          <ul><li><strong>源 App：</strong>当前官方 Codex / ChatGPT 桌面应用使用的 Codex 数据目录。</li><li><strong>已有 Profile：</strong>之前通过多开助手创建的一个或多个配置。</li></ul>
+          <p>未勾选的来源不会参与同步。多个来源中遇到相同会话 ID 时会避免重复写入。</p>
+          <div class="article-callout warning">同步前请关闭正在使用这些来源数据的 Codex 窗口，避免数据库或会话文件正处于写入状态。</div>
+        </section>
+        <section class="article-section" id="behavior">
+          <h2>同步后会发生什么</h2>
+          <ol><li>复制符合范围的会话文件、索引和必要数据库记录。</li><li>将来源中的模型服务商引用改写为目标 Profile 的配置。</li><li>保留项目目录与临时任务的归类。</li><li>新 Profile 之后独立运行，不会把新增对话写回来源。</li></ol>
+          <p>同步不仅是复制项目目录。Codex 历史依赖会话 JSONL、SQLite 线程数据、索引、项目路径和全局状态，缺少其中一部分就可能出现“能看到项目但看不到对话”或“重启后消失”。</p>
+        </section>
+        <section class="article-section" id="troubleshoot">
+          <h2>同步后看不到历史怎么办</h2>
+          <ol><li>确认创建时开启了“同步已有对话记录”。</li><li>确认勾选了正确来源，而不只是选择了同步范围。</li><li>确认选择“仅临时任务”时，目标对话原本确实位于临时任务区。</li><li>完全退出目标 Codex 窗口后重新打开。</li><li>仍然失败时，通过 App 复制诊断并提交 Issue。</li></ol>
+          <div class="article-callout">重新填写 API Key 或接口地址不应该删除历史对话。若修改 Provider 后历史消失，通常是配置解析、目标 Provider 标识或全局状态读取异常，需要日志进一步确认。</div>
+        </section>
+      </article>
+    </main>
+    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>同步会创建独立副本，但重要工作记录仍建议自行备份。</p></div><nav aria-label="页脚导航"><a href="../../features/multiple-accounts/">多账号隔离</a><a href="../../support/">问题反馈</a><a href="https://github.com/JqyModi/codex-multi-launcher/issues/8">相关 Issue</a></nav></footer>
+  </body>
+</html>
