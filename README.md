@@ -62,6 +62,10 @@ Open a [GitHub Issue](https://github.com/JqyModi/codex-multi-launcher/issues) wi
 
 Do not include API keys, account cookies, or private conversation content.
 
+## Community
+
+Thanks to the [Linux.do](https://linux.do/) community for early feedback, testing, and ongoing discussion.
+
 ## Disclaimer
 
 Codex Multi Launcher is an independent community project. It is not affiliated with, endorsed by, or sponsored by OpenAI.
