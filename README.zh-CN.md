@@ -1,80 +1,67 @@
-[English](README.md) | 中文
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-# Codex 多开助手
+# Codex Multi Launcher（Codex 多开助手）
 
-Codex 多开助手是一个跨平台小工具，用来创建多个彼此隔离的 Codex 桌面窗口，并为每个窗口配置独立的 API Key、Base URL、模型和启动器。
+在 macOS 和 Windows 上同时运行多个相互隔离的 Codex / ChatGPT 桌面配置。每个配置都可以使用独立的 ChatGPT 账号、API Key、接口地址、模型、应用数据和指定历史对话。
+
+[![最新版本](https://img.shields.io/github/v/release/JqyModi/codex-multi-launcher?display_name=tag)](https://github.com/JqyModi/codex-multi-launcher/releases/latest)
+[![累计下载](https://img.shields.io/github/downloads/JqyModi/codex-multi-launcher/total)](https://github.com/JqyModi/codex-multi-launcher/releases)
+[![Stars](https://img.shields.io/github/stars/JqyModi/codex-multi-launcher)](https://github.com/JqyModi/codex-multi-launcher/stargazers)
+
+- [产品官网](https://jqymodi.github.io/codex-multi-launcher/)
+- [下载最新版](https://github.com/JqyModi/codex-multi-launcher/releases/latest)
+- [用户手册](https://jqymodi.github.io/codex-multi-launcher/manual.html)
+- [问题反馈](https://github.com/JqyModi/codex-multi-launcher/issues)
 
 <p align="center">
-  <img alt="Codex 多开助手首页" src="https://raw.githubusercontent.com/JqyModi/codex-multi-launcher/main/user-manual-assets/01-dashboard.png" width="880">
+  <img alt="Codex 多开助手工作台" src="https://raw.githubusercontent.com/JqyModi/codex-multi-launcher/main/user-manual-assets/01-dashboard.png" width="980">
 </p>
 
-这个仓库用于：
+## 它解决什么问题
 
-- 发布产品落地页和用户手册；
-- 通过 GitHub Issues 收集早期试用反馈；
-- 通过 GitHub Releases 分发 macOS 和 Windows 测试版安装包。
+- 同时打开工作、个人和不同服务商的 Codex 窗口。
+- 在不同窗口登录不同 ChatGPT 账号，登录状态互不影响。
+- 在账号登录、官方 OpenAI API Key 和第三方 Responses 兼容接口之间切换。
+- 创建新配置时同步指定项目或临时任务的历史对话。
+- 不再手动修改 `config.toml`、环境变量和启动参数。
 
-## 在线访问
+## 当前功能
 
-- 落地页：<https://jqymodi.github.io/codex-multi-launcher/>
-- 用户手册：<https://jqymodi.github.io/codex-multi-launcher/manual.html>
-- 问题反馈：<https://github.com/JqyModi/codex-multi-launcher/issues>
-- 下载测试版：<https://github.com/JqyModi/codex-multi-launcher/releases/latest>
+- 每个配置独立使用 `CODEX_HOME` 和 `--user-data-dir`。
+- 支持 ChatGPT 账号登录与 API Key 两种方式。
+- 独立设置 API Key、接口地址、模型和服务商。
+- 从源 App 或已有多开配置中同步历史对话。
+- 可选仅项目、仅临时任务或全部支持的历史范围。
+- 支持应用内检查、下载和安装更新。
+- API Key 本地加密保存，诊断信息自动脱敏。
+- macOS arm64、x64 和 universal 包已签名并完成 Apple 公证。
+- 提供 Windows x64 安装版和便携版。
 
-## 当前能力
+## 下载
 
-- 创建独立 `CODEX_HOME` 和 `user-data-dir`。
-- 生成可双击打开的 Codex 启动器 App。
-- 支持官方 OpenAI API Key 和第三方 Responses 兼容接口。
-- 可尝试通过 `/models` 获取模型列表。
-- `/models` 不可用时仍保留手动填写模型。
-- API Key 本地加密保存。
-- 诊断信息不包含 API Key。
+请从 [最新版发布页](https://github.com/JqyModi/codex-multi-launcher/releases/latest) 选择对应安装包：
 
-Provider 兼容说明：
+| 系统 | 安装包 |
+| --- | --- |
+| Apple Silicon Mac | arm64 或 universal macOS zip |
+| Intel Mac | x64 或 universal macOS zip |
+| Windows x64 | 安装版或便携版 exe |
 
-- MVP 需要 OpenAI/Responses 兼容入口，Base URL 通常以 `/v1` 结尾。
-- 只提供原生 API 或只支持 Chat Completions 的服务商，不一定能在 Codex Desktop 中稳定使用。
-- 智谱、DeepSeek、通义/Qwen、Kimi、OpenRouter 或自建中转都建议使用它们的 OpenAI 兼容入口和准确模型 ID 测试。
+Windows 安装包目前暂未签名；macOS 安装包已经过 Developer ID 签名和 Apple 公证。
 
-## 试用边界
+## 使用与排错
 
-当前 v0.1.1 测试版提供三种安装包：
+- [多个 ChatGPT 账号同时登录](https://jqymodi.github.io/codex-multi-launcher/features/multiple-accounts/)
+- [历史对话同步](https://jqymodi.github.io/codex-multi-launcher/features/session-sync/)
+- [Windows 安装与排错](https://jqymodi.github.io/codex-multi-launcher/guides/windows/)
+- [自定义接口地址和第三方 API](https://jqymodi.github.io/codex-multi-launcher/guides/custom-base-url/)
 
-- macOS Apple Silicon：`Codex-Multi-Launcher-0.1.1-arm64-mac.zip`
-- macOS Intel：`Codex-Multi-Launcher-0.1.1-x64-mac.zip`
-- Windows x64：`Codex-Multi-Launcher-0.1.1-x64-windows.zip`
+## 问题反馈
 
-App 暂未签名和 notarization，首次打开可能需要手动解除 quarantine：
+请通过 [GitHub Issues](https://github.com/JqyModi/codex-multi-launcher/issues) 反馈，并附带应用版本、操作系统、Codex / ChatGPT 版本、登录方式、复现步骤和 App 内复制的诊断信息。
 
-```bash
-xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"
-```
+请勿公开 API Key、账号 Cookie 或私人对话内容。
 
-Windows x64 已进入测试版。如果遇到真实环境兼容问题，请通过 GitHub Issues 提供复现步骤和诊断信息。
+## 声明
 
-## Roadmap
-
-早期用户反馈里已经出现两个明确方向：
-
-- [Windows support](https://github.com/JqyModi/codex-multi-launcher/issues/2)：v0.1.1 已包含 Windows x64 测试支持，后续兼容问题仍在这里跟进。
-- [多账号隔离验证](https://github.com/JqyModi/codex-multi-launcher/issues/1)：确认不同 Profile 是否可以保持独立 Codex 登录状态。
-
-## 反馈建议
-
-如果你试用了这个工具，欢迎提交 GitHub Issue：
-
-<https://github.com/JqyModi/codex-multi-launcher/issues>
-
-建议反馈时包含：
-
-- 系统版本和芯片架构；
-- Codex App 版本；
-- 使用官方 API Key 还是第三方 Responses 兼容接口；
-- Base URL 是否以 `/v1` 结尾；
-- App 内复制的诊断报告；
-- 可复现步骤和截图。
-
-## 致谢
-
-感谢 [LinuxDo](https://linux.do/) 社区的支持。
+Codex Multi Launcher 是独立社区项目，与 OpenAI 不存在隶属、授权、赞助或官方合作关系。
