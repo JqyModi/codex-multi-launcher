@@ -13,6 +13,7 @@ await fs.writeFile(
   path.join(testRoot, ".codex", "config.toml"),
   [
     'model = "gpt-5.5"',
+    'model_catalog_json = "cockpit-local-access-model-catalog.json"',
     `notify = ["${path.join(testRoot, ".codex", "computer-use", "Codex Computer Use.app", "Contents", "SharedSupport", "SkyComputerUseClient.app", "Contents", "MacOS", "SkyComputerUseClient")}", "turn-ended"]`,
     "",
     "[mcp_servers.example]",
@@ -30,6 +31,7 @@ await fs.writeFile(
   ].join("\n"),
   { mode: 0o600 }
 );
+await fs.writeFile(path.join(testRoot, ".codex", "cockpit-local-access-model-catalog.json"), '{"models":[]}\n', { mode: 0o600 });
 await fs.mkdir(path.join(testRoot, ".codex", "skills", "sample-skill"), { recursive: true });
 await fs.writeFile(path.join(testRoot, ".codex", "skills", "sample-skill", "SKILL.md"), "# Sample skill\n", { mode: 0o600 });
 await fs.mkdir(path.join(testRoot, ".codex", "plugins", "sample-plugin", ".codex-plugin"), { recursive: true });
@@ -308,6 +310,7 @@ const launcherScript = path.join(result.profile.paths.launcherPath, "Contents", 
 const inheritedSkillPath = path.join(result.profile.paths.codexHome, "skills", "sample-skill", "SKILL.md");
 const inheritedPluginManifestPath = path.join(result.profile.paths.codexHome, "plugins", "sample-plugin", ".codex-plugin", "plugin.json");
 const inheritedAgentsPath = path.join(result.profile.paths.codexHome, "AGENTS.md");
+const inheritedModelCatalogPath = path.join(result.profile.paths.codexHome, "cockpit-local-access-model-catalog.json");
 const inheritedSyncedSessionPath = path.join(result.profile.paths.codexHome, "sessions", "2026", "07", "15", path.basename(syncedSessionPath));
 const inheritedOtherSessionPath = path.join(result.profile.paths.codexHome, "sessions", "2026", "07", "15", path.basename(otherSessionPath));
 const inheritedArchivedSessionPath = path.join(result.profile.paths.codexHome, "archived_sessions", path.basename(archivedSessionPath));
@@ -315,7 +318,7 @@ const inheritedSourceProfileSessionPath = path.join(result.profile.paths.codexHo
 const inheritedSessionIndexPath = path.join(result.profile.paths.codexHome, "session_index.jsonl");
 const inheritedHistoryPath = path.join(result.profile.paths.codexHome, "history.jsonl");
 
-const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat, inheritedSkillRaw, inheritedPluginRaw, inheritedAgentsRaw, inheritedSyncedSessionRaw, inheritedArchivedSessionRaw, inheritedSourceProfileSessionRaw, inheritedSessionIndexRaw, inheritedHistoryRaw] = await Promise.all([
+const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRaw, launcherStat, launcherContentsStat, launcherMacosStat, launcherResourcesStat, launcherIconStat, inheritedSkillRaw, inheritedPluginRaw, inheritedAgentsRaw, inheritedModelCatalogRaw, inheritedSyncedSessionRaw, inheritedArchivedSessionRaw, inheritedSourceProfileSessionRaw, inheritedSessionIndexRaw, inheritedHistoryRaw] = await Promise.all([
   fs.readFile(appPaths.profilesFile, "utf8"),
   fs.readFile(appPaths.secretsFile, "utf8"),
   fs.readFile(configPath, "utf8"),
@@ -330,6 +333,7 @@ const [registryRaw, secretsRaw, configRaw, authRaw, launcherPlistRaw, launcherRa
   fs.readFile(inheritedSkillPath, "utf8"),
   fs.readFile(inheritedPluginManifestPath, "utf8"),
   fs.readFile(inheritedAgentsPath, "utf8"),
+  fs.readFile(inheritedModelCatalogPath, "utf8"),
   fs.readFile(inheritedSyncedSessionPath, "utf8"),
   fs.readFile(inheritedArchivedSessionPath, "utf8"),
   fs.readFile(inheritedSourceProfileSessionPath, "utf8"),
@@ -358,6 +362,7 @@ assert(configRaw.includes("[features]"), "config should inherit default feature 
 assert(inheritedSkillRaw.includes("Sample skill"), "profile should inherit default CODEX_HOME skills");
 assert(inheritedPluginRaw.includes("sample-plugin"), "profile should inherit default CODEX_HOME plugins");
 assert(inheritedAgentsRaw.includes("Default instructions"), "profile should inherit default CODEX_HOME instructions");
+assert(inheritedModelCatalogRaw.includes('"models"'), "profile should inherit relative model catalog artifacts referenced by config");
 assert(inheritedSyncedSessionRaw.includes("synced project history"), "profile should inherit matching project session history");
 assert(inheritedArchivedSessionRaw.includes("archived synced project history"), "profile should inherit matching archived project session history");
 assert(inheritedSourceProfileSessionRaw.includes("source profile project history"), "profile should inherit project session history from selected profile source");
@@ -377,8 +382,10 @@ assert(!launcherRaw.includes(fakeKey), "launcher must not contain plaintext API 
 assert(!secretsRaw.includes(fakeKey), "encrypted secrets file must not contain plaintext API key");
 assert(JSON.parse(authRaw).auth_mode === "apikey", "auth bootstrap should select API key mode");
 assert(JSON.parse(authRaw).OPENAI_API_KEY === fakeKey, "auth bootstrap should contain API key for Codex desktop login");
-assert(launcherRaw.includes("CODEX_HOME="), "launcher should set CODEX_HOME");
-assert(launcherRaw.includes("--user-data-dir="), "launcher should pass user-data-dir");
+assert(launcherRaw.includes("--open-profile"), "launcher should delegate profile opening back to the manager");
+assert(launcherRaw.includes(result.profile.id), "launcher should pass the profile id back to the manager");
+assert(!launcherRaw.includes("CODEX_HOME="), "launcher should not launch the desktop app directly");
+assert(!launcherRaw.includes("--user-data-dir="), "launcher should not pass user-data-dir directly");
 assert(launcherContentsStat.isDirectory(), "launcher bundle should contain Contents directory");
 assert(launcherMacosStat.isDirectory(), "launcher bundle should contain Contents/MacOS directory");
 assert(launcherResourcesStat.isDirectory(), "launcher bundle should contain Contents/Resources directory");
@@ -393,8 +400,9 @@ assert(launcherPlistRaw.includes("<string>profile-icon</string>"), "Info.plist s
 assert(launcherPlistRaw.includes("local.codexprofilemanager.e2e-sandbox"), "Info.plist should use profile bundle id");
 assert(launcherRaw.startsWith("#!/bin/zsh"), "launcher should be a zsh script");
 assert(launcherRaw.includes("set -euo pipefail"), "launcher should use strict shell mode");
-assert(launcherRaw.includes(appPaths.masterKeyFile), "launcher should reference encrypted secret master key");
-assert(launcherRaw.includes(appPaths.secretsFile), "launcher should reference encrypted secrets file");
+assert(!launcherRaw.includes(appPaths.masterKeyFile), "launcher should not reference encrypted secret master key");
+assert(!launcherRaw.includes(appPaths.secretsFile), "launcher should not reference encrypted secrets file");
+assert(!launcherRaw.includes("API_KEY="), "launcher should not decrypt an API key");
 await execFileAsync("zsh", ["-n", launcherScript]);
 await permanentlyDeleteProfile(sourceProfileResult.profile.id);
 
@@ -516,7 +524,8 @@ assert(officialResult.profile.provider.envKeyName === "OPENAI_API_KEY", "officia
 assert(officialConfigRaw.includes('model = "gpt-5.2"'), "official config should contain model");
 assert(!officialConfigRaw.includes("model_provider"), "official config should not select custom provider");
 assert(!officialConfigRaw.includes("[model_providers."), "official config should not write custom provider block");
-assert(officialLauncherRaw.includes("export OPENAI_API_KEY="), "official launcher should export OPENAI_API_KEY");
+assert(officialLauncherRaw.includes("--open-profile"), "official launcher should delegate profile opening back to the manager");
+assert(!officialLauncherRaw.includes("OPENAI_API_KEY"), "official launcher should not export OPENAI_API_KEY");
 assert(officialStoredKey === officialKey, "official API key should be retrievable from encrypted storage");
 assert(!officialConfigRaw.includes(officialKey), "official config must not contain plaintext API key");
 assert(!officialLauncherRaw.includes(officialKey), "official launcher must not contain plaintext API key");
@@ -556,8 +565,7 @@ assert(!(await fileExists(accountAuthPath)), "account profile should not bootstr
 assert(accountStoredKey === null, "account profile should not store an API key");
 assert(!accountLauncherRaw.includes("API_KEY="), "account launcher should not decrypt an API key");
 assert(!accountLauncherRaw.includes("OPENAI_API_KEY"), "account launcher should not export OPENAI_API_KEY");
-assert(accountLauncherRaw.includes("CODEX_HOME="), "account launcher should still isolate CODEX_HOME");
-assert(accountLauncherRaw.includes("--user-data-dir="), "account launcher should still isolate user-data-dir");
+assert(accountLauncherRaw.includes("--open-profile"), "account launcher should delegate profile opening back to the manager");
 await permanentlyDeleteProfile(accountResult.profile.id);
 
 await fs.rm(testRoot, { force: true, recursive: true });

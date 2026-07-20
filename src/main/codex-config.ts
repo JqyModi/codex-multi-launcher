@@ -1047,18 +1047,61 @@ export async function writeCodexConfig(profile: ManagedProfile, options: { inher
 
   if (options.preserveExistingConfig && await pathExists(configPath)) {
     const existingConfig = await fs.readFile(configPath, "utf8");
-    await fs.writeFile(configPath, mergeManagedConfig(existingConfig, profile), { mode: 0o600 });
+    const mergedConfig = mergeManagedConfig(existingConfig, profile);
+    await fs.writeFile(configPath, mergedConfig, { mode: 0o600 });
+    await copyReferencedConfigArtifacts(mergedConfig, getDefaultCodexHome(), profile.paths.codexHome);
     return configPath;
   }
 
   if (options.inheritDefaultConfig && await pathExists(defaultConfigPath)) {
     const inheritedConfig = await fs.readFile(defaultConfigPath, "utf8");
-    await fs.writeFile(configPath, mergeManagedConfig(inheritedConfig, profile), { mode: 0o600 });
+    const mergedConfig = mergeManagedConfig(inheritedConfig, profile);
+    await fs.writeFile(configPath, mergedConfig, { mode: 0o600 });
+    await copyReferencedConfigArtifacts(mergedConfig, getDefaultCodexHome(), profile.paths.codexHome);
     return configPath;
   }
 
-  await fs.writeFile(configPath, renderConfig(profile), { mode: 0o600 });
+  const renderedConfig = renderConfig(profile);
+  await fs.writeFile(configPath, renderedConfig, { mode: 0o600 });
+  await copyReferencedConfigArtifacts(renderedConfig, getDefaultCodexHome(), profile.paths.codexHome);
   return configPath;
+}
+
+async function copyReferencedConfigArtifacts(config: string, sourceCodexHome: string, profileCodexHome: string): Promise<void> {
+  for (const artifactPath of referencedConfigArtifactPaths(config)) {
+    const sourcePath = path.isAbsolute(artifactPath)
+      ? artifactPath
+      : path.join(sourceCodexHome, artifactPath);
+    const destinationPath = path.isAbsolute(artifactPath)
+      ? artifactPath
+      : path.join(profileCodexHome, artifactPath);
+
+    if (sourcePath === destinationPath || !(await pathExists(sourcePath))) {
+      continue;
+    }
+
+    await ensureDir(path.dirname(destinationPath));
+    await copyIfExists(sourcePath, destinationPath);
+  }
+}
+
+function referencedConfigArtifactPaths(config: string): string[] {
+  const artifacts: string[] = [];
+  let inRoot = true;
+  for (const line of config.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      inRoot = false;
+    }
+    if (!inRoot || trimmed.startsWith("#")) {
+      continue;
+    }
+    const match = trimmed.match(/^model_catalog_json\s*=\s*"([^"]+)"\s*$/);
+    if (match?.[1]) {
+      artifacts.push(match[1]);
+    }
+  }
+  return artifacts;
 }
 
 async function copyIfExists(sourcePath: string, destinationPath: string): Promise<void> {
