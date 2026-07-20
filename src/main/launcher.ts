@@ -1,10 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ensureDir, pathExists } from "./fs-utils.js";
+import { ensureDir } from "./fs-utils.js";
 import { generateProfileIcon } from "./icon-generator.js";
-import { codexExecutablePath, getAppPaths, getRuntimePlatform, isWindowsAppsPath } from "./paths.js";
-import { defaultExecutablePathEnv, findExecutable } from "./executable-lookup.js";
-import { ensureWindowsAppxDesktopCache } from "./windows-appx-cache.js";
+import { APP_NAME, getRuntimePlatform } from "./paths.js";
 import type { LauncherResult, ManagedProfile } from "../shared/types.js";
 
 function plist(profile: ManagedProfile): string {
@@ -44,130 +42,46 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
-function cmdQuote(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+function launcherLogPath(profile: ManagedProfile): string {
+  return path.join(profile.paths.codexHome, "logs", "launcher.log");
 }
 
-function windowsBundledNodePath(executablePath: string): string {
-  return path.win32.join(path.win32.dirname(executablePath), "resources", "cua_node", "bin", "node.exe");
+function managerExecutablePath(): string {
+  return process.execPath;
 }
 
-function decryptSnippet(profile: ManagedProfile): string {
-  const appPaths = getAppPaths();
-  return `const crypto = require('node:crypto');
-const fs = require('node:fs');
-
-const masterKeyFile = ${JSON.stringify(appPaths.masterKeyFile)};
-const secretsFile = ${JSON.stringify(appPaths.secretsFile)};
-const profileId = ${JSON.stringify(profile.id)};
-const providerId = ${JSON.stringify(profile.provider.id)};
-
-const key = Buffer.from(fs.readFileSync(masterKeyFile, 'utf8').trim(), 'base64');
-const encrypted = JSON.parse(fs.readFileSync(secretsFile, 'utf8'));
-const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(encrypted.payload.iv, 'base64'));
-decipher.setAuthTag(Buffer.from(encrypted.payload.authTag, 'base64'));
-const plaintext = Buffer.concat([
-  decipher.update(Buffer.from(encrypted.payload.ciphertext, 'base64')),
-  decipher.final()
-]).toString('utf8');
-const secrets = JSON.parse(plaintext).secrets;
-const secret = secrets.find((item) => item.profileId === profileId && item.providerId === providerId);
-if (!secret) process.exit(2);
-process.stdout.write(secret.value);
-`;
-}
-
-function windowsDecryptScript(profile: ManagedProfile): string {
-  const appPaths = getAppPaths();
-  return [
-    "const crypto = require('node:crypto');",
-    "const fs = require('node:fs');",
-    `const masterKeyFile = ${JSON.stringify(appPaths.masterKeyFile)};`,
-    `const secretsFile = ${JSON.stringify(appPaths.secretsFile)};`,
-    `const profileId = ${JSON.stringify(profile.id)};`,
-    `const providerId = ${JSON.stringify(profile.provider.id)};`,
-    "const key = Buffer.from(fs.readFileSync(masterKeyFile, 'utf8').trim(), 'base64');",
-    "const encrypted = JSON.parse(fs.readFileSync(secretsFile, 'utf8'));",
-    "const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(encrypted.payload.iv, 'base64'));",
-    "decipher.setAuthTag(Buffer.from(encrypted.payload.authTag, 'base64'));",
-    "const plaintext = Buffer.concat([decipher.update(Buffer.from(encrypted.payload.ciphertext, 'base64')), decipher.final()]).toString('utf8');",
-    "const secrets = JSON.parse(plaintext).secrets;",
-    "const secret = secrets.find((item) => item.profileId === profileId && item.providerId === providerId);",
-    "if (!secret) process.exit(2);",
-    "process.stdout.write(secret.value);"
-  ].join(" ");
-}
-
-function windowsDecryptScriptBase64(profile: ManagedProfile): string {
-  return Buffer.from(windowsDecryptScript(profile), "utf8").toString("base64");
-}
-
-async function launcherScript(profile: ManagedProfile): Promise<string> {
-  const nodeRuntime = await findExecutable("node");
-  const nodeCommand = nodeRuntime.path ? shellQuote(nodeRuntime.path) : "/usr/bin/env node";
-  const envLines = [
-    `export PATH=${shellQuote(defaultExecutablePathEnv())}`,
-    `export CODEX_HOME=${shellQuote(profile.paths.codexHome)}`
-  ];
-  const apiKeySnippet = isApiKeyProfile(profile)
-    ? `API_KEY=$(${nodeCommand} <<'NODE'
-${decryptSnippet(profile)}
-NODE
-)
-export ${profile.provider.envKeyName}="$API_KEY"
-`
-    : "";
-
+function launcherScript(profile: ManagedProfile): string {
   return `#!/bin/zsh
 set -euo pipefail
 
-${envLines.join("\n")}
-USER_DATA_DIR=${shellQuote(profile.paths.userDataDir)}
-${apiKeySnippet}
+LOG_FILE=${shellQuote(launcherLogPath(profile))}
+mkdir -p "$(dirname "$LOG_FILE")"
+{
+  echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] launcher started"
+  echo "manager=${managerExecutablePath()}"
+  echo "profile=${profile.id}"
+} >> "$LOG_FILE" 2>&1
 
-mkdir -p "$CODEX_HOME" "$USER_DATA_DIR"
-
-exec ${shellQuote(codexExecutablePath(profile.paths.codexAppPath))} \\
-  --user-data-dir="$USER_DATA_DIR"
+exec ${shellQuote(managerExecutablePath())} --open-profile ${shellQuote(profile.id)} >> "$LOG_FILE" 2>&1
 `;
 }
 
 async function windowsLauncherScript(profile: ManagedProfile): Promise<string> {
-  let executablePath = codexExecutablePath(profile.paths.codexAppPath);
-  if (!(await pathExists(executablePath)) || isWindowsAppsPath(executablePath)) {
-    const cachedAppx = await ensureWindowsAppxDesktopCache();
-    executablePath = cachedAppx?.cachedExecutablePath ?? executablePath;
-  }
-
   return `@echo off
 setlocal
-set "CODEX_HOME=${profile.paths.codexHome}"
-set "USER_DATA_DIR=${profile.paths.userDataDir}"
-set "CODEX_EXE=${executablePath}"
-${isApiKeyProfile(profile) ? `set "NODE_EXE=${windowsBundledNodePath(executablePath)}"
-set "DECRYPT_SCRIPT_B64=${windowsDecryptScriptBase64(profile)}"
-set "API_KEY_FILE=%TEMP%\\codex-profile-%RANDOM%-%RANDOM%.key"` : ""}
-if not exist "%CODEX_EXE%" (
-  echo Codex executable was not found: %CODEX_EXE%
+set "MANAGER_EXE=${managerExecutablePath()}"
+set "LOG_FILE=${launcherLogPath(profile)}"
+if not exist "${path.win32.dirname(launcherLogPath(profile))}" mkdir "${path.win32.dirname(launcherLogPath(profile))}"
+echo [%DATE% %TIME%] launcher started>>"%LOG_FILE%"
+echo manager=%MANAGER_EXE%>>"%LOG_FILE%"
+echo profile=${profile.id}>>"%LOG_FILE%"
+if not exist "%MANAGER_EXE%" (
+  echo ${APP_NAME} executable was not found: %MANAGER_EXE%
+  echo ${APP_NAME} executable was not found: %MANAGER_EXE%>>"%LOG_FILE%"
   pause
   exit /b 1
 )
-${isApiKeyProfile(profile) ? `
-if not exist "%NODE_EXE%" set "NODE_EXE=node"
-"%NODE_EXE%" -e "eval(Buffer.from(process.env.DECRYPT_SCRIPT_B64, 'base64').toString('utf8'))" > "%API_KEY_FILE%"
-if errorlevel 1 (
-  echo Failed to read the saved API key. Make sure Codex is installed correctly.
-  if exist "%API_KEY_FILE%" del "%API_KEY_FILE%"
-  pause
-  exit /b 2
-)
-set /p API_KEY=<"%API_KEY_FILE%"
-if exist "%API_KEY_FILE%" del "%API_KEY_FILE%"
-if not defined API_KEY exit /b 2
-set "${profile.provider.envKeyName}=%API_KEY%"` : ""}
-if not exist "%CODEX_HOME%" mkdir "%CODEX_HOME%"
-if not exist "%USER_DATA_DIR%" mkdir "%USER_DATA_DIR%"
-start "" "%CODEX_EXE%" --user-data-dir="%USER_DATA_DIR%"
+start "" "%MANAGER_EXE%" --open-profile "${profile.id}" >>"%LOG_FILE%" 2>&1
 endlocal
 `;
 }
@@ -202,8 +116,4 @@ async function generateWindowsLauncher(profile: ManagedProfile): Promise<Launche
 
 export async function generateLauncher(profile: ManagedProfile): Promise<LauncherResult> {
   return getRuntimePlatform() === "win32" ? generateWindowsLauncher(profile) : generateMacLauncher(profile);
-}
-
-function isApiKeyProfile(profile: ManagedProfile): boolean {
-  return (profile.auth?.mode ?? "api_key") === "api_key";
 }

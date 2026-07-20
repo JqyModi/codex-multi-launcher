@@ -39,19 +39,14 @@ const [launcherRaw, configRaw, secretsRaw] = await Promise.all([
 assert(launcherPath.endsWith(".cmd"), "Windows launcher should use .cmd extension");
 assert(!launcherPath.endsWith(".app"), "Windows launcher should not use .app bundle extension");
 assert(launcherRaw.startsWith("@echo off"), "Windows launcher should be a cmd script");
-assert(launcherRaw.includes("set \"CODEX_HOME="), "Windows launcher should set CODEX_HOME");
-assert(launcherRaw.includes("set \"USER_DATA_DIR="), "Windows launcher should set USER_DATA_DIR");
-assert(launcherRaw.includes("set \"NODE_EXE="), "Windows launcher should configure a Node runtime");
-assert(launcherRaw.includes("resources\\cua_node\\bin\\node.exe"), "Windows launcher should prefer the Codex-bundled Node runtime");
-assert(launcherRaw.includes("set \"DECRYPT_SCRIPT_B64="), "Windows launcher should store the decrypt script without nested cmd quotes");
-assert(launcherRaw.includes("process.env.DECRYPT_SCRIPT_B64"), "Windows launcher should read the decrypt script from the environment");
-assert(launcherRaw.includes("set \"API_KEY_FILE=%TEMP%\\"), "Windows launcher should decrypt the saved API key through a temp file");
-assert(launcherRaw.includes("set /p API_KEY=<\"%API_KEY_FILE%\""), "Windows launcher should read the decrypted API key from the temp file");
-assert(launcherRaw.includes("CODEX_PROFILE_WINDOWS_SANDBOX_API_KEY"), "Windows launcher should export the provider env key");
-assert(launcherRaw.includes("--user-data-dir=\"%USER_DATA_DIR%\""), "Windows launcher should pass user-data-dir");
-assert(launcherRaw.includes("start \"\" \"%CODEX_EXE%\""), "Windows launcher should start the GUI app in a separate window");
-assert(!launcherRaw.includes("start \"\" /b"), "Windows launcher should not use /b because the manager opens it with ignored stdio");
-assert(launcherRaw.includes("ChatGPT.exe"), "Windows launcher should reference ChatGPT.exe");
+assert(launcherRaw.includes("set \"MANAGER_EXE="), "Windows launcher should reference the profile manager executable");
+assert(launcherRaw.includes("--open-profile \"windows-sandbox\""), "Windows launcher should delegate profile opening back to the manager");
+assert(!launcherRaw.includes("NODE_EXE"), "Windows launcher should not depend on an external Node runtime");
+assert(!launcherRaw.includes("DECRYPT_SCRIPT_B64"), "Windows launcher should not decrypt secrets itself");
+assert(!launcherRaw.includes("API_KEY_FILE"), "Windows launcher should not create an API key temp file");
+assert(!launcherRaw.includes("CODEX_PROFILE_WINDOWS_SANDBOX_API_KEY"), "Windows launcher should not export provider secrets itself");
+assert(!launcherRaw.includes("--user-data-dir="), "Windows launcher should not launch the desktop app directly");
+assert(!launcherRaw.includes("ChatGPT.exe"), "Windows launcher should not reference the desktop app executable directly");
 assert(!launcherRaw.includes(fakeKey), "Windows launcher must not contain plaintext API key");
 assert(!configRaw.includes(fakeKey), "Windows profile config must not contain plaintext API key");
 assert(!secretsRaw.includes(fakeKey), "encrypted secrets must not contain plaintext API key");
@@ -73,7 +68,8 @@ const legacyResult = await createProfile({
   }
 });
 const legacyLauncherRaw = await fs.readFile(legacyResult.profile.paths.launcherPath, "utf8");
-assert(legacyLauncherRaw.includes("Codex.exe"), "Windows launcher should still support legacy Codex.exe paths");
+assert(legacyLauncherRaw.includes("--open-profile \"windows-legacy\""), "Windows legacy launcher should delegate profile opening back to the manager");
+assert(!legacyLauncherRaw.includes("Codex.exe"), "Windows launcher should not reference legacy desktop executable paths directly");
 await permanentlyDeleteProfile(legacyResult.profile.id);
 
 const accountResult = await createProfile({
@@ -90,8 +86,7 @@ const accountResult = await createProfile({
 });
 const accountLauncherRaw = await fs.readFile(accountResult.profile.paths.launcherPath, "utf8");
 assert(accountResult.profile.auth.mode === "chatgpt_account", "Windows account profile should persist account auth mode");
-assert(accountLauncherRaw.includes("set \"CODEX_HOME="), "Windows account launcher should set CODEX_HOME");
-assert(accountLauncherRaw.includes("--user-data-dir=\"%USER_DATA_DIR%\""), "Windows account launcher should pass user-data-dir");
+assert(accountLauncherRaw.includes("--open-profile \"windows-account\""), "Windows account launcher should delegate profile opening back to the manager");
 assert(!accountLauncherRaw.includes("DECRYPT_SCRIPT_B64"), "Windows account launcher should not decrypt an API key");
 assert(!accountLauncherRaw.includes("API_KEY_FILE"), "Windows account launcher should not create an API key temp file");
 assert(!accountLauncherRaw.includes("OPENAI_API_KEY"), "Windows account launcher should not export OPENAI_API_KEY");

@@ -39,6 +39,7 @@ const APP_LINKS = {
 const UPDATE_FEED_URL = process.env.CODEX_PROFILE_MANAGER_UPDATE_URL?.trim();
 const ANNOUNCEMENTS_URL = process.env.CODEX_PROFILE_MANAGER_ANNOUNCEMENTS_URL?.trim()
   || "https://jqymodi.github.io/codex-multi-launcher/announcements.json";
+let pendingOpenProfileId = getOpenProfileArg(process.argv);
 
 if (UPDATE_FEED_URL) {
   autoUpdater.setFeedURL(UPDATE_FEED_URL);
@@ -64,6 +65,24 @@ if (process.platform === "win32") {
   app.commandLine.appendSwitch("in-process-gpu");
 }
 
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+}
+
+app.on("second-instance", (_event, argv) => {
+  const profileId = getOpenProfileArg(argv);
+  if (profileId) {
+    void openProfileFromArg(profileId);
+  }
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.focus();
+  }
+});
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1180,
@@ -87,6 +106,29 @@ function createWindow(): void {
     void mainWindow.loadURL(devServerUrl);
   } else {
     void mainWindow.loadFile(path.join(__dirname, "../../dist/index.html"));
+  }
+}
+
+function getOpenProfileArg(argv: string[]): string | null {
+  const flagIndex = argv.indexOf("--open-profile");
+  if (flagIndex >= 0) {
+    return argv[flagIndex + 1]?.trim() || null;
+  }
+
+  const inlineArg = argv.find((arg) => arg.startsWith("--open-profile="));
+  return inlineArg?.slice("--open-profile=".length).trim() || null;
+}
+
+async function openProfileFromArg(profileId: string): Promise<void> {
+  try {
+    await openProfile(profileId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not open the selected profile.";
+    if (mainWindow) {
+      dialog.showErrorBox("Open Profile Failed", message);
+    } else {
+      console.error("[launchers] Failed to open profile from launcher", message);
+    }
   }
 }
 
@@ -498,6 +540,11 @@ void app.whenReady().then(() => {
     console.warn("[launchers] Failed to refresh active profile launchers", error);
   });
   createWindow();
+  if (pendingOpenProfileId) {
+    const profileId = pendingOpenProfileId;
+    pendingOpenProfileId = null;
+    void openProfileFromArg(profileId);
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

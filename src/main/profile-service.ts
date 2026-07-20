@@ -22,6 +22,11 @@ interface LaunchCommand {
   env?: NodeJS.ProcessEnv;
 }
 
+interface LaunchLog {
+  path: string;
+  append: (message: string, details?: Record<string, unknown>) => Promise<void>;
+}
+
 export async function getRuntimeStatus(): Promise<ProfileRuntimeInfo[]> {
   return inspectRuntimeStatus(await listProfiles());
 }
@@ -237,53 +242,98 @@ export async function restoreProfile(profileId: string): Promise<{ ok: true }> {
 
 export async function openProfile(profileId: string): Promise<{ pid: number | null }> {
   const profile = await repairProfileCodexAppPath(await mustFindProfile(profileId));
-  const apiKey = isApiKeyProfile(profile) ? await getApiKey(profile.id, profile.provider.id) : null;
-  await writeCodexConfig(profile, { preserveExistingConfig: true });
-  if (isApiKeyProfile(profile) && apiKey) {
-    await writeCodexAuth(profile, apiKey);
-  }
-  await repairProfileGlobalState(profile);
-  let codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
-  const shouldUseAppxCache = getRuntimePlatform() === "win32" && (!(await pathExists(codexExecutable)) || isWindowsAppsPath(codexExecutable));
-  if (shouldUseAppxCache) {
-    const cachedAppx = await ensureWindowsAppxDesktopCache();
-    if (cachedAppx) {
-      codexExecutable = cachedAppx.cachedExecutablePath;
-    }
-  }
+  const launchLog = await createLaunchLog(profile);
+  await launchLog.append("openProfile started", {
+    profileId: profile.id,
+    profileName: profile.name,
+    authMode: profile.auth?.mode ?? "api_key",
+    providerType: profile.provider.type,
+    codexAppPath: profile.paths.codexAppPath,
+    codexHome: profile.paths.codexHome,
+    userDataDir: profile.paths.userDataDir
+  });
 
-  if (!(await pathExists(codexExecutable)) || !isWindowsCodexGuiExecutable(codexExecutable)) {
-    if (getRuntimePlatform() === "win32") {
-      const appx = findWindowsCodexAppxDesktopApp();
-      if (appx || isWindowsAppsPath(codexExecutable)) {
-        throw new Error([
-          "Microsoft Store / WindowsApps Codex is installed, but Windows blocks direct launching from the protected WindowsApps directory.",
-          "Codex Multi Launcher cannot reliably open isolated profiles with the Store/AppX package yet because the launch needs per-profile environment variables and --user-data-dir.",
-          appx ? `Detected package: ${appx.packageFullName}` : null,
-          appx ? `Detected executable: ${appx.executablePath}` : `Requested executable: ${codexExecutable}`,
-          "Profile creation is fixed; Store/AppX profile launching still needs a separate compatibility path."
-        ].filter(Boolean).join(" "));
+  try {
+    await launchLog.append("reading saved API key", { required: isApiKeyProfile(profile), envKeyName: profile.provider.envKeyName });
+    const apiKey = isApiKeyProfile(profile) ? await getApiKey(profile.id, profile.provider.id) : null;
+    await launchLog.append("saved API key read", { found: Boolean(apiKey), envKeyName: profile.provider.envKeyName });
+
+    await launchLog.append("writing Codex config");
+    await writeCodexConfig(profile, { preserveExistingConfig: true });
+    if (isApiKeyProfile(profile) && apiKey) {
+      await launchLog.append("writing Codex auth bootstrap");
+      await writeCodexAuth(profile, apiKey);
+    }
+
+    await launchLog.append("repairing profile global state");
+    await repairProfileGlobalState(profile);
+    let codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
+    await launchLog.append("resolved desktop executable", { codexExecutable });
+
+    const shouldUseAppxCache = getRuntimePlatform() === "win32" && (!(await pathExists(codexExecutable)) || isWindowsAppsPath(codexExecutable));
+    if (shouldUseAppxCache) {
+      await launchLog.append("checking Windows AppX cache", { requestedExecutable: codexExecutable });
+      const cachedAppx = await ensureWindowsAppxDesktopCache();
+      if (cachedAppx) {
+        codexExecutable = cachedAppx.cachedExecutablePath;
+        await launchLog.append("using Windows AppX cache executable", { codexExecutable });
+      } else {
+        await launchLog.append("Windows AppX cache executable unavailable");
       }
     }
 
-    throw new Error(`Codex desktop executable was not found: ${codexExecutable}. Install Codex for Windows or update this profile with the correct Codex.exe path.`);
-  }
-  await generateLauncher(profile);
-  const launchCommand = getRuntimePlatform() === "win32"
-    ? profileLaunchCommand(profile, codexExecutable, apiKey)
-    : launcherOpenCommand(profile.paths.launcherPath);
-  const spawnOptions = getRuntimePlatform() === "win32"
-    ? await windowsDetachedSpawnOptions(profile, launchCommand)
-    : {
-        detached: true,
-        stdio: "ignore" as const,
-        ...(launchCommand.env ? { env: launchCommand.env } : {})
-      };
-  const child = spawn(launchCommand.command, launchCommand.args, spawnOptions);
+    if (!(await pathExists(codexExecutable)) || !isWindowsCodexGuiExecutable(codexExecutable)) {
+      if (getRuntimePlatform() === "win32") {
+        const appx = findWindowsCodexAppxDesktopApp();
+        if (appx || isWindowsAppsPath(codexExecutable)) {
+          throw new Error([
+            "Microsoft Store / WindowsApps Codex is installed, but Windows blocks direct launching from the protected WindowsApps directory.",
+            "Codex Multi Launcher cannot reliably open isolated profiles with the Store/AppX package yet because the launch needs per-profile environment variables and --user-data-dir.",
+            appx ? `Detected package: ${appx.packageFullName}` : null,
+            appx ? `Detected executable: ${appx.executablePath}` : `Requested executable: ${codexExecutable}`,
+            "Profile creation is fixed; Store/AppX profile launching still needs a separate compatibility path."
+          ].filter(Boolean).join(" "));
+        }
+      }
 
-  child.unref();
-  await updateProfileLaunchMetadata(profile.id, child.pid ?? null);
-  return { pid: child.pid ?? null };
+      throw new Error(`Codex desktop executable was not found: ${codexExecutable}. Install Codex for Windows or update this profile with the correct Codex.exe path.`);
+    }
+
+    await launchLog.append("regenerating profile launcher");
+    await generateLauncher(profile);
+    const launchCommand = profileLaunchCommand(profile, codexExecutable, apiKey);
+    await launchLog.append("spawning desktop app", {
+      command: launchCommand.command,
+      args: launchCommand.args,
+      cwd: launchCommand.cwd,
+      env: summarizeLaunchEnv(launchCommand.env, profile.provider.envKeyName)
+    });
+    const spawnOutput = await openLaunchOutput(profile);
+    const spawnOptions = getRuntimePlatform() === "win32"
+      ? windowsDetachedSpawnOptions(launchCommand, spawnOutput.fd)
+      : macosDetachedSpawnOptions(launchCommand, spawnOutput.fd);
+    const child = spawn(launchCommand.command, launchCommand.args, spawnOptions);
+
+    child.once("spawn", () => {
+      void launchLog.append("desktop app process spawned", { pid: child.pid ?? null });
+    });
+    child.once("error", (error) => {
+      spawnOutput.close();
+      void launchLog.append("desktop app process error", { message: error.message, stack: error.stack });
+    });
+    child.once("exit", (code, signal) => {
+      spawnOutput.close();
+      void launchLog.append("desktop app process exited", { pid: child.pid ?? null, code, signal });
+    });
+
+    child.unref();
+    await updateProfileLaunchMetadata(profile.id, child.pid ?? null);
+    await launchLog.append("openProfile finished", { pid: child.pid ?? null, logPath: launchLog.path });
+    return { pid: child.pid ?? null };
+  } catch (error) {
+    await launchLog.append("openProfile failed", serializeError(error));
+    throw error;
+  }
 }
 
 function isApiKeyProfile(profile: ManagedProfile): boolean {
@@ -310,24 +360,99 @@ function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, 
   };
 }
 
-async function windowsDetachedSpawnOptions(profile: ManagedProfile, launchCommand: LaunchCommand): Promise<SpawnOptions> {
-  const logDir = path.join(profile.paths.codexHome, "logs");
-  await fs.mkdir(logDir, { recursive: true });
-  const output = nodeFs.openSync(path.join(logDir, "desktop-launch.log"), "a");
+function macosDetachedSpawnOptions(launchCommand: LaunchCommand, outputFd: number): SpawnOptions {
+  return {
+    cwd: launchCommand.cwd,
+    detached: true,
+    env: launchCommand.env,
+    stdio: ["ignore", outputFd, outputFd]
+  };
+}
+
+function windowsDetachedSpawnOptions(launchCommand: LaunchCommand, outputFd: number): SpawnOptions {
   return {
     detached: true,
     cwd: launchCommand.cwd,
     env: launchCommand.env,
-    stdio: ["ignore", output, output]
+    stdio: ["ignore", outputFd, outputFd]
   };
 }
 
-function launcherOpenCommand(launcherPath: string): LaunchCommand {
-  if (getRuntimePlatform() === "win32") {
-    return { command: "cmd.exe", args: ["/d", "/c", "call", launcherPath] };
-  }
+async function createLaunchLog(profile: ManagedProfile): Promise<LaunchLog> {
+  const logDir = path.join(profile.paths.codexHome, "logs");
+  await fs.mkdir(logDir, { recursive: true });
+  const logPath = path.join(logDir, "desktop-launch.log");
+  return {
+    path: logPath,
+    append: async (message, details) => {
+      const suffix = details ? ` ${JSON.stringify(redactLogDetails(details))}` : "";
+      await fs.appendFile(logPath, `[${new Date().toISOString()}] ${message}${suffix}\n`, "utf8");
+    }
+  };
+}
 
-  return { command: "/usr/bin/open", args: [launcherPath] };
+async function openLaunchOutput(profile: ManagedProfile): Promise<{ fd: number; close: () => void }> {
+  const logDir = path.join(profile.paths.codexHome, "logs");
+  await fs.mkdir(logDir, { recursive: true });
+  const fd = nodeFs.openSync(path.join(logDir, "desktop-output.log"), "a");
+  let closed = false;
+  nodeFs.writeSync(fd, `\n[${new Date().toISOString()}] desktop process output begins\n`);
+  return {
+    fd,
+    close: () => {
+      if (closed) return;
+      closed = true;
+      try {
+        nodeFs.writeSync(fd, `[${new Date().toISOString()}] desktop process output stream closed\n`);
+      } catch {
+        // ignore logging close failures
+      }
+      try {
+        nodeFs.closeSync(fd);
+      } catch {
+        // ignore logging close failures
+      }
+    }
+  };
+}
+
+function summarizeLaunchEnv(env: NodeJS.ProcessEnv | undefined, providerEnvKeyName: string): Record<string, unknown> {
+  return {
+    CODEX_HOME: env?.CODEX_HOME,
+    providerEnvKeyName,
+    providerApiKeyInjected: Boolean(env?.[providerEnvKeyName]),
+    openaiApiKeyInjected: Boolean(env?.OPENAI_API_KEY),
+    PATH: env?.PATH
+  };
+}
+
+function redactLogDetails(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(redactLogDetails);
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  const redacted: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    redacted[key] = shouldRedactLogKey(key) ? "[redacted]" : redactLogDetails(entry);
+  }
+  return redacted;
+}
+
+function shouldRedactLogKey(key: string): boolean {
+  const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return normalized === "apikey"
+    || normalized === "openaiapikey"
+    || normalized === "secret"
+    || normalized === "token"
+    || normalized === "authorization";
+}
+
+function serializeError(error: unknown): Record<string, unknown> {
+  return error instanceof Error
+    ? { message: error.message, stack: error.stack }
+    : { message: String(error) };
 }
 
 async function mustFindProfile(profileId: string): Promise<ManagedProfile> {

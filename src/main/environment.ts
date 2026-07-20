@@ -59,10 +59,10 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
       id: "node-runtime",
       label: "Node runtime",
       path: nodeRuntime.path ?? undefined,
-      status: nodeRuntime.path ? "pass" : "fail",
+      status: nodeRuntime.path ? "pass" : "warn",
       detail: nodeRuntime.path
-        ? `Detected ${nodeRuntime.version ?? "unknown version"}. Generated launchers use Node to decrypt local secrets.`
-        : "Node was not found. Generated profile launchers will not be able to decrypt local secrets."
+        ? `Detected ${nodeRuntime.version ?? "unknown version"}. The manager opens profiles without relying on external Node.`
+        : "Node was not found. Profile launch no longer depends on external Node; only custom inherited tools may need it."
     },
     {
       id: "launcher-root",
