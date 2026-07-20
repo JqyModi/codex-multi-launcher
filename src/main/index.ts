@@ -110,13 +110,19 @@ function createWindow(): void {
 }
 
 function getOpenProfileArg(argv: string[]): string | null {
-  const flagIndex = argv.indexOf("--open-profile");
-  if (flagIndex >= 0) {
-    return argv[flagIndex + 1]?.trim() || null;
+  const inlineArg = argv.find((arg) => arg.startsWith("--open-profile="));
+  if (inlineArg) {
+    const profileId = inlineArg.slice("--open-profile=".length).trim();
+    return profileId && !profileId.startsWith("--") ? profileId : null;
   }
 
-  const inlineArg = argv.find((arg) => arg.startsWith("--open-profile="));
-  return inlineArg?.slice("--open-profile=".length).trim() || null;
+  const flagIndex = argv.indexOf("--open-profile");
+  if (flagIndex >= 0) {
+    const profileId = argv.slice(flagIndex + 1).find((arg) => arg.trim() && !arg.startsWith("--"))?.trim();
+    return profileId && !profileId.startsWith("--") ? profileId : null;
+  }
+
+  return null;
 }
 
 async function openProfileFromArg(profileId: string): Promise<void> {

@@ -95,7 +95,7 @@ if [[ "\${CODEX_PROFILE_MANAGER_LAUNCH:-}" == "1" ]]; then
   exec "$CODEX_EXE" --user-data-dir="$USER_DATA_DIR" >> "$LOG_FILE" 2>&1
 fi
 
-exec ${shellQuote(managerCommand.executablePath)} ${managerArgs} --open-profile ${shellQuote(profile.id)} >> "$LOG_FILE" 2>&1
+exec ${shellQuote(managerCommand.executablePath)} ${managerArgs} ${shellQuote(`--open-profile=${profile.id}`)} >> "$LOG_FILE" 2>&1
 `;
 }
 
@@ -117,7 +117,7 @@ if not exist "%MANAGER_EXE%" (
   pause
   exit /b 1
 )
-start "" "%MANAGER_EXE%" ${managerArgs} --open-profile "${profile.id}" >>"%LOG_FILE%" 2>&1
+start "" "%MANAGER_EXE%" ${managerArgs} "--open-profile=${profile.id}" >>"%LOG_FILE%" 2>&1
 endlocal
 `;
 }

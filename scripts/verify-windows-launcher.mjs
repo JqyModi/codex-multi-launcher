@@ -40,7 +40,7 @@ assert(launcherPath.endsWith(".cmd"), "Windows launcher should use .cmd extensio
 assert(!launcherPath.endsWith(".app"), "Windows launcher should not use .app bundle extension");
 assert(launcherRaw.startsWith("@echo off"), "Windows launcher should be a cmd script");
 assert(launcherRaw.includes("set \"MANAGER_EXE="), "Windows launcher should reference the profile manager executable");
-assert(launcherRaw.includes("--open-profile \"windows-sandbox\""), "Windows launcher should delegate profile opening back to the manager");
+assert(launcherRaw.includes("\"--open-profile=windows-sandbox\""), "Windows launcher should delegate profile opening back to the manager");
 assert(!launcherRaw.includes("NODE_EXE"), "Windows launcher should not depend on an external Node runtime");
 assert(!launcherRaw.includes("DECRYPT_SCRIPT_B64"), "Windows launcher should not decrypt secrets itself");
 assert(!launcherRaw.includes("API_KEY_FILE"), "Windows launcher should not create an API key temp file");
@@ -68,7 +68,7 @@ const legacyResult = await createProfile({
   }
 });
 const legacyLauncherRaw = await fs.readFile(legacyResult.profile.paths.launcherPath, "utf8");
-assert(legacyLauncherRaw.includes("--open-profile \"windows-legacy\""), "Windows legacy launcher should delegate profile opening back to the manager");
+assert(legacyLauncherRaw.includes("\"--open-profile=windows-legacy\""), "Windows legacy launcher should delegate profile opening back to the manager");
 assert(!legacyLauncherRaw.includes("Codex.exe"), "Windows launcher should not reference legacy desktop executable paths directly");
 await permanentlyDeleteProfile(legacyResult.profile.id);
 
@@ -86,7 +86,7 @@ const accountResult = await createProfile({
 });
 const accountLauncherRaw = await fs.readFile(accountResult.profile.paths.launcherPath, "utf8");
 assert(accountResult.profile.auth.mode === "chatgpt_account", "Windows account profile should persist account auth mode");
-assert(accountLauncherRaw.includes("--open-profile \"windows-account\""), "Windows account launcher should delegate profile opening back to the manager");
+assert(accountLauncherRaw.includes("\"--open-profile=windows-account\""), "Windows account launcher should delegate profile opening back to the manager");
 assert(!accountLauncherRaw.includes("DECRYPT_SCRIPT_B64"), "Windows account launcher should not decrypt an API key");
 assert(!accountLauncherRaw.includes("API_KEY_FILE"), "Windows account launcher should not create an API key temp file");
 assert(!accountLauncherRaw.includes("OPENAI_API_KEY"), "Windows account launcher should not export OPENAI_API_KEY");
