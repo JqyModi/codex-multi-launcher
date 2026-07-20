@@ -42,15 +42,32 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
+function cmdQuote(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
 function launcherLogPath(profile: ManagedProfile): string {
   return path.join(profile.paths.codexHome, "logs", "launcher.log");
 }
 
-function managerExecutablePath(): string {
-  return process.execPath;
+function managerLaunchCommand(): { executablePath: string; args: string[] } {
+  const defaultApp = Boolean((process as NodeJS.Process & { defaultApp?: boolean }).defaultApp);
+  if (!defaultApp) {
+    return { executablePath: process.execPath, args: [] };
+  }
+
+  const appPathArg = process.argv[1] && !process.argv[1].startsWith("--")
+    ? process.argv[1]
+    : process.cwd();
+  return {
+    executablePath: process.execPath,
+    args: [path.resolve(process.cwd(), appPathArg)]
+  };
 }
 
 function launcherScript(profile: ManagedProfile): string {
+  const managerCommand = managerLaunchCommand();
+  const managerArgs = managerCommand.args.map(shellQuote).join(" ");
   return `#!/bin/zsh
 set -euo pipefail
 
@@ -58,7 +75,8 @@ LOG_FILE=${shellQuote(launcherLogPath(profile))}
 mkdir -p "$(dirname "$LOG_FILE")"
 {
   echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] launcher started"
-  echo "manager=${managerExecutablePath()}"
+  echo "manager=${managerCommand.executablePath}"
+  echo "manager_args=${managerCommand.args.join(" ")}"
   echo "profile=${profile.id}"
 } >> "$LOG_FILE" 2>&1
 
@@ -77,18 +95,21 @@ if [[ "\${CODEX_PROFILE_MANAGER_LAUNCH:-}" == "1" ]]; then
   exec "$CODEX_EXE" --user-data-dir="$USER_DATA_DIR" >> "$LOG_FILE" 2>&1
 fi
 
-exec ${shellQuote(managerExecutablePath())} --open-profile ${shellQuote(profile.id)} >> "$LOG_FILE" 2>&1
+exec ${shellQuote(managerCommand.executablePath)} ${managerArgs} --open-profile ${shellQuote(profile.id)} >> "$LOG_FILE" 2>&1
 `;
 }
 
 async function windowsLauncherScript(profile: ManagedProfile): Promise<string> {
+  const managerCommand = managerLaunchCommand();
+  const managerArgs = managerCommand.args.map(cmdQuote).join(" ");
   return `@echo off
 setlocal
-set "MANAGER_EXE=${managerExecutablePath()}"
+set "MANAGER_EXE=${managerCommand.executablePath}"
 set "LOG_FILE=${launcherLogPath(profile)}"
 if not exist "${path.win32.dirname(launcherLogPath(profile))}" mkdir "${path.win32.dirname(launcherLogPath(profile))}"
 echo [%DATE% %TIME%] launcher started>>"%LOG_FILE%"
 echo manager=%MANAGER_EXE%>>"%LOG_FILE%"
+echo manager_args=${managerCommand.args.join(" ")}>>"%LOG_FILE%"
 echo profile=${profile.id}>>"%LOG_FILE%"
 if not exist "%MANAGER_EXE%" (
   echo ${APP_NAME} executable was not found: %MANAGER_EXE%
@@ -96,7 +117,7 @@ if not exist "%MANAGER_EXE%" (
   pause
   exit /b 1
 )
-start "" "%MANAGER_EXE%" --open-profile "${profile.id}" >>"%LOG_FILE%" 2>&1
+start "" "%MANAGER_EXE%" ${managerArgs} --open-profile "${profile.id}" >>"%LOG_FILE%" 2>&1
 endlocal
 `;
 }
