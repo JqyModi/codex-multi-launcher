@@ -384,8 +384,9 @@ assert(JSON.parse(authRaw).auth_mode === "apikey", "auth bootstrap should select
 assert(JSON.parse(authRaw).OPENAI_API_KEY === fakeKey, "auth bootstrap should contain API key for Codex desktop login");
 assert(launcherRaw.includes("--open-profile"), "launcher should delegate profile opening back to the manager");
 assert(launcherRaw.includes(result.profile.id), "launcher should pass the profile id back to the manager");
-assert(!launcherRaw.includes("CODEX_HOME="), "launcher should not launch the desktop app directly");
-assert(!launcherRaw.includes("--user-data-dir="), "launcher should not pass user-data-dir directly");
+assert(launcherRaw.includes("CODEX_PROFILE_MANAGER_LAUNCH"), "launcher should support manager-injected launch mode");
+assert(launcherRaw.includes("--user-data-dir=\"$USER_DATA_DIR\""), "launcher should use manager-injected user-data-dir");
+assert(!launcherRaw.includes(result.profile.paths.userDataDir), "launcher should not contain profile-specific user-data-dir paths");
 assert(launcherContentsStat.isDirectory(), "launcher bundle should contain Contents directory");
 assert(launcherMacosStat.isDirectory(), "launcher bundle should contain Contents/MacOS directory");
 assert(launcherResourcesStat.isDirectory(), "launcher bundle should contain Contents/Resources directory");

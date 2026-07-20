@@ -300,8 +300,10 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
     }
 
     await launchLog.append("regenerating profile launcher");
-    await generateLauncher(profile);
-    const launchCommand = profileLaunchCommand(profile, codexExecutable, apiKey);
+    const launcher = await generateLauncher(profile);
+    const launchCommand = getRuntimePlatform() === "darwin"
+      ? profileManagedLauncherCommand(profile, launcher.executablePath, codexExecutable, apiKey)
+      : profileLaunchCommand(profile, codexExecutable, apiKey);
     await launchLog.append("spawning desktop app", {
       command: launchCommand.command,
       args: launchCommand.args,
@@ -343,7 +345,8 @@ function isApiKeyProfile(profile: ManagedProfile): boolean {
 function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, apiKey: string | null): LaunchCommand {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    CODEX_HOME: profile.paths.codexHome
+    CODEX_HOME: profile.paths.codexHome,
+    USER_DATA_DIR: profile.paths.userDataDir
   };
   if (apiKey) {
     env[profile.provider.envKeyName] = apiKey;
@@ -357,6 +360,20 @@ function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, 
     args: [`--user-data-dir=${profile.paths.userDataDir}`],
     cwd: path.dirname(codexExecutable),
     env
+  };
+}
+
+function profileManagedLauncherCommand(profile: ManagedProfile, launcherExecutable: string, codexExecutable: string, apiKey: string | null): LaunchCommand {
+  const command = profileLaunchCommand(profile, codexExecutable, apiKey);
+  return {
+    command: launcherExecutable,
+    args: [],
+    cwd: path.dirname(launcherExecutable),
+    env: {
+      ...command.env,
+      CODEX_PROFILE_MANAGER_LAUNCH: "1",
+      CODEX_EXE: codexExecutable
+    }
   };
 }
 
@@ -419,6 +436,9 @@ async function openLaunchOutput(profile: ManagedProfile): Promise<{ fd: number; 
 function summarizeLaunchEnv(env: NodeJS.ProcessEnv | undefined, providerEnvKeyName: string): Record<string, unknown> {
   return {
     CODEX_HOME: env?.CODEX_HOME,
+    USER_DATA_DIR: env?.USER_DATA_DIR,
+    CODEX_EXE: env?.CODEX_EXE,
+    CODEX_PROFILE_MANAGER_LAUNCH: env?.CODEX_PROFILE_MANAGER_LAUNCH,
     providerEnvKeyName,
     providerApiKeyInjected: Boolean(env?.[providerEnvKeyName]),
     openaiApiKeyInjected: Boolean(env?.OPENAI_API_KEY),

@@ -62,6 +62,21 @@ mkdir -p "$(dirname "$LOG_FILE")"
   echo "profile=${profile.id}"
 } >> "$LOG_FILE" 2>&1
 
+if [[ "\${CODEX_PROFILE_MANAGER_LAUNCH:-}" == "1" ]]; then
+  {
+    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] managed launch requested"
+    echo "codex_exe=\${CODEX_EXE:-}"
+    echo "codex_home=\${CODEX_HOME:-}"
+    echo "user_data_dir=\${USER_DATA_DIR:-}"
+  } >> "$LOG_FILE" 2>&1
+  if [[ -z "\${CODEX_EXE:-}" || -z "\${CODEX_HOME:-}" || -z "\${USER_DATA_DIR:-}" ]]; then
+    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] missing managed launch environment" >> "$LOG_FILE" 2>&1
+    exit 2
+  fi
+  mkdir -p "$CODEX_HOME" "$USER_DATA_DIR"
+  exec "$CODEX_EXE" --user-data-dir="$USER_DATA_DIR" >> "$LOG_FILE" 2>&1
+fi
+
 exec ${shellQuote(managerExecutablePath())} --open-profile ${shellQuote(profile.id)} >> "$LOG_FILE" 2>&1
 `;
 }
