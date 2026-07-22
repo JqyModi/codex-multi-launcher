@@ -8,6 +8,7 @@ import { generateLauncher } from "./launcher.js";
 import { codexExecutablePath, findWindowsCodexAppxDesktopApp, getDefaultCodexHome, getRuntimePlatform, isWindowsAppsPath, isWindowsCodexGuiExecutable } from "./paths.js";
 import { pathExists } from "./fs-utils.js";
 import { ensureWindowsAppxDesktopCache } from "./windows-appx-cache.js";
+import { restoreWindowsDesktopTaskbarIdentity } from "./windows-window-icon.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
@@ -268,6 +269,10 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
     await launchLog.append("repairing profile global state");
     await repairProfileGlobalState(profile);
     let codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
+    const installedWindowsAppx = getRuntimePlatform() === "win32" ? findWindowsCodexAppxDesktopApp() : null;
+    const windowsAppUserModelId = installedWindowsAppx
+      ? `${installedWindowsAppx.packageFamilyName}!${installedWindowsAppx.applicationId}`
+      : null;
     await launchLog.append("resolved desktop executable", { codexExecutable });
 
     const shouldUseAppxCache = getRuntimePlatform() === "win32" && (!(await pathExists(codexExecutable)) || isWindowsAppsPath(codexExecutable));
@@ -318,6 +323,11 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
 
     child.once("spawn", () => {
       void launchLog.append("desktop app process spawned", { pid: child.pid ?? null });
+      if (getRuntimePlatform() === "win32" && child.pid && windowsAppUserModelId) {
+        void restoreWindowsDesktopTaskbarIdentity(child.pid, windowsAppUserModelId)
+          .then((result) => launchLog.append("restored Windows desktop taskbar identity", { ...result }))
+          .catch((error: unknown) => launchLog.append("failed to restore Windows desktop taskbar identity", serializeError(error)));
+      }
     });
     child.once("error", (error) => {
       spawnOutput.close();

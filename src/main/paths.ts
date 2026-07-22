@@ -23,6 +23,8 @@ export interface ResolvedDesktopApp {
 export interface WindowsAppxDesktopApp {
   packageName: string;
   packageFullName: string;
+  packageFamilyName: string;
+  applicationId: string;
   installLocation: string;
   executablePath: string;
   productName: "ChatGPT" | "Codex";
@@ -330,7 +332,7 @@ export function findWindowsCodexAppxDesktopApp(): WindowsAppxDesktopApp | null {
     const output = execFileSync("powershell.exe", [
       "-NoProfile",
       "-Command",
-      "$packages = @(); foreach ($pattern in 'OpenAI.Codex','OpenAI.ChatGPT','*OpenAI*Codex*','*OpenAI*ChatGPT*') { $packages += Get-AppxPackage -Name $pattern -ErrorAction SilentlyContinue }; $pkg = $packages | Select-Object -First 1; if ($pkg) { foreach ($name in 'app\\ChatGPT.exe','app\\Codex.exe','ChatGPT.exe','Codex.exe') { $candidate = Join-Path $pkg.InstallLocation $name; if (Test-Path $candidate) { [PSCustomObject]@{ PackageName = $pkg.Name; PackageFullName = $pkg.PackageFullName; InstallLocation = $pkg.InstallLocation; ExecutablePath = $candidate } | ConvertTo-Json -Compress; break } } }"
+      "$packages = @(); foreach ($pattern in 'OpenAI.Codex','OpenAI.ChatGPT','*OpenAI*Codex*','*OpenAI*ChatGPT*') { $packages += Get-AppxPackage -Name $pattern -ErrorAction SilentlyContinue }; $pkg = $packages | Select-Object -First 1; if ($pkg) { [xml]$manifest = Get-Content -Raw (Join-Path $pkg.InstallLocation 'AppxManifest.xml'); $ns = New-Object System.Xml.XmlNamespaceManager($manifest.NameTable); $ns.AddNamespace('f', $manifest.DocumentElement.NamespaceURI); $appId = $manifest.SelectSingleNode('/f:Package/f:Applications/f:Application', $ns).Id; foreach ($name in 'app\\ChatGPT.exe','app\\Codex.exe','ChatGPT.exe','Codex.exe') { $candidate = Join-Path $pkg.InstallLocation $name; if (Test-Path $candidate) { [PSCustomObject]@{ PackageName = $pkg.Name; PackageFullName = $pkg.PackageFullName; PackageFamilyName = $pkg.PackageFamilyName; ApplicationId = $appId; InstallLocation = $pkg.InstallLocation; ExecutablePath = $candidate } | ConvertTo-Json -Compress; break } } }"
     ], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     const trimmed = output.trim();
     if (!trimmed) {
@@ -340,16 +342,20 @@ export function findWindowsCodexAppxDesktopApp(): WindowsAppxDesktopApp | null {
     const appx = JSON.parse(trimmed) as {
       PackageName?: string;
       PackageFullName?: string;
+      PackageFamilyName?: string;
+      ApplicationId?: string;
       InstallLocation?: string;
       ExecutablePath?: string;
     };
-    if (!appx.PackageName || !appx.PackageFullName || !appx.InstallLocation || !appx.ExecutablePath) {
+    if (!appx.PackageName || !appx.PackageFullName || !appx.PackageFamilyName || !appx.ApplicationId || !appx.InstallLocation || !appx.ExecutablePath) {
       return null;
     }
 
     return {
       packageName: appx.PackageName,
       packageFullName: appx.PackageFullName,
+      packageFamilyName: appx.PackageFamilyName,
+      applicationId: appx.ApplicationId,
       installLocation: appx.InstallLocation,
       executablePath: appx.ExecutablePath,
       productName: productNameForPath(appx.ExecutablePath)
