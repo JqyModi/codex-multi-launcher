@@ -39,18 +39,21 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
     {
       id: "codex-app",
       label: "Codex App",
+      importance: "required",
       path: desktopApp.appPath,
       ...appCheck
     },
     {
       id: "codex-executable",
       label: "Codex executable",
+      importance: "required",
       path: executablePath,
       ...executableCheck
     },
     {
       id: "codex-cli",
       label: "Codex CLI",
+      importance: "optional",
       path: cli.path ?? undefined,
       status: cli.path ? "pass" : "warn",
       detail: cli.path ? `Detected ${cli.version ?? "unknown version"}.` : "Codex CLI was not found. Desktop profile launch can still work."
@@ -58,6 +61,7 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
     {
       id: "node-runtime",
       label: "Node runtime",
+      importance: "optional",
       path: nodeRuntime.path ?? undefined,
       status: nodeRuntime.path ? "pass" : "warn",
       detail: nodeRuntime.path
@@ -67,6 +71,7 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
     {
       id: "launcher-root",
       label: "Launcher directory",
+      importance: "required",
       path: appPaths.defaultLauncherRoot,
       status: launcherWritable ? "pass" : "fail",
       detail: launcherWritable ? "Default launcher directory is writable." : "Default launcher directory is not writable."
@@ -74,6 +79,7 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
     {
       id: "profile-root",
       label: "Profile directory",
+      importance: "required",
       path: appPaths.defaultProfileRoot,
       status: profileRootWritable ? "pass" : "fail",
       detail: profileRootWritable ? "Default profile directory is writable." : "Default profile directory is not writable."
@@ -81,6 +87,7 @@ export async function getEnvironmentReport(codexAppPath = getDefaultCodexAppPath
     {
       id: "app-data",
       label: "Manager data directory",
+      importance: "required",
       path: appPaths.appDataDir,
       status: appDataWritable ? "pass" : "fail",
       detail: appDataWritable ? "Manager data directory is writable." : "Manager data directory is not writable."

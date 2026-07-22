@@ -1644,53 +1644,6 @@ code {
   line-height: 28px;
 }
 
-.dashboard-environment-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.dashboard-environment-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  width: fit-content;
-  max-width: 100%;
-  border: 0;
-  border-radius: 999px;
-  padding: 5px 9px;
-  color: #92400e;
-  background: rgb(255 251 235 / 72%);
-  font-size: 12px;
-}
-
-.dashboard-environment-note:hover {
-  background: #fffbeb;
-}
-
-.dashboard-environment-note strong {
-  overflow: hidden;
-  max-width: 260px;
-  color: #78350f;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboard-environment-note small {
-  display: inline-grid;
-  min-width: 18px;
-  height: 18px;
-  place-items: center;
-  border-radius: 999px;
-  color: #92400e;
-  background: rgb(253 230 138 / 72%);
-  font-size: 10px;
-  font-weight: 750;
-}
-
 .dashboard-lower-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1854,7 +1807,7 @@ code {
   justify-content: space-between;
   gap: 16px;
   border-top: 1px solid #eef2f7;
-  padding-top: 12px;
+  padding: 16px 0;
 }
 
 .settings-row > div:first-child {
@@ -1866,9 +1819,31 @@ code {
 }
 
 .settings-row p {
-  margin: 3px 0 0;
+  margin: 5px 0 0;
   color: #667085;
   font-size: 12px;
+  line-height: 18px;
+}
+
+.settings-row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.diagnostic-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.diagnostic-status.issue {
+  color: #b45309;
 }
 
 .segmented-control {
@@ -2365,6 +2340,166 @@ code {
 .modal-body {
   overflow: auto;
   padding: 18px 20px 20px;
+}
+
+.diagnostics-content {
+  display: grid;
+  gap: 18px;
+}
+
+.diagnostics-summary {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dcefe3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #15803d;
+  background: #f3fbf6;
+}
+
+.diagnostics-summary.issue {
+  border-color: #fde3b5;
+  color: #b45309;
+  background: #fffaf0;
+}
+
+.diagnostics-summary > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 84%);
+}
+
+.diagnostics-summary strong {
+  color: #172033;
+  font-size: 13px;
+}
+
+.diagnostics-summary p {
+  margin: 2px 0 0;
+  color: #667085;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.diagnostics-section {
+  display: grid;
+  gap: 10px;
+}
+
+.diagnostics-section h4 {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.diagnostics-content .checks {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e7ebf1;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 72%);
+}
+
+.diagnostics-content .check-row {
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  border-top: 1px solid #eef2f7;
+  padding: 11px 12px;
+}
+
+.diagnostics-content .check-row:first-child {
+  border-top: 0;
+}
+
+.diagnostics-content .check-row p {
+  margin: 0;
+  color: #667085;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.diagnostics-content .check-row code {
+  color: #64748b;
+}
+
+.muted {
+  color: #94a3b8;
+}
+
+.diagnostics-optional {
+  border: 1px solid #e7ebf1;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.diagnostics-optional summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.diagnostics-optional summary::-webkit-details-marker {
+  display: none;
+}
+
+.diagnostics-optional summary span {
+  display: grid;
+  gap: 2px;
+}
+
+.diagnostics-optional summary strong {
+  color: #334155;
+  font-size: 12px;
+}
+
+.diagnostics-optional summary small {
+  color: #7a8495;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.diagnostics-optional summary > svg {
+  flex: 0 0 auto;
+  color: #94a3b8;
+  transition: transform 160ms ease;
+}
+
+.diagnostics-optional[open] summary > svg {
+  transform: rotate(90deg);
+}
+
+.diagnostics-optional .checks {
+  margin: 0 10px 10px;
+}
+
+.diagnostics-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 16px;
+}
+
+@media (max-width: 720px) {
+  .diagnostics-settings-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-row-actions {
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 .modal-badge-row {

@@ -31,6 +31,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   CreateProfileInput,
+  EnvironmentCheck,
   EnvironmentReport,
   ConfigBackupInfo,
   AppInfo,
@@ -71,7 +72,6 @@ const TEXT: Record<Language, Record<string, string>> = {
     dashboardHint: "运行中的窗口会集中显示在这里，配置详情从左侧进入。",
     runningProfiles: "正在运行",
     noRunningProfiles: "暂无运行中的窗口。",
-    environmentIssues: "环境提示",
     createProfile: "创建配置",
     showRemoved: "显示已移除",
     noProfiles: "暂无配置",
@@ -84,8 +84,16 @@ const TEXT: Record<Language, Record<string, string>> = {
     runtimeRunning: "运行中",
     runtimeNotRunning: "未运行",
     runtimeUnknown: "未知",
-    environment: "环境",
-    environmentOk: "环境正常",
+    environment: "运行诊断",
+    environmentOk: "运行正常",
+    environmentProblem: "发现 {count} 个问题",
+    environmentChecking: "正在检查运行环境",
+    environmentSettingsDesc: "仅在无法正常启动或保存配置时需要查看。",
+    viewDiagnostics: "查看诊断",
+    requiredChecks: "运行所需",
+    optionalChecks: "可选工具",
+    optionalChecksDesc: "缺少这些工具不会影响配置窗口启动。",
+    recheck: "重新检查",
     checking: "检查中",
     selectedProfile: "当前配置",
     revealFiles: "显示文件",
@@ -104,7 +112,18 @@ const TEXT: Record<Language, Record<string, string>> = {
     createProfileTitle: "创建配置",
     createProfileSubtitle: "生成一套独立的 Codex App 工作设置。",
     apiKeyEncrypted: "密钥会加密保存在本机",
-    environmentSubtitle: "检查桌面 App、目录权限和可选工具。",
+    environmentSubtitle: "检查桌面 App 和必要目录是否可以正常使用。",
+    checkCodexApp: "桌面 App",
+    checkCodexExecutable: "桌面 App 主程序",
+    checkCodexCli: "Codex 命令行工具",
+    checkNodeRuntime: "外部 Node.js",
+    checkLauncherRoot: "启动器保存目录",
+    checkProfileRoot: "配置保存目录",
+    checkAppData: "应用数据目录",
+    checkAvailable: "检查通过，可以正常使用。",
+    checkUnavailable: "未找到或当前不可用，可能影响配置启动。",
+    optionalAvailable: "已检测到，部分自定义功能可以使用。",
+    optionalUnavailable: "未安装，不影响桌面配置正常启动。",
     profile: "配置",
     provider: "模型服务",
     test: "测试",
@@ -258,7 +277,6 @@ const TEXT: Record<Language, Record<string, string>> = {
     dashboardHint: "Running instances appear here. Open profile details from the sidebar.",
     runningProfiles: "Running",
     noRunningProfiles: "No profiles are currently running.",
-    environmentIssues: "Environment Note",
     createProfile: "Create Profile",
     showRemoved: "Show removed",
     noProfiles: "No profiles yet.",
@@ -271,8 +289,16 @@ const TEXT: Record<Language, Record<string, string>> = {
     runtimeRunning: "Running",
     runtimeNotRunning: "Not running",
     runtimeUnknown: "Unknown",
-    environment: "Environment",
-    environmentOk: "Environment OK",
+    environment: "Run Diagnostics",
+    environmentOk: "Running normally",
+    environmentProblem: "{count} issue(s) found",
+    environmentChecking: "Checking runtime requirements",
+    environmentSettingsDesc: "Open this only when a profile cannot launch or save correctly.",
+    viewDiagnostics: "View Diagnostics",
+    requiredChecks: "Required to run",
+    optionalChecks: "Optional tools",
+    optionalChecksDesc: "Missing optional tools do not prevent desktop profiles from launching.",
+    recheck: "Check Again",
     checking: "Checking",
     selectedProfile: "Selected Profile",
     revealFiles: "Reveal Files",
@@ -291,7 +317,18 @@ const TEXT: Record<Language, Record<string, string>> = {
     createProfileTitle: "Create Profile",
     createProfileSubtitle: "Generate an isolated Codex app profile.",
     apiKeyEncrypted: "API key encrypted locally",
-    environmentSubtitle: "Desktop app, directory permissions, and optional tools.",
+    environmentSubtitle: "Check that the desktop app and required directories are ready.",
+    checkCodexApp: "Desktop app",
+    checkCodexExecutable: "Desktop app executable",
+    checkCodexCli: "Codex CLI",
+    checkNodeRuntime: "External Node.js",
+    checkLauncherRoot: "Launcher directory",
+    checkProfileRoot: "Profile directory",
+    checkAppData: "App data directory",
+    checkAvailable: "Check passed and ready to use.",
+    checkUnavailable: "Not found or unavailable. This may prevent profiles from launching.",
+    optionalAvailable: "Detected and available for optional custom workflows.",
+    optionalUnavailable: "Not installed. Desktop profiles can still launch normally.",
     profile: "Profile",
     provider: "Provider",
     test: "Test",
@@ -515,7 +552,7 @@ export function App() {
     [activeProfiles, runtimeByProfileId]
   );
   const environmentIssues = useMemo(
-    () => environment?.checks.filter((check) => check.status !== "pass") ?? [],
+    () => environment?.checks.filter((check) => check.importance === "required" && check.status !== "pass") ?? [],
     [environment]
   );
 
@@ -1015,7 +1052,9 @@ export function App() {
           <SettingsPage
             appInfo={appInfo}
             isCheckingUpdates={isCheckingUpdates}
+            isRefreshing={isRefreshing}
             language={language}
+            environment={environment}
             settingsTab={settingsTab}
             t={t}
             updateCheck={updateCheck}
@@ -1024,6 +1063,7 @@ export function App() {
             onClearUpdateSimulation={clearUpdateSimulation}
             onOpenExternal={(url) => void openExternalUrl(url)}
             onOpenUpdateDialog={() => setIsUpdateModalOpen(true)}
+            onOpenDiagnostics={() => setIsEnvironmentOpen(true)}
             onSetSettingsTab={setSettingsTab}
             onSimulateUpdate={simulateUpdateAvailable}
           />
@@ -1061,20 +1101,6 @@ export function App() {
                   <strong>{runtimeStatuses.filter((runtime) => runtime.status === "running").length}</strong>
                 </div>
               </div>
-              {environmentIssues.length > 0 ? (
-                <div className="dashboard-environment-actions">
-                  <button className="dashboard-environment-note" onClick={() => setIsEnvironmentOpen(true)} type="button">
-                    <TriangleAlert size={14} />
-                    <span>{t.environmentIssues}</span>
-                    <strong>{environmentIssues[0]?.label}</strong>
-                    <small>{environmentIssues.length}</small>
-                  </button>
-                  <button className="button secondary compact" disabled={isCopyingDiagnostics} onClick={() => void copyDiagnosticsReport()} type="button">
-                    <Copy size={14} />
-                    {isCopyingDiagnostics ? t.copied : t.copyDiagnostics}
-                  </button>
-                </div>
-              ) : null}
               {activeProfiles.length === 0 ? (
                 <div className="empty-state compact-empty">
                   <div className="empty-mark"><Rocket size={22} /></div>
@@ -1341,22 +1367,15 @@ export function App() {
       ) : null}
       {isEnvironmentOpen ? (
         <Modal title={t.environment} subtitle={t.environmentSubtitle} onClose={() => setIsEnvironmentOpen(false)}>
-          <div className="checks">
-            {environment?.checks.map((check) => (
-              <div className="check-row" key={check.id}>
-                {check.status === "pass" ? (
-                  <CheckCircle2 className="ok" size={17} />
-                ) : (
-                  <TriangleAlert className={check.status === "warn" ? "warn" : "danger"} size={17} />
-                )}
-                <div>
-                  <strong>{check.label}</strong>
-                  <p>{check.detail}</p>
-                  {check.path ? <code>{check.path}</code> : null}
-                </div>
-              </div>
-            )) ?? <p className="empty-text">{t.loadingChecks}</p>}
-          </div>
+          <EnvironmentDiagnostics
+            environment={environment}
+            issueCount={environmentIssues.length}
+            isCopying={isCopyingDiagnostics}
+            isRefreshing={isRefreshing}
+            onCopy={() => void copyDiagnosticsReport()}
+            onRefresh={() => void refresh()}
+            t={t}
+          />
         </Modal>
       ) : null}
       {toastMessage ? (
@@ -1366,6 +1385,109 @@ export function App() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function EnvironmentDiagnostics({
+  environment,
+  issueCount,
+  isCopying,
+  isRefreshing,
+  onCopy,
+  onRefresh,
+  t
+}: {
+  environment: EnvironmentReport | null;
+  issueCount: number;
+  isCopying: boolean;
+  isRefreshing: boolean;
+  onCopy: () => void;
+  onRefresh: () => void;
+  t: Record<string, string>;
+}) {
+  const requiredChecks = environment?.checks.filter((check) => check.importance === "required") ?? [];
+  const optionalChecks = environment?.checks.filter((check) => check.importance === "optional") ?? [];
+
+  return (
+    <div className="diagnostics-content">
+      <div className={`diagnostics-summary ${issueCount > 0 ? "issue" : "ready"}`}>
+        <span>{issueCount > 0 ? <TriangleAlert size={18} /> : <CheckCircle2 size={18} />}</span>
+        <div>
+          <strong>{issueCount > 0 ? t.environmentProblem.replace("{count}", String(issueCount)) : t.environmentOk}</strong>
+          <p>{t.environmentSettingsDesc}</p>
+        </div>
+      </div>
+
+      <section className="diagnostics-section">
+        <h4>{t.requiredChecks}</h4>
+        <div className="checks">
+          {requiredChecks.length > 0 ? requiredChecks.map((check) => (
+            <EnvironmentCheckRow check={check} key={check.id} t={t} />
+          )) : <p className="empty-text">{t.loadingChecks}</p>}
+        </div>
+      </section>
+
+      {optionalChecks.length > 0 ? (
+        <details className="diagnostics-optional">
+          <summary>
+            <span>
+              <strong>{t.optionalChecks}</strong>
+              <small>{t.optionalChecksDesc}</small>
+            </span>
+            <ChevronRight size={15} />
+          </summary>
+          <div className="checks">
+            {optionalChecks.map((check) => (
+              <EnvironmentCheckRow check={check} key={check.id} t={t} />
+            ))}
+          </div>
+        </details>
+      ) : null}
+
+      <div className="diagnostics-actions">
+        <button className="button secondary" disabled={isRefreshing} onClick={onRefresh} type="button">
+          <RefreshCcw size={15} />
+          {isRefreshing ? t.refreshing : t.recheck}
+        </button>
+        <button className="button primary" disabled={isCopying} onClick={onCopy} type="button">
+          <Copy size={15} />
+          {isCopying ? t.copied : t.copyDiagnostics}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EnvironmentCheckRow({ check, t }: { check: EnvironmentCheck; t: Record<string, string> }) {
+  const isAvailable = check.status === "pass";
+  const labelById: Record<string, string> = {
+    "codex-app": t.checkCodexApp,
+    "codex-executable": t.checkCodexExecutable,
+    "codex-cli": t.checkCodexCli,
+    "node-runtime": t.checkNodeRuntime,
+    "launcher-root": t.checkLauncherRoot,
+    "profile-root": t.checkProfileRoot,
+    "app-data": t.checkAppData
+  };
+  const detail = check.importance === "optional"
+    ? isAvailable ? t.optionalAvailable : t.optionalUnavailable
+    : isAvailable ? t.checkAvailable : t.checkUnavailable;
+
+  return (
+    <div className={`check-row ${check.importance === "optional" ? "optional" : ""}`}>
+      {isAvailable ? (
+        <CheckCircle2 className="ok" size={17} />
+      ) : check.importance === "optional" ? (
+        <Info className="muted" size={17} />
+      ) : (
+        <TriangleAlert className="danger" size={17} />
+      )}
+      <div>
+        <strong>{labelById[check.id] ?? check.label}</strong>
+        <p>{detail}</p>
+        {check.path ? <code title={check.path}>{check.path}</code> : null}
+      </div>
+    </div>
   );
 }
 
@@ -1546,12 +1668,15 @@ function UpdatePromptBanner({
 
 function SettingsPage({
   appInfo,
+  environment,
   isCheckingUpdates,
+  isRefreshing,
   language,
   onChangeLanguage,
   onCheckForUpdates,
   onClearUpdateSimulation,
   onOpenExternal,
+  onOpenDiagnostics,
   onOpenUpdateDialog,
   onSetSettingsTab,
   onSimulateUpdate,
@@ -1560,12 +1685,15 @@ function SettingsPage({
   updateCheck
 }: {
   appInfo: AppInfo | null;
+  environment: EnvironmentReport | null;
   isCheckingUpdates: boolean;
+  isRefreshing: boolean;
   language: Language;
   onChangeLanguage: (language: Language) => void;
   onCheckForUpdates: () => void;
   onClearUpdateSimulation: () => void;
   onOpenExternal: (url: string | undefined) => void;
+  onOpenDiagnostics: () => void;
   onOpenUpdateDialog: () => void;
   onSetSettingsTab: (tab: SettingsTab) => void;
   onSimulateUpdate: () => void;
@@ -1573,6 +1701,13 @@ function SettingsPage({
   t: Record<string, string>;
   updateCheck: UpdateCheckResult | null;
 }) {
+  const issueCount = environment?.checks.filter((check) => check.importance === "required" && check.status !== "pass").length ?? 0;
+  const diagnosticStatus = !environment || isRefreshing
+    ? t.environmentChecking
+    : issueCount > 0
+      ? t.environmentProblem.replace("{count}", String(issueCount))
+      : t.environmentOk;
+
   return (
     <div className="settings-page">
       <nav className="settings-tabs" aria-label="Settings">
@@ -1603,6 +1738,22 @@ function SettingsPage({
               </button>
               <button className={language === "en" ? "selected" : ""} onClick={() => onChangeLanguage("en")} type="button">
                 {t.english}
+              </button>
+            </div>
+          </div>
+          <div className="settings-row diagnostics-settings-row">
+            <div>
+              <strong>{t.environment}</strong>
+              <p>{t.environmentSettingsDesc}</p>
+            </div>
+            <div className="settings-row-actions">
+              <span className={`diagnostic-status ${issueCount > 0 ? "issue" : "ready"}`}>
+                {issueCount > 0 ? <TriangleAlert size={14} /> : <CheckCircle2 size={14} />}
+                {diagnosticStatus}
+              </span>
+              <button className="button secondary compact" onClick={onOpenDiagnostics} type="button">
+                {t.viewDiagnostics}
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>

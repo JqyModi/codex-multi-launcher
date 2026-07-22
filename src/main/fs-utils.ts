@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 
 export async function pathExists(targetPath: string): Promise<boolean> {
   try {
@@ -15,14 +16,18 @@ export async function ensureDir(targetPath: string): Promise<void> {
 }
 
 export async function isWritableDirectory(targetPath: string): Promise<boolean> {
+  let probe: string | null = null;
   try {
     await ensureDir(targetPath);
-    const probe = path.join(targetPath, `.write-test-${Date.now()}`);
+    probe = path.join(targetPath, `.write-test-${process.pid}-${randomUUID()}`);
     await fs.writeFile(probe, "ok", { mode: 0o600 });
-    await fs.unlink(probe);
     return true;
   } catch {
     return false;
+  } finally {
+    if (probe) {
+      await fs.rm(probe, { force: true }).catch(() => undefined);
+    }
   }
 }
 

@@ -20,6 +20,7 @@ export interface EnvironmentCheck {
   id: string;
   label: string;
   status: "pass" | "warn" | "fail";
+  importance: "required" | "optional";
   detail: string;
   path?: string;
 }
