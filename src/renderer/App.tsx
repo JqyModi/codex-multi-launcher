@@ -175,6 +175,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     authModeReview: "登录方式",
     accountProfileTitle: "ChatGPT 账号登录",
     accountProfileDesc: "这个配置使用分身窗口内的官方账号授权，不使用接口地址或 API Key。需要更换账号时，请打开该配置后在 ChatGPT/Codex 窗口里退出并重新登录。",
+    subscriptionProfileTitle: "订阅服务",
+    subscriptionProfileDesc: "此配置由订阅服务自动接入。接口地址、模型和访问凭据会随订阅授权管理，无需手动填写或修改。",
     providerType: "服务接口类型",
     thirdPartyResponses: "第三方兼容接口",
     officialOpenAI: "官方 OpenAI 密钥",
@@ -388,6 +390,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     authModeReview: "Login mode",
     accountProfileTitle: "ChatGPT account login",
     accountProfileDesc: "This profile uses the official account session inside the isolated app window, without a Base URL or API key. To switch accounts, open this profile and sign out or sign in inside ChatGPT/Codex.",
+    subscriptionProfileTitle: "Subscription service",
+    subscriptionProfileDesc: "This profile is connected by the subscription service. Its endpoint, model, and access credential are managed by the authorization and do not need manual edits.",
     providerType: "Provider type",
     thirdPartyResponses: "Third-party Responses-compatible",
     officialOpenAI: "Official OpenAI API key",
@@ -1269,6 +1273,14 @@ export function App() {
                   <div>
                     <h4>{t.accountProfileTitle}</h4>
                     <p>{t.accountProfileDesc}</p>
+                  </div>
+                </div>
+              ) : (selectedProfile.auth?.mode ?? "api_key") === "subscription" ? (
+                <div className="edit-box account-profile-box subscription-profile-box">
+                  <span className="auth-mode-icon"><CreditCard size={16} /></span>
+                  <div>
+                    <h4>{t.subscriptionProfileTitle}</h4>
+                    <p>{t.subscriptionProfileDesc}</p>
                   </div>
                 </div>
               ) : (
