@@ -1,6 +1,6 @@
 # Sub2API 多开授权闭环方案
 
-> 状态：方案已确认，尚未开始业务代码开发
+> 状态：核心授权链路已实现并通过桌面端验证脚本、Sub2API 单元/HTTP 测试及 GitHub Actions 完整 CI；真实 Sub2API 部署、支付履约和 Mac/Windows 端到端验证待进行。
 >
 > 桌面端开发分支：`jqy/sub2api-desktop-auth`
 >
@@ -425,28 +425,25 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 
 ### 桌面端仓库
 
-- [ ] `HostedProvider` / 订阅服务类型设计。
-- [ ] 创建向导增加订阅服务 UI。
-- [ ] 授权会话 API 客户端。
-- [ ] PKCE 和状态机。
-- [ ] Mac / Windows 深链与轮询回退。
-- [ ] 授权配置接入现有 Profile 创建。
+- [x] 订阅服务类型、创建向导和只读 Profile 配置。
+- [x] 授权会话 API 客户端、PKCE 和内存状态机。
+- [x] 浏览器授权后的轮询回退机制。
+- [x] 授权配置接入现有 Profile 创建和本地加密存储。
 - [ ] 订阅授权状态和重新授权。
-- [ ] Provider、Profile、启动器自动化测试。
+- [x] Provider、Profile 创建和 Token 不经 Renderer 暴露的自动化测试。
 - [ ] Mac 和 Windows 封闭测试。
 
 ### Sub2API fork
 
-- [ ] 桌面授权会话数据模型和迁移。
+- [x] Redis 短期桌面授权会话（5 分钟 TTL，无需数据库迁移）。
 - [ ] 设备模型和设备撤销。
-- [ ] 创建授权会话接口。
-- [ ] 桌面授权网页。
-- [ ] 订阅状态检查和支付后续接。
-- [ ] 设备 Key 创建/复用编排。
-- [ ] 授权码兑换接口。
+- [x] 创建授权会话、PKCE 兑换及一次性消费接口。
+- [x] 桌面授权网页。
+- [x] 订阅状态检查和支付成功后的自动继续。
+- [x] 用户订阅分组的设备 Key 创建编排。
 - [ ] 审计日志和限流。
-- [ ] 服务端接口测试。
-- [ ] Docker Compose 与生产配置。
+- [x] 服务端服务层、HTTP 合约和专项 CI 测试。
+- [x] Docker Compose 本地验证文档；生产部署参数仍待确定。
 
 ### 运维与业务
 
@@ -468,5 +465,5 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 - [x] 以独立桌面授权模块连接 Sub2API 和多开助手。
 - [x] 先本地零成本验证，再使用免费 VM 封闭测试，最后迁移低成本 VPS。
 - [ ] 尚未决定正式上游供应商和支付渠道。
-- [ ] 尚未开始 Sub2API fork 编码。
-- [ ] 尚未开始桌面端业务编码。
+- [x] Sub2API fork 核心授权编码已完成。
+- [x] 桌面端核心授权编码已完成。
