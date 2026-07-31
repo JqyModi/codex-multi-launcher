@@ -12,6 +12,7 @@ import { restoreWindowsDesktopTaskbarIdentity } from "./windows-window-icon.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
+import { cancelSubscriptionAuthorization, getAuthorizedSubscriptionConfig } from "./subscription-auth.js";
 import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderModelsInput, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderModelsResult, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, SessionHistorySyncResolvedSource, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
 export { listProfiles };
@@ -41,35 +42,72 @@ export async function restoreConfigBackup(input: RestoreConfigBackupInput): Prom
 }
 
 export async function createProfile(input: CreateProfileInput): Promise<CreateProfileResult> {
-  const profile = await createProfileRecord(input);
-  if (isApiKeyProfile(profile)) {
-    const apiKey = input.provider.apiKey?.trim();
-    if (!apiKey) {
-      throw new Error("API key is required for API Key profiles.");
-    }
-    await upsertApiKey({
-      profileId: profile.id,
-      providerId: profile.provider.id,
-      envKeyName: profile.provider.envKeyName,
-      secretType: "api_key",
-      value: apiKey
-    });
-    await writeCodexAuth(profile, apiKey);
+  const subscriptionSessionId = input.subscriptionAuthorizationSessionId?.trim();
+  if (input.authMode === "subscription" && !subscriptionSessionId) {
+    throw new Error("Subscription authorization is required before creating this profile.");
   }
-  if (input.inheritDefaultConfig) {
-    await inheritDefaultCodexHomeResources(profile);
+  if (subscriptionSessionId && input.authMode !== "subscription") {
+    throw new Error("Subscription authorization can only be used with a subscription profile.");
   }
-  if (input.syncHistory?.enabled) {
-    await syncSessionHistory(profile, input.syncHistory, await resolveSessionHistorySources(input, profile));
-  }
-  const configPath = await writeCodexConfig(profile, { inheritDefaultConfig: input.inheritDefaultConfig });
-  const launcher = await generateLauncher(profile);
 
-  return {
-    profile,
-    configPath,
-    launcherPath: launcher.launcherPath
-  };
+  const subscription = subscriptionSessionId
+    ? getAuthorizedSubscriptionConfig(subscriptionSessionId)
+    : null;
+  const resolvedInput: CreateProfileInput = subscription
+    ? {
+        ...input,
+        authMode: "subscription",
+        provider: {
+          ...input.provider,
+          type: "third_party_responses",
+          displayName: subscription.providerName,
+          baseUrl: subscription.baseUrl,
+          model: subscription.defaultModel,
+          apiKey: subscription.accessToken
+        }
+      }
+    : input;
+  const profile = await createProfileRecord(resolvedInput);
+
+  try {
+    if (isApiKeyProfile(profile)) {
+      const apiKey = resolvedInput.provider.apiKey?.trim();
+      if (!apiKey) {
+        throw new Error("API key is required for API Key profiles.");
+      }
+      await upsertApiKey({
+        profileId: profile.id,
+        providerId: profile.provider.id,
+        envKeyName: profile.provider.envKeyName,
+        secretType: "api_key",
+        value: apiKey
+      });
+      await writeCodexAuth(profile, apiKey);
+    }
+    if (resolvedInput.inheritDefaultConfig) {
+      await inheritDefaultCodexHomeResources(profile);
+    }
+    if (resolvedInput.syncHistory?.enabled) {
+      await syncSessionHistory(profile, resolvedInput.syncHistory, await resolveSessionHistorySources(resolvedInput, profile));
+    }
+    const configPath = await writeCodexConfig(profile, { inheritDefaultConfig: resolvedInput.inheritDefaultConfig });
+    const launcher = await generateLauncher(profile);
+
+    if (subscriptionSessionId) {
+      cancelSubscriptionAuthorization(subscriptionSessionId);
+    }
+
+    return {
+      profile,
+      configPath,
+      launcherPath: launcher.launcherPath
+    };
+  } catch (error) {
+    if (subscriptionSessionId) {
+      await cleanupFailedProfileCreation(profile);
+    }
+    throw error;
+  }
 }
 
 async function resolveSessionHistorySources(input: CreateProfileInput, targetProfile: ManagedProfile): Promise<SessionHistorySyncResolvedSource[]> {
@@ -349,7 +387,17 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
 }
 
 function isApiKeyProfile(profile: ManagedProfile): boolean {
-  return (profile.auth?.mode ?? "api_key") === "api_key";
+  return (profile.auth?.mode ?? "api_key") !== "chatgpt_account";
+}
+
+async function cleanupFailedProfileCreation(profile: ManagedProfile): Promise<void> {
+  await removeProfileRecord(profile.id).catch(() => undefined);
+  await deleteProfileSecrets(profile.id).catch(() => undefined);
+  await Promise.all([
+    fs.rm(profile.paths.codexHome, { force: true, recursive: true }),
+    fs.rm(profile.paths.userDataDir, { force: true, recursive: true }),
+    fs.rm(profile.paths.launcherPath, { force: true, recursive: true })
+  ]);
 }
 
 function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, apiKey: string | null): LaunchCommand {

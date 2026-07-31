@@ -35,6 +35,7 @@
     "verify:win-launcher": "npm run build:main && node scripts/verify-windows-launcher.mjs",
     "verify:win-inheritance": "npm run build:main && node scripts/verify-windows-inheritance.mjs",
     "verify:subscription-auth": "npm run build:main && node scripts/verify-subscription-auth.mjs",
+    "verify:subscription-profile": "npm run build:main && node scripts/verify-subscription-profile-create.mjs",
     "verify:e2e": "npm run build && node scripts/verify-profile-generation.mjs",
     "verify:update-cdp": "node scripts/run-update-cdp-test.mjs"
   },

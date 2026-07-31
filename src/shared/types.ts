@@ -1,6 +1,6 @@
 export type ProviderType = "official_openai" | "third_party_responses";
 
-export type ProfileAuthMode = "api_key" | "chatgpt_account";
+export type ProfileAuthMode = "api_key" | "chatgpt_account" | "subscription";
 
 export type SubscriptionAuthorizationState = "pending" | "payment_required" | "authorized" | "denied" | "expired" | "error";
 
@@ -151,6 +151,8 @@ export interface SessionHistorySyncResolvedSource {
 export interface CreateProfileInput {
   name: string;
   authMode?: ProfileAuthMode;
+  /** Opaque, short-lived ID issued by the main-process subscription authorization flow. */
+  subscriptionAuthorizationSessionId?: string;
   codexAppPath?: string;
   inheritDefaultConfig?: boolean;
   syncHistory?: SessionHistorySyncInput;
