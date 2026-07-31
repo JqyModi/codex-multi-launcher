@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Circle,
   Copy,
+  CreditCard,
   Download,
   ExternalLink,
   FileText,
@@ -40,6 +41,8 @@ import type {
   ProfileRuntimeInfo,
   ProviderModelsResult,
   ProviderTestResult,
+  SubscriptionAuthorizationSession,
+  SubscriptionAuthorizationStatus,
   UpdateDownloadEvent,
   UpdateCheckResult
 } from "../shared/types";
@@ -157,6 +160,14 @@ const TEXT: Record<Language, Record<string, string>> = {
     authMode: "使用方式",
     authModeApiKey: "API Key 配置",
     authModeApiKeyDesc: "适合代理接口、第三方兼容服务，或只想用密钥隔离不同模型服务。",
+    authModeSubscription: "订阅服务",
+    authModeSubscriptionDesc: "完成购买或授权后自动接入，无需填写接口地址和密钥。",
+    authModeSubscriptionPreview: "将打开服务页面完成登录、购买或授权。授权成功后会自动写入当前配置，仅保存在本机。",
+    authModeSubscriptionStart: "前往授权",
+    authModeSubscriptionPending: "等待授权完成",
+    authModeSubscriptionAuthorized: "授权已完成",
+    authModeSubscriptionExpired: "授权已过期，请重新开始。",
+    authModeSubscriptionError: "授权暂不可用，请重新开始。",
     authModeAccount: "ChatGPT 账号登录",
     authModeAccountDesc: "适合 Plus / Pro 官方账号。生成后在分身窗口里登录，账号状态不应被密钥配置覆盖。",
     authModeAccountPending: "账号登录",
@@ -362,6 +373,14 @@ const TEXT: Record<Language, Record<string, string>> = {
     authMode: "Usage mode",
     authModeApiKey: "API key profile",
     authModeApiKeyDesc: "For proxy endpoints, third-party compatible services, or separate model providers.",
+    authModeSubscription: "Subscription service",
+    authModeSubscriptionDesc: "Authorize a purchase to connect automatically, with no Base URL or API key to enter.",
+    authModeSubscriptionPreview: "A service page opens for sign-in, purchase, or authorization. Once approved, this profile is set up automatically and saved only on this device.",
+    authModeSubscriptionStart: "Continue to authorization",
+    authModeSubscriptionPending: "Waiting for authorization",
+    authModeSubscriptionAuthorized: "Authorization complete",
+    authModeSubscriptionExpired: "Authorization expired. Start again.",
+    authModeSubscriptionError: "Authorization is unavailable. Start again.",
     authModeAccount: "ChatGPT account login",
     authModeAccountDesc: "For Plus / Pro accounts. Sign in inside the isolated app window without API key overwrite.",
     authModeAccountPending: "Account",
@@ -470,7 +489,7 @@ const TEXT: Record<Language, Record<string, string>> = {
 
 const DEFAULT_FORM = {
   name: "Codex Sandbox",
-  authMode: "api_key" as "api_key" | "chatgpt_account",
+  authMode: "api_key" as "api_key" | "chatgpt_account" | "subscription",
   providerType: "third_party_responses" as "official_openai" | "third_party_responses",
   providerName: "Proxy",
   baseUrl: "https://example.com/v1",
@@ -502,6 +521,9 @@ export function App() {
   const [configBackups, setConfigBackups] = useState<ConfigBackupInfo[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [wizardStep, setWizardStep] = useState<WizardStep>("profile");
+  const [subscriptionAuthorization, setSubscriptionAuthorization] = useState<SubscriptionAuthorizationSession | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionAuthorizationStatus | null>(null);
+  const [isStartingSubscriptionAuthorization, setIsStartingSubscriptionAuthorization] = useState(false);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -545,7 +567,7 @@ export function App() {
 
   const currentStepIndex = WIZARD_STEPS.findIndex((step) => step === wizardStep);
   const canGoBack = currentStepIndex > 0;
-  const canGoNext = currentStepIndex < WIZARD_STEPS.length - 1 && isCurrentStepValid(wizardStep, form);
+  const canGoNext = currentStepIndex < WIZARD_STEPS.length - 1 && isCurrentStepValid(wizardStep, form, subscriptionStatus);
   const t = TEXT[language];
   const runningProfiles = useMemo(
     () => activeProfiles.filter((profile) => runtimeByProfileId.get(profile.id)?.status === "running"),
@@ -625,6 +647,26 @@ export function App() {
     void window.codexProfileManager.listConfigBackups(selectedProfile.id).then(setConfigBackups);
   }, [selectedProfile]);
 
+  useEffect(() => {
+    if (form.authMode !== "subscription" || !subscriptionAuthorization || ["authorized", "denied", "expired", "error"].includes(subscriptionStatus?.state ?? "")) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void window.codexProfileManager.pollSubscriptionAuthorization(subscriptionAuthorization.id)
+        .then(setSubscriptionStatus)
+        .catch((error) => setSubscriptionStatus({
+          id: subscriptionAuthorization.id,
+          expiresAt: subscriptionAuthorization.expiresAt,
+          pollIntervalMs: subscriptionAuthorization.pollIntervalMs,
+          state: "error",
+          error: error instanceof Error ? error.message : "Subscription authorization failed."
+        }));
+    }, subscriptionStatus?.pollIntervalMs ?? subscriptionAuthorization.pollIntervalMs);
+
+    return () => window.clearTimeout(timeout);
+  }, [form.authMode, subscriptionAuthorization, subscriptionStatus]);
+
   function showToast(nextMessage: string) {
     setToastMessage(nextMessage);
   }
@@ -647,6 +689,7 @@ export function App() {
       const input: CreateProfileInput = {
         name: form.name,
         authMode: form.authMode,
+        subscriptionAuthorizationSessionId: form.authMode === "subscription" ? subscriptionAuthorization?.id : undefined,
         codexAppPath: form.codexAppPath || undefined,
         inheritDefaultConfig: form.inheritDefaultConfig,
         syncHistory: {
@@ -660,7 +703,7 @@ export function App() {
         },
         provider: {
           type: form.authMode === "chatgpt_account" ? "official_openai" : form.providerType,
-          displayName: form.authMode === "chatgpt_account" ? "ChatGPT Account" : form.providerName,
+          displayName: form.authMode === "chatgpt_account" ? "ChatGPT Account" : form.authMode === "subscription" ? "Subscription service" : form.providerName,
           baseUrl: form.authMode === "api_key" && form.providerType === "third_party_responses" ? form.baseUrl : undefined,
           model: form.model,
           apiKey: form.authMode === "api_key" ? form.apiKey : undefined,
@@ -676,11 +719,48 @@ export function App() {
       setProviderTest(null);
       setProviderModels(null);
       setWizardStep("profile");
+      setSubscriptionAuthorization(null);
+      setSubscriptionStatus(null);
       setIsCreateProfileOpen(false);
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Failed to create profile.");
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function startSubscriptionAuthorization() {
+    setIsStartingSubscriptionAuthorization(true);
+    setSubscriptionAuthorization(null);
+    setSubscriptionStatus(null);
+    setToastMessage(null);
+
+    try {
+      const session = await window.codexProfileManager.startSubscriptionAuthorization({ deviceName: "Codex Multi Launcher" });
+      setSubscriptionAuthorization(session);
+      setSubscriptionStatus({
+        id: session.id,
+        expiresAt: session.expiresAt,
+        pollIntervalMs: session.pollIntervalMs,
+        state: session.state
+      });
+      await window.codexProfileManager.openExternalUrl(session.authorizationUrl);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not start subscription authorization.");
+    } finally {
+      setIsStartingSubscriptionAuthorization(false);
+    }
+  }
+
+  function updateCreateForm(nextForm: typeof DEFAULT_FORM) {
+    if (form.authMode === "subscription" && nextForm.authMode !== "subscription" && subscriptionAuthorization) {
+      void window.codexProfileManager.cancelSubscriptionAuthorization(subscriptionAuthorization.id);
+      setSubscriptionAuthorization(null);
+      setSubscriptionStatus(null);
+    }
+    setForm(nextForm);
+    if (nextForm.baseUrl !== form.baseUrl || nextForm.apiKey !== form.apiKey || nextForm.providerType !== form.providerType) {
+      setProviderModels(null);
     }
   }
 
@@ -1321,17 +1401,16 @@ export function App() {
                 providerModels={providerModels}
                 availableHistoryProfiles={activeProfiles}
                 wizardStep={wizardStep}
+                subscriptionAuthorization={subscriptionAuthorization}
+                subscriptionStatus={subscriptionStatus}
+                isStartingSubscriptionAuthorization={isStartingSubscriptionAuthorization}
                 t={t}
-                onChange={(nextForm) => {
-                  setForm(nextForm);
-                  if (nextForm.baseUrl !== form.baseUrl || nextForm.apiKey !== form.apiKey || nextForm.providerType !== form.providerType) {
-                    setProviderModels(null);
-                  }
-                }}
+                onChange={updateCreateForm}
                 onFetchModels={() => void fetchProviderModels()}
                 onPickCodexAppPath={() => void pickCodexAppPath()}
                 onPickLauncherDirectory={() => void pickLauncherDirectory()}
                 onTestProvider={() => void testProvider()}
+                onStartSubscriptionAuthorization={() => void startSubscriptionAuthorization()}
               />
             </div>
             <footer className="wizard-actions">
@@ -1340,7 +1419,7 @@ export function App() {
                 {t.back}
               </button>
               {wizardStep === "generate" ? (
-                <button className="button primary" disabled={isCreating || !isCurrentStepValid(wizardStep, form)} onClick={() => void createProfile()} type="button">
+                <button className="button primary" disabled={isCreating || !isCurrentStepValid(wizardStep, form, subscriptionStatus)} onClick={() => void createProfile()} type="button">
                   <Plus size={16} />
                   {isCreating ? t.generating : t.generate}
                 </button>
@@ -1987,12 +2066,16 @@ function WizardBody({
   providerModels,
   availableHistoryProfiles,
   wizardStep,
+  subscriptionAuthorization,
+  subscriptionStatus,
+  isStartingSubscriptionAuthorization,
   t,
   onChange,
   onFetchModels,
   onPickCodexAppPath,
   onPickLauncherDirectory,
-  onTestProvider
+  onTestProvider,
+  onStartSubscriptionAuthorization
 }: {
   form: typeof DEFAULT_FORM;
   providerTest: ProviderTestResult | null;
@@ -2001,12 +2084,16 @@ function WizardBody({
   providerModels: ProviderModelsResult | null;
   availableHistoryProfiles: ManagedProfile[];
   wizardStep: WizardStep;
+  subscriptionAuthorization: SubscriptionAuthorizationSession | null;
+  subscriptionStatus: SubscriptionAuthorizationStatus | null;
+  isStartingSubscriptionAuthorization: boolean;
   t: Record<string, string>;
   onChange: (nextForm: typeof DEFAULT_FORM) => void;
   onFetchModels: () => void;
   onPickCodexAppPath: () => void;
   onPickLauncherDirectory: () => void;
   onTestProvider: () => void;
+  onStartSubscriptionAuthorization: () => void;
 }) {
   if (wizardStep === "profile") {
     return (
@@ -2052,6 +2139,7 @@ function WizardBody({
 
   if (wizardStep === "provider") {
     const isAccountMode = form.authMode === "chatgpt_account";
+    const isSubscriptionMode = form.authMode === "subscription";
     return (
       <div className="form">
         <AuthModeOptions form={form} onChange={onChange} t={t} />
@@ -2060,6 +2148,14 @@ function WizardBody({
             <User size={16} />
             <p>{t.authModeAccountPreview}</p>
           </div>
+        ) : isSubscriptionMode ? (
+          <SubscriptionAuthorizationPanel
+            authorization={subscriptionAuthorization}
+            isStarting={isStartingSubscriptionAuthorization}
+            status={subscriptionStatus}
+            t={t}
+            onStart={onStartSubscriptionAuthorization}
+          />
         ) : (
           <>
             <label>
@@ -2117,6 +2213,20 @@ function WizardBody({
       );
     }
 
+    if (form.authMode === "subscription") {
+      return (
+        <div className="form">
+          <SubscriptionAuthorizationPanel
+            authorization={subscriptionAuthorization}
+            isStarting={isStartingSubscriptionAuthorization}
+            status={subscriptionStatus}
+            t={t}
+            onStart={onStartSubscriptionAuthorization}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="form">
         <p className="field-note">{t.testNote}</p>
@@ -2170,7 +2280,7 @@ function WizardBody({
     <div className="review-box">
       <PathRow label={t.profile} value={form.name || t.missing} />
       <ColorReviewRow color={sanitizeProfileColor(form.iconBackgroundColor)} label={t.profileColorReview} />
-      <PathRow label={t.authModeReview} value={form.authMode === "chatgpt_account" ? `${t.authModeAccount} (${t.authModeAccountPending})` : t.authModeApiKey} />
+      <PathRow label={t.authModeReview} value={form.authMode === "chatgpt_account" ? `${t.authModeAccount} (${t.authModeAccountPending})` : form.authMode === "subscription" ? subscriptionStatus?.state === "authorized" ? t.authModeSubscriptionAuthorized : t.authModeSubscriptionPending : t.authModeApiKey} />
       {form.authMode === "api_key" ? (
         <>
           <PathRow label={t.provider} value={form.providerName || t.missing} />
@@ -2189,7 +2299,7 @@ function WizardBody({
           : t.syncHistoryOff}
       />
       {form.syncHistory ? <PathRow label={t.syncHistorySourcesReview} value={historySourceSummary} /> : null}
-      <PathRow label={t.providerTestReview} value={form.authMode === "chatgpt_account" ? t.authModeAccountPending : providerTest ? providerTest.summary : t.notTested} />
+      <PathRow label={t.providerTestReview} value={form.authMode === "chatgpt_account" ? t.authModeAccountPending : form.authMode === "subscription" ? subscriptionStatus?.state === "authorized" ? t.authModeSubscriptionAuthorized : t.authModeSubscriptionPending : providerTest ? providerTest.summary : t.notTested} />
     </div>
   );
 }
@@ -2211,6 +2321,16 @@ function AuthModeOptions({ form, onChange, t }: { form: typeof DEFAULT_FORM; onC
             {form.authMode === "api_key" ? <CheckCircle2 size={16} /> : <Circle size={16} />}
           </span>
         </button>
+        <button className={`auth-mode-option ${form.authMode === "subscription" ? "selected" : ""}`} onClick={() => onChange({ ...form, authMode: "subscription" })} type="button">
+          <span className="auth-mode-icon"><CreditCard size={16} /></span>
+          <span className="auth-mode-copy">
+            <strong>{t.authModeSubscription}</strong>
+            <small>{t.authModeSubscriptionDesc}</small>
+          </span>
+          <span className="history-check" aria-hidden="true">
+            {form.authMode === "subscription" ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+          </span>
+        </button>
         <button className={`auth-mode-option ${form.authMode === "chatgpt_account" ? "selected" : ""}`} onClick={() => onChange({ ...form, authMode: "chatgpt_account" })} type="button">
           <span className="auth-mode-icon"><User size={16} /></span>
           <span className="auth-mode-copy">
@@ -2225,6 +2345,46 @@ function AuthModeOptions({ form, onChange, t }: { form: typeof DEFAULT_FORM; onC
           </span>
         </button>
       </div>
+    </div>
+  );
+}
+
+function SubscriptionAuthorizationPanel({
+  authorization,
+  isStarting,
+  status,
+  t,
+  onStart
+}: {
+  authorization: SubscriptionAuthorizationSession | null;
+  isStarting: boolean;
+  status: SubscriptionAuthorizationStatus | null;
+  t: Record<string, string>;
+  onStart: () => void;
+}) {
+  const currentState = status?.state ?? authorization?.state;
+  const isAuthorized = currentState === "authorized";
+  const statusText = currentState === "authorized"
+    ? t.authModeSubscriptionAuthorized
+    : currentState === "expired"
+      ? t.authModeSubscriptionExpired
+      : currentState === "error" || currentState === "denied"
+        ? status?.error ?? t.authModeSubscriptionError
+        : authorization
+          ? t.authModeSubscriptionPending
+          : t.authModeSubscriptionPreview;
+
+  return (
+    <div className={`subscription-authorization ${isAuthorized ? "authorized" : ""}`}>
+      <span className="auth-mode-icon"><CreditCard size={16} /></span>
+      <div>
+        <strong>{isAuthorized ? t.authModeSubscriptionAuthorized : t.authModeSubscription}</strong>
+        <p>{statusText}</p>
+      </div>
+      <button className="button secondary compact" disabled={isStarting || isAuthorized} onClick={onStart} type="button">
+        <ExternalLink size={14} />
+        {isStarting ? t.generating : t.authModeSubscriptionStart}
+      </button>
     </div>
   );
 }
@@ -2541,9 +2701,10 @@ function sanitizeProfileColor(value: string | undefined): string {
   return DEFAULT_PROFILE_COLOR;
 }
 
-function isCurrentStepValid(step: WizardStep, form: typeof DEFAULT_FORM): boolean {
+function isCurrentStepValid(step: WizardStep, form: typeof DEFAULT_FORM, subscriptionStatus: SubscriptionAuthorizationStatus | null): boolean {
   if (step === "profile") return Boolean(form.name.trim());
   if (form.authMode === "chatgpt_account") return true;
+  if (form.authMode === "subscription") return subscriptionStatus?.state === "authorized";
   if (step === "provider") return Boolean(
     form.providerName.trim()
     && (form.providerType === "official_openai" || form.baseUrl.trim())

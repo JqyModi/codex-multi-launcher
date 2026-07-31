@@ -916,7 +916,7 @@ code {
 
 .auth-mode-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 8px;
 }
 
@@ -1009,6 +1009,52 @@ code {
   color: #475569;
   font-size: 12px;
   line-height: 18px;
+}
+
+.subscription-authorization {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.subscription-authorization.authorized {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}
+
+.subscription-authorization > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.subscription-authorization strong {
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.subscription-authorization p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+@media (max-width: 540px) {
+  .subscription-authorization {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .subscription-authorization .button {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
 
 .history-section {
