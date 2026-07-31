@@ -23,6 +23,7 @@ import {
   updateProfile
 } from "./profile-service.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
+import { cancelSubscriptionAuthorization, pollSubscriptionAuthorization, startSubscriptionAuthorization } from "./subscription-auth.js";
 import type { AnnouncementItem, AnnouncementPlatform, AnnouncementResult, CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTestInput, ProviderModelsInput, ProviderTestInput, RestoreConfigBackupInput, UpdateDownloadEvent, UpdateProfileInput } from "../shared/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -205,6 +206,12 @@ function registerIpc(): void {
   ipcMain.handle("profiles:test-provider", (_event, input: ProfileProviderTestInput) => testProfileProvider(input));
   ipcMain.handle("provider:models", (_event, input: ProviderModelsInput) => listProviderModels(input));
   ipcMain.handle("profiles:models", (_event, input: ProfileProviderModelsInput) => listProfileProviderModels(input));
+  ipcMain.handle("subscription-auth:start", (_event, input) => startSubscriptionAuthorization(input));
+  ipcMain.handle("subscription-auth:poll", (_event, sessionId: string) => pollSubscriptionAuthorization(sessionId));
+  ipcMain.handle("subscription-auth:cancel", (_event, sessionId: string) => {
+    cancelSubscriptionAuthorization(sessionId);
+    return { ok: true };
+  });
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));
   ipcMain.handle("profiles:update", (_event, input: UpdateProfileInput) => updateProfile(input));
   ipcMain.handle("profiles:delete", (_event, profileId: string) => deleteProfile(profileId));

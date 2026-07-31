@@ -2,6 +2,8 @@ export type ProviderType = "official_openai" | "third_party_responses";
 
 export type ProfileAuthMode = "api_key" | "chatgpt_account";
 
+export type SubscriptionAuthorizationState = "pending" | "payment_required" | "authorized" | "denied" | "expired" | "error";
+
 export type ProfileStatus = "active" | "disabled" | "deleted";
 
 export type RuntimeStatus = "running" | "not_running" | "unknown" | "error";
@@ -247,6 +249,29 @@ export interface ProviderTestResult {
   httpStatus?: number;
 }
 
+export interface StartSubscriptionAuthorizationInput {
+  deviceName?: string;
+}
+
+export interface SubscriptionAuthorizationSession {
+  id: string;
+  authorizationUrl: string;
+  expiresAt: string;
+  pollIntervalMs: number;
+  state: SubscriptionAuthorizationState;
+}
+
+export interface SubscriptionAuthorizationStatus {
+  id: string;
+  expiresAt: string;
+  pollIntervalMs: number;
+  state: SubscriptionAuthorizationState;
+  providerName?: string;
+  defaultModel?: string;
+  subscriptionExpiresAt?: string;
+  error?: string;
+}
+
 export interface LauncherResult {
   launcherPath: string;
   executablePath: string;
@@ -330,6 +355,9 @@ export interface CodexApi {
   testProfileProvider(input: ProfileProviderTestInput): Promise<ProviderTestResult>;
   listProviderModels(input: ProviderModelsInput): Promise<ProviderModelsResult>;
   listProfileProviderModels(input: ProfileProviderModelsInput): Promise<ProviderModelsResult>;
+  startSubscriptionAuthorization(input: StartSubscriptionAuthorizationInput): Promise<SubscriptionAuthorizationSession>;
+  pollSubscriptionAuthorization(sessionId: string): Promise<SubscriptionAuthorizationStatus>;
+  cancelSubscriptionAuthorization(sessionId: string): Promise<{ ok: true }>;
   createProfile(input: CreateProfileInput): Promise<CreateProfileResult>;
   updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult>;
   restoreConfigBackup(input: RestoreConfigBackupInput): Promise<RestoreConfigBackupResult>;
