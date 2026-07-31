@@ -153,7 +153,7 @@ created_at
 - 其他设备的 Key。
 - 支付密钥或内部订单凭据。
 
-## 5. 推荐 API 合约
+## 5. API 合约
 
 接口前缀暂定为 `/api/v1/desktop-auth`，最终以 Sub2API fork 的路由规范为准。
 
@@ -198,6 +198,15 @@ POST /api/v1/desktop-auth/sessions
 点击授权 -> 会话变为 approved
 ```
 
+当前 fork 已实现的审批接口：
+
+```http
+POST /api/v1/desktop-auth/sessions/:session_id/approve
+Authorization: Bearer <Sub2API 登录态>
+```
+
+审批接口只读取当前登录用户的有效订阅；没有有效订阅时返回 `payment_required`，购买套餐并完成服务端履约后可以重复审批。审批成功后由 Sub2API 为用户所属订阅分组创建一个独立设备 Key，桌面端不会看到网页中的 Key。
+
 授权页面必须只允许受控的桌面客户端 `client_id` 和固定回调来源，禁止任意 `redirect_uri`，避免开放重定向。
 
 ### 5.3 轮询并兑换配置
@@ -216,6 +225,8 @@ POST /api/v1/desktop-auth/token
 ```
 
 成功后立即将会话标记为 `consumed`，同一授权码不能重复兑换。
+
+当前实现将会话放在 Redis 中，TTL 为 5 分钟；Redis 只保存短期兑换所需的服务端状态，Token 兑换成功后立即删除会话，不新增数据库表。
 
 ### 5.4 撤销设备
 
@@ -365,7 +376,7 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 - [ ] 支付订单创建。
 - [ ] 支付 Webhook 验签和幂等。
 - [ ] 支付后自动激活订阅。
-- [ ] 用户级设备 Key 自动创建或复用。
+- [x] 用户级设备 Key 自动创建。
 - [ ] Key 有效期跟随订阅。
 - [ ] 用户额度和并发限制。
 - [ ] Key 撤销后请求失败。
@@ -379,15 +390,15 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 
 ### 桌面端
 
-- [ ] “订阅服务”选项的默认和未连接状态。
+- [x] “订阅服务”选项的默认和未连接状态。
 - [ ] Mac 授权页面打开和回到 App。
 - [ ] Windows 授权页面打开和回到 App。
 - [ ] 浏览器关闭后的轮询恢复。
 - [ ] 购买中状态。
 - [ ] 支付成功后的自动继续。
-- [ ] 授权成功后自动填充 Provider。
-- [ ] 自动完成 Profile 和启动器生成。
-- [ ] Token 不出现在 Renderer、日志和诊断中。
+- [x] 授权成功后自动填充 Provider。
+- [x] 自动完成 Profile 和启动器生成。
+- [x] Token 不出现在 Renderer、日志和诊断中。
 - [ ] 重启 App 后 Profile 仍可打开。
 - [ ] 订阅失效和设备撤销提示。
 - [ ] 网络中断、授权过期、Key 创建失败的重试。
