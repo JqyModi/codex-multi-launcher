@@ -1,10 +1,12 @@
 # Sub2API 多开授权闭环方案
 
-> 状态：核心授权链路已实现并通过桌面端验证脚本、Sub2API 单元/HTTP 测试及 GitHub Actions 完整 CI；真实 Sub2API 部署、支付履约和 Mac/Windows 端到端验证待进行。
+> 状态：核心授权链路已实现并通过桌面端验证脚本、Sub2API 单元/HTTP 测试、GitHub Actions 完整 CI，以及本地 Docker + Electron 浏览器授权实测。真实支付履约、上游服务、Windows 公网端到端和生产运维仍待进行。
 >
 > 桌面端开发分支：`jqy/sub2api-desktop-auth`
 >
 > 基线分支：`jqy/win`，基于提交 `354339a`（v0.1.8）
+
+> 服务端配置、三容器部署、HTTPS 代理要求、验收和排障以 Sub2API fork 的 [订阅服务运行手册](https://github.com/JqyModi/sub2api/blob/jqy/desktop-auth/docs/desktop-auth-runbook.zh-CN.md) 为准。本文件保留为产品设计与实施记录。
 
 ## 1. 目标
 
