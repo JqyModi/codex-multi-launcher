@@ -76,13 +76,24 @@ app.on("second-instance", (_event, argv) => {
   if (profileId) {
     void openProfileFromArg(profileId);
   }
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) {
-      mainWindow.restore();
-    }
-    mainWindow.focus();
-  }
+  focusMainWindow();
 });
+
+function focusMainWindow(): void {
+  if (!mainWindow) {
+    return;
+  }
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  if (!mainWindow.isVisible()) {
+    mainWindow.show();
+  }
+  if (process.platform === "darwin") {
+    app.focus({ steal: true });
+  }
+  mainWindow.focus();
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -207,7 +218,13 @@ function registerIpc(): void {
   ipcMain.handle("provider:models", (_event, input: ProviderModelsInput) => listProviderModels(input));
   ipcMain.handle("profiles:models", (_event, input: ProfileProviderModelsInput) => listProfileProviderModels(input));
   ipcMain.handle("subscription-auth:start", (_event, input) => startSubscriptionAuthorization(input));
-  ipcMain.handle("subscription-auth:poll", (_event, sessionId: string) => pollSubscriptionAuthorization(sessionId));
+  ipcMain.handle("subscription-auth:poll", async (_event, sessionId: string) => {
+    const status = await pollSubscriptionAuthorization(sessionId);
+    if (status.state === "authorized") {
+      focusMainWindow();
+    }
+    return status;
+  });
   ipcMain.handle("subscription-auth:cancel", (_event, sessionId: string) => {
     cancelSubscriptionAuthorization(sessionId);
     return { ok: true };
