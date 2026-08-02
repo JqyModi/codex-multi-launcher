@@ -1,6 +1,6 @@
 # Sub2API 多开授权闭环方案
 
-> 状态：核心授权链路已实现并通过桌面端验证脚本、Sub2API 单元/HTTP 测试、GitHub Actions 完整 CI，以及本地 Docker + Electron 浏览器授权实测。真实支付履约、上游服务、Windows 公网端到端和生产运维仍待进行。
+> 状态：核心授权链路已实现并通过桌面端验证脚本、Sub2API 单元/HTTP 测试、GitHub Actions 完整 CI，以及本地 Docker + Electron 注册、订单、模拟签名支付回调和浏览器授权实测。真实商户、上游服务、Windows 公网端到端和生产运维仍待进行。
 >
 > 桌面端开发分支：`jqy/sub2api-desktop-auth`
 >
@@ -193,11 +193,12 @@ POST /api/v1/desktop-auth/sessions
 授权页面复用 Sub2API 当前登录和支付体系：
 
 ```text
-未登录 -> 登录/注册
-无有效订阅 -> 套餐购买
+未登录 -> 登录/注册并保留桌面授权会话
+新用户注册 -> 直接进入订阅购买页，不经过 Dashboard
+已有无订阅用户登录 -> 自动检查并进入订阅购买页
 支付处理中 -> 等待服务端履约
-已订阅 -> 显示设备信息和授权确认
-点击授权 -> 会话变为 approved
+支付成功 -> 自动返回原授权会话
+已订阅 -> 自动创建设备 Key 并完成授权
 ```
 
 当前 fork 已实现的审批接口：
@@ -228,7 +229,7 @@ POST /api/v1/desktop-auth/token
 
 成功后立即将会话标记为 `consumed`，同一授权码不能重复兑换。
 
-当前实现将会话放在 Redis 中，TTL 为 5 分钟；Redis 只保存短期兑换所需的服务端状态，Token 兑换成功后立即删除会话，不新增数据库表。
+当前实现将会话放在 Redis 中，TTL 为 30 分钟，以覆盖注册和第三方支付操作；Redis 只保存短期兑换所需的服务端状态，Token 兑换成功后立即删除会话，不新增数据库表。
 
 ### 5.4 撤销设备
 
@@ -313,7 +314,7 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 - HTTPS。
 - `state`、PKCE 和短期授权会话。
 - 授权码一次性消费。
-- 授权会话 5 分钟过期。
+- 授权会话 30 分钟过期。
 - 服务端以支付 Webhook 确认支付，不信任前端回跳。
 - 服务端检查订阅有效期后才允许兑换配置。
 - 桌面端只获得用户级设备 Token。
@@ -375,9 +376,9 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 
 - [ ] 注册、登录和 Refresh Token。
 - [ ] 测试套餐和正式套餐。
-- [ ] 支付订单创建。
-- [ ] 支付 Webhook 验签和幂等。
-- [ ] 支付后自动激活订阅。
+- [x] 本地测试套餐支付订单创建。
+- [x] 本地 EasyPay 错误签名拒绝、正确 Webhook 验签和幂等履约。
+- [x] 支付后自动激活订阅并返回原授权会话。
 - [x] 用户级设备 Key 自动创建。
 - [ ] Key 有效期跟随订阅。
 - [ ] 用户额度和并发限制。
@@ -396,8 +397,8 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 - [ ] Mac 授权页面打开和回到 App。
 - [ ] Windows 授权页面打开和回到 App。
 - [ ] 浏览器关闭后的轮询恢复。
-- [ ] 购买中状态。
-- [ ] 支付成功后的自动继续。
+- [x] 购买中状态。
+- [x] 支付成功后的自动继续。
 - [x] 授权成功后自动填充 Provider。
 - [x] 自动完成 Profile 和启动器生成。
 - [x] Token 不出现在 Renderer、日志和诊断中。
@@ -437,7 +438,7 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 
 ### Sub2API fork
 
-- [x] Redis 短期桌面授权会话（5 分钟 TTL，无需数据库迁移）。
+- [x] Redis 短期桌面授权会话（30 分钟 TTL，无需数据库迁移）。
 - [ ] 设备模型和设备撤销。
 - [x] 创建授权会话、PKCE 兑换及一次性消费接口。
 - [x] 桌面授权网页。
