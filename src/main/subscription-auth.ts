@@ -7,6 +7,7 @@ import type {
 } from "../shared/types.js";
 
 const CLIENT_ID = "codex-multi-launcher";
+const DEFAULT_SUBSCRIPTION_SERVICE_URL = "https://sub2api.minai.eu.org";
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
 const DEFAULT_EXPIRES_IN_SECONDS = 300;
 const PENDING_STATES = new Set(["authorization_pending", "pending", "login_required", "waiting_for_authorization"]);
@@ -181,10 +182,8 @@ function publicStatus(id: string, authorization: PendingAuthorization): Subscrip
 }
 
 function subscriptionServiceUrl(): URL {
-  const rawUrl = process.env.CODEX_PROFILE_MANAGER_SUBSCRIPTION_SERVICE_URL?.trim();
-  if (!rawUrl) {
-    throw new Error("Subscription service is not configured for this build.");
-  }
+  // Local and staging builds may override the production service explicitly.
+  const rawUrl = process.env.CODEX_PROFILE_MANAGER_SUBSCRIPTION_SERVICE_URL?.trim() || DEFAULT_SUBSCRIPTION_SERVICE_URL;
 
   let url: URL;
   try {
