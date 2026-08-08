@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Windows Codex 多开安装与排错指南，说明普通安装版、Microsoft Store / WindowsApps、权限、symlink 和可执行文件检测问题。" />
+    <meta name="description" content="Windows Codex 多开安装与排错指南：下载安装版或便携版，创建独立 Profile，并处理 WindowsApps、AppX、权限、路径和启动失败问题。" />
     <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/guides/windows/" />
-    <meta property="og:title" content="Windows Codex 多开安装与排错" />
-    <meta property="og:description" content="处理 Windows Codex 安装来源、WindowsApps 权限、Profile 创建和启动问题。" />
+    <meta property="og:title" content="Windows Codex 多开：安装、创建 Profile 与排错" />
+    <meta property="og:description" content="从下载 Windows x64 安装包到处理 WindowsApps、AppX、权限与启动问题。" />
     <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
-    <title>Windows Codex 多开安装与排错 | Codex Multi Launcher</title>
+    <title>Windows Codex 多开｜安装、创建 Profile 与启动排错</title>
     <link rel="icon" href="../../assets/favicon.png" />
     <link rel="stylesheet" href="../../styles.css" />
   </head>
@@ -18,14 +18,19 @@
       <nav aria-label="主导航"><a href="../../">首页</a><a href="../../manual.html">手册</a><a href="../../support/">帮助</a><a class="nav-download" href="../../download/">下载</a></nav>
     </header>
     <main class="article-layout">
-      <aside class="article-nav"><strong>Windows 指南</strong><a href="#install-source">安装来源</a><a href="#create">创建问题</a><a href="#open">打开问题</a><a href="#report">反馈信息</a></aside>
+      <aside class="article-nav"><strong>Windows 指南</strong><a href="#install">下载安装</a><a href="#install-source">安装来源</a><a href="#create">创建问题</a><a href="#open">打开问题</a><a href="#report">反馈信息</a></aside>
       <article class="article-content">
         <header class="article-hero">
           <p class="eyebrow">Codex Windows · WindowsApps</p>
-          <h1>Windows 上的安装、创建与启动排错。</h1>
-          <p class="hero-lede">Windows 版本的主要差异来自 App 安装来源、WindowsApps 目录权限、符号链接和可执行文件路径。最新版已针对这些链路做兼容处理。</p>
+          <h1>Windows Codex 多开：安装、创建 Profile 与启动排错。</h1>
+          <p class="hero-lede">在 Windows 同时运行多个独立 Codex / ChatGPT 窗口。最新版已处理 Microsoft Store / AppX 缓存复制、任务栏图标、路径检测和常见权限差异。</p>
           <div class="hero-actions"><a class="button primary" href="../../download/">下载 Windows x64</a><a class="button secondary" href="https://github.com/JqyModi/codex-multi-launcher/issues/10">查看相关 Issue</a></div>
         </header>
+        <section class="article-section" id="install">
+          <h2>Windows 上如何开始 Codex 多开</h2>
+          <ol><li>先安装并正常打开一次官方 Codex / ChatGPT 桌面 App。</li><li>在<a href="../../download/">下载页</a>选择 Windows x64 安装版或便携版。</li><li>打开 Codex Multi Launcher，在设置中确认检测到的桌面 App 路径。</li><li>创建第一个 Profile；每个 Profile 都使用独立应用数据和 Codex 配置目录。</li></ol>
+          <div class="article-callout">v0.1.8 已修复 Microsoft Store / AppX 版缓存复制可能导致 Profile 无法打开的问题，并恢复 Windows 多开窗口的官方任务栏图标。</div>
+        </section>
         <section class="article-section" id="install-source">
           <h2>先确认 Codex / ChatGPT 安装来源</h2>
           <p>Windows 桌面 App 可能来自官网安装器，也可能以 Microsoft Store / AppX 包形式安装。两者最终文件位置和权限模型不同。</p>

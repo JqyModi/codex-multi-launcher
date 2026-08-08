@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Codex 历史对话同步指南：从源 App 或已有 Profile 选择项目对话、临时任务或全部历史，并复制到新的独立配置。" />
+    <meta name="description" content="Codex 历史对话同步与迁移指南：创建新 Profile 时选择项目对话、临时任务或全部历史，复制后独立使用，不影响来源配置。" />
     <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/features/session-sync/" />
-    <meta property="og:title" content="Codex 历史对话同步与迁移" />
-    <meta property="og:description" content="创建新 Profile 时同步指定项目、临时任务和多个来源中的历史对话。" />
+    <meta property="og:title" content="Codex 历史对话同步与迁移：新 Profile 保留项目记录" />
+    <meta property="og:description" content="明确选择项目对话、临时任务和同步来源；新 Profile 获得独立副本，不会改动原配置。" />
     <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
-    <title>Codex 历史对话同步与项目迁移 | Codex Multi Launcher</title>
+    <title>Codex 历史对话同步与迁移｜创建新 Profile 保留记录</title>
     <link rel="icon" href="../../assets/favicon.png" />
     <link rel="stylesheet" href="../../styles.css" />
   </head>
@@ -22,10 +22,14 @@
       <article class="article-content">
         <header class="article-hero">
           <p class="eyebrow">Codex 项目迁移 · 历史对话恢复</p>
-          <h1>创建新配置时，带上需要的历史对话。</h1>
-          <p class="hero-lede">不必在“完全空白”和“复制全部数据”之间二选一。你可以从源 App 或已有多开配置中选择来源，并只同步项目、临时任务或全部支持的历史。</p>
+          <h1>Codex 历史对话同步：新 Profile 也能保留工作记录。</h1>
+          <p class="hero-lede">创建新配置时，不必在“完全空白”和“复制全部数据”之间二选一。选择来源后，只同步项目对话、临时任务或全部支持的历史；复制完成的新 Profile 独立运行，不会改动原配置。</p>
           <div class="hero-actions"><a class="button primary" href="../../download/">下载最新版</a><a class="button secondary" href="../../manual.html#create">查看创建流程</a></div>
         </header>
+        <section class="article-section" aria-labelledby="summary">
+          <h2 id="summary">先判断：你需要同步什么</h2>
+          <p>需要继续某个仓库的上下文，选择<strong>仅项目</strong>；需要保留不属于项目的聊天，选择<strong>仅临时任务</strong>；要迁移完整工作记录，再选择<strong>全部</strong>。同步是创建副本，不会把目标 Profile 后续新增的对话写回来源。</p>
+        </section>
         <section class="article-section" id="scope">
           <h2>三种同步范围</h2>
           <h3>仅项目</h3><p>同步与项目目录关联的历史对话，适合继续维护已有代码仓库。</p>
@@ -47,6 +51,12 @@
           <h2>同步后看不到历史怎么办</h2>
           <ol><li>确认创建时开启了“同步已有对话记录”。</li><li>确认勾选了正确来源，而不只是选择了同步范围。</li><li>确认选择“仅临时任务”时，目标对话原本确实位于临时任务区。</li><li>完全退出目标 Codex 窗口后重新打开。</li><li>仍然失败时，通过 App 复制诊断并提交 Issue。</li></ol>
           <div class="article-callout">重新填写 API Key 或接口地址不应该删除历史对话。若修改 Provider 后历史消失，通常是配置解析、目标 Provider 标识或全局状态读取异常，需要日志进一步确认。</div>
+        </section>
+        <section class="article-section" id="faq">
+          <h2>历史同步常见问题</h2>
+          <h3>同步会删除或修改原来的对话吗？</h3><p>不会。工具会向新 Profile 写入独立副本，原 App 和已有 Profile 的会话不会被删除或覆盖。</p>
+          <h3>为什么只看到项目，没看到对话？</h3><p>历史不仅包含项目目录，还依赖会话 JSONL、SQLite 线程数据、索引和全局状态。请确认选择了正确来源和同步范围，并在完全退出目标窗口后重新打开。</p>
+          <h3>可以同时保留多个来源的历史吗？</h3><p>可以。选择多个来源后，相同会话 ID 会避免重复写入。</p>
         </section>
       </article>
     </main>
