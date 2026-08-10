@@ -31,6 +31,7 @@ const api = {
   cancelSubscriptionAuthorization: (sessionId) => ipcRenderer.invoke("subscription-auth:cancel", sessionId),
   createProfile: (input) => ipcRenderer.invoke("profiles:create", input),
   updateProfile: (input) => ipcRenderer.invoke("profiles:update", input),
+  reauthorizeSubscriptionProfile: (input) => ipcRenderer.invoke("profiles:reauthorize-subscription", input),
   deleteProfile: (profileId) => ipcRenderer.invoke("profiles:delete", profileId),
   permanentlyDeleteProfile: (profileId) => ipcRenderer.invoke("profiles:delete-permanently", profileId),
   restoreProfile: (profileId) => ipcRenderer.invoke("profiles:restore", profileId),

@@ -17,6 +17,7 @@ import {
   openProfile,
   permanentlyDeleteProfile,
   refreshActiveProfileLaunchers,
+  reauthorizeSubscriptionProfile,
   restoreProfile,
   restoreConfigBackup,
   testProfileProvider,
@@ -24,7 +25,7 @@ import {
 } from "./profile-service.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { cancelSubscriptionAuthorization, pollSubscriptionAuthorization, startSubscriptionAuthorization } from "./subscription-auth.js";
-import type { AnnouncementItem, AnnouncementPlatform, AnnouncementResult, CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTestInput, ProviderModelsInput, ProviderTestInput, RestoreConfigBackupInput, UpdateDownloadEvent, UpdateProfileInput } from "../shared/types.js";
+import type { AnnouncementItem, AnnouncementPlatform, AnnouncementResult, CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTestInput, ProviderModelsInput, ProviderTestInput, ReauthorizeSubscriptionProfileInput, RestoreConfigBackupInput, UpdateDownloadEvent, UpdateProfileInput } from "../shared/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -231,6 +232,7 @@ function registerIpc(): void {
   });
   ipcMain.handle("profiles:create", (_event, input: CreateProfileInput) => createProfile(input));
   ipcMain.handle("profiles:update", (_event, input: UpdateProfileInput) => updateProfile(input));
+  ipcMain.handle("profiles:reauthorize-subscription", (_event, input: ReauthorizeSubscriptionProfileInput) => reauthorizeSubscriptionProfile(input));
   ipcMain.handle("profiles:delete", (_event, profileId: string) => deleteProfile(profileId));
   ipcMain.handle("profiles:delete-permanently", (_event, profileId: string) => permanentlyDeleteProfile(profileId));
   ipcMain.handle("profiles:restore", (_event, profileId: string) => restoreProfile(profileId));

@@ -37,7 +37,13 @@ const server = http.createServer(async (request, response) => {
     seen.tokenPolls += 1;
 
     if (seen.tokenPolls === 1) {
-      sendJson(response, 409, { error: { code: "authorization_pending" } });
+      sendJson(response, 409, { data: {
+        state: "selection_required",
+        subscriptions: [
+          { id: 22, group_id: 4, group_name: "Codex Standard", expires_at: "2026-09-30T00:00:00.000Z" },
+          { id: 11, group_id: 3, group_name: "Codex Lite", expires_at: "2026-09-15T00:00:00.000Z" }
+        ]
+      } });
       return;
     }
 
@@ -71,6 +77,8 @@ try {
 
   const pending = await auth.pollSubscriptionAuthorization(session.id);
   assert.equal(pending.state, "pending");
+  assert.equal(pending.subscriptions?.length, 2);
+  assert.equal(pending.subscriptions?.[0]?.group_name, "Codex Standard");
   assert.equal(JSON.stringify(pending).includes("sk-subscription-test-secret"), false);
 
   const authorized = await auth.pollSubscriptionAuthorization(session.id);

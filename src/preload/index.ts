@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { CodexApi, CreateProfileInput, UpdateDownloadEvent } from "../shared/types.js";
+import type { CodexApi, CreateProfileInput, ReauthorizeSubscriptionProfileInput, UpdateDownloadEvent } from "../shared/types.js";
 
 const api: CodexApi = {
   getAppInfo: () => ipcRenderer.invoke("app:get-info"),
@@ -32,6 +32,7 @@ const api: CodexApi = {
   cancelSubscriptionAuthorization: (sessionId) => ipcRenderer.invoke("subscription-auth:cancel", sessionId),
   createProfile: (input: CreateProfileInput) => ipcRenderer.invoke("profiles:create", input),
   updateProfile: (input) => ipcRenderer.invoke("profiles:update", input),
+  reauthorizeSubscriptionProfile: (input: ReauthorizeSubscriptionProfileInput) => ipcRenderer.invoke("profiles:reauthorize-subscription", input),
   deleteProfile: (profileId: string) => ipcRenderer.invoke("profiles:delete", profileId),
   permanentlyDeleteProfile: (profileId: string) => ipcRenderer.invoke("profiles:delete-permanently", profileId),
   restoreProfile: (profileId: string) => ipcRenderer.invoke("profiles:restore", profileId),

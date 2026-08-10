@@ -2,7 +2,14 @@ export type ProviderType = "official_openai" | "third_party_responses";
 
 export type ProfileAuthMode = "api_key" | "chatgpt_account" | "subscription";
 
-export type SubscriptionAuthorizationState = "pending" | "payment_required" | "authorized" | "denied" | "expired" | "error";
+export type SubscriptionAuthorizationState = "pending" | "payment_required" | "selection_required" | "authorized" | "denied" | "expired" | "error";
+
+export interface SubscriptionAuthorizationOption {
+  id: number;
+  group_id: number;
+  group_name: string;
+  expires_at: string;
+}
 
 export type ProfileStatus = "active" | "disabled" | "deleted";
 
@@ -192,6 +199,11 @@ export interface UpdateProfileResult {
   launcherPath: string;
 }
 
+export interface ReauthorizeSubscriptionProfileInput {
+  profileId: string;
+  subscriptionAuthorizationSessionId: string;
+}
+
 export interface RestoreConfigBackupInput {
   profileId: string;
   backupPath: string;
@@ -271,6 +283,7 @@ export interface SubscriptionAuthorizationStatus {
   providerName?: string;
   defaultModel?: string;
   subscriptionExpiresAt?: string;
+  subscriptions?: SubscriptionAuthorizationOption[];
   error?: string;
 }
 
@@ -362,6 +375,7 @@ export interface CodexApi {
   cancelSubscriptionAuthorization(sessionId: string): Promise<{ ok: true }>;
   createProfile(input: CreateProfileInput): Promise<CreateProfileResult>;
   updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult>;
+  reauthorizeSubscriptionProfile(input: ReauthorizeSubscriptionProfileInput): Promise<UpdateProfileResult>;
   restoreConfigBackup(input: RestoreConfigBackupInput): Promise<RestoreConfigBackupResult>;
   deleteProfile(profileId: string): Promise<{ ok: true }>;
   permanentlyDeleteProfile(profileId: string): Promise<{ ok: true }>;

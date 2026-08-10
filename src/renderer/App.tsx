@@ -166,6 +166,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     authModeSubscriptionStart: "前往授权",
     authModeSubscriptionPending: "等待授权完成",
     authModeSubscriptionAuthorized: "授权已完成",
+    reauthorizeSubscription: "重新授权订阅",
+    reauthorizingSubscription: "等待重新授权",
+    cancelSubscriptionReauthorization: "取消",
     authModeSubscriptionExpired: "授权已过期，请重新开始。",
     authModeSubscriptionError: "授权暂不可用，请重新开始。",
     authModeAccount: "ChatGPT 账号登录",
@@ -381,6 +384,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     authModeSubscriptionStart: "Continue to authorization",
     authModeSubscriptionPending: "Waiting for authorization",
     authModeSubscriptionAuthorized: "Authorization complete",
+    reauthorizeSubscription: "Reauthorize subscription",
+    reauthorizingSubscription: "Waiting for reauthorization",
+    cancelSubscriptionReauthorization: "Cancel",
     authModeSubscriptionExpired: "Authorization expired. Start again.",
     authModeSubscriptionError: "Authorization is unavailable. Start again.",
     authModeAccount: "ChatGPT account login",
@@ -528,6 +534,11 @@ export function App() {
   const [subscriptionAuthorization, setSubscriptionAuthorization] = useState<SubscriptionAuthorizationSession | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionAuthorizationStatus | null>(null);
   const [isStartingSubscriptionAuthorization, setIsStartingSubscriptionAuthorization] = useState(false);
+  const [subscriptionReauthorization, setSubscriptionReauthorization] = useState<SubscriptionAuthorizationSession | null>(null);
+  const [subscriptionReauthorizationStatus, setSubscriptionReauthorizationStatus] = useState<SubscriptionAuthorizationStatus | null>(null);
+  const [subscriptionReauthorizationProfileId, setSubscriptionReauthorizationProfileId] = useState<string | null>(null);
+  const [isStartingSubscriptionReauthorization, setIsStartingSubscriptionReauthorization] = useState(false);
+  const appliedReauthorizationSessionId = useRef<string | null>(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -670,6 +681,54 @@ export function App() {
 
     return () => window.clearTimeout(timeout);
   }, [form.authMode, subscriptionAuthorization, subscriptionStatus]);
+
+  useEffect(() => {
+    if (!subscriptionReauthorization || !subscriptionReauthorizationStatus || ["authorized", "denied", "expired", "error"].includes(subscriptionReauthorizationStatus.state)) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void window.codexProfileManager.pollSubscriptionAuthorization(subscriptionReauthorization.id)
+        .then(async (status) => {
+          setSubscriptionReauthorizationStatus(status);
+          if (["denied", "expired", "error"].includes(status.state)) {
+            await window.codexProfileManager.cancelSubscriptionAuthorization(subscriptionReauthorization.id).catch(() => ({ ok: true as const }));
+            setSubscriptionReauthorization(null);
+            setSubscriptionReauthorizationStatus(null);
+            setSubscriptionReauthorizationProfileId(null);
+            showToast(status.error || (language === "zh" ? "重新授权未完成，请重试。" : "Reauthorization did not complete. Try again."));
+            return;
+          }
+          const targetProfile = profiles.find((profile) => profile.id === subscriptionReauthorizationProfileId);
+          if (status.state === "authorized" && appliedReauthorizationSessionId.current !== subscriptionReauthorization.id && targetProfile) {
+            appliedReauthorizationSessionId.current = subscriptionReauthorization.id;
+            try {
+              const result = await window.codexProfileManager.reauthorizeSubscriptionProfile({
+                profileId: targetProfile.id,
+                subscriptionAuthorizationSessionId: subscriptionReauthorization.id
+              });
+              await refresh();
+              setSelectedProfileId(result.profile.id);
+              showToast(language === "zh" ? `已更新 ${result.profile.name} 的订阅授权，请重新打开 Profile。` : `Updated ${result.profile.name}'s subscription authorization. Reopen the Profile to apply it.`);
+              setSubscriptionReauthorization(null);
+              setSubscriptionReauthorizationStatus(null);
+              setSubscriptionReauthorizationProfileId(null);
+            } catch (error) {
+              appliedReauthorizationSessionId.current = null;
+              setSubscriptionReauthorizationStatus({ ...status, state: "error", error: error instanceof Error ? error.message : "Subscription reauthorization failed." });
+            }
+          }
+        })
+        .catch((error) => {
+          setSubscriptionReauthorization(null);
+          setSubscriptionReauthorizationStatus(null);
+          setSubscriptionReauthorizationProfileId(null);
+          showToast(error instanceof Error ? error.message : language === "zh" ? "重新授权失败，请重试。" : "Subscription reauthorization failed. Try again.");
+        });
+    }, subscriptionReauthorizationStatus.pollIntervalMs);
+
+    return () => window.clearTimeout(timeout);
+  }, [language, profiles, subscriptionReauthorization, subscriptionReauthorizationProfileId, subscriptionReauthorizationStatus]);
 
   function showToast(nextMessage: string) {
     setToastMessage(nextMessage);
@@ -945,6 +1004,32 @@ export function App() {
     } finally {
       setIsUpdatingProfile(false);
     }
+  }
+
+  async function reauthorizeSelectedSubscription() {
+    if (!selectedProfile || selectedProfile.auth?.mode !== "subscription" || isStartingSubscriptionReauthorization) return;
+    setIsStartingSubscriptionReauthorization(true);
+    setToastMessage(null);
+    try {
+      const session = await window.codexProfileManager.startSubscriptionAuthorization({ deviceName: selectedProfile.name });
+      appliedReauthorizationSessionId.current = null;
+      setSubscriptionReauthorizationProfileId(selectedProfile.id);
+      setSubscriptionReauthorization(session);
+      setSubscriptionReauthorizationStatus({ id: session.id, expiresAt: session.expiresAt, pollIntervalMs: session.pollIntervalMs, state: session.state });
+      await window.codexProfileManager.openExternalUrl(session.authorizationUrl);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : language === "zh" ? "无法开始重新授权。" : "Could not start reauthorization.");
+    } finally {
+      setIsStartingSubscriptionReauthorization(false);
+    }
+  }
+
+  async function cancelSelectedSubscriptionReauthorization() {
+    if (!subscriptionReauthorization) return;
+    await window.codexProfileManager.cancelSubscriptionAuthorization(subscriptionReauthorization.id).catch(() => ({ ok: true as const }));
+    setSubscriptionReauthorization(null);
+    setSubscriptionReauthorizationStatus(null);
+    setSubscriptionReauthorizationProfileId(null);
   }
 
   async function pickLauncherDirectory() {
@@ -1281,6 +1366,18 @@ export function App() {
                   <div>
                     <h4>{t.subscriptionProfileTitle}</h4>
                     <p>{t.subscriptionProfileDesc}</p>
+                    <div className="button-row">
+                      <button className="button secondary compact" disabled={isStartingSubscriptionReauthorization || Boolean(subscriptionReauthorization)} onClick={() => void reauthorizeSelectedSubscription()} type="button">
+                        <RefreshCcw size={14} />
+                        {isStartingSubscriptionReauthorization || subscriptionReauthorization ? t.reauthorizingSubscription : t.reauthorizeSubscription}
+                      </button>
+                      {subscriptionReauthorization ? (
+                        <button className="button secondary compact" onClick={() => void cancelSelectedSubscriptionReauthorization()} type="button">
+                          <X size={14} />
+                          {t.cancelSubscriptionReauthorization}
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ) : (

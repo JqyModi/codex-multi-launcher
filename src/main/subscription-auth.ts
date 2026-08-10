@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type {
   StartSubscriptionAuthorizationInput,
+  SubscriptionAuthorizationOption,
   SubscriptionAuthorizationSession,
   SubscriptionAuthorizationState,
   SubscriptionAuthorizationStatus
@@ -22,6 +23,7 @@ interface PendingAuthorization {
   authorizationUrl: string;
   error?: string;
   authorizedConfig?: AuthorizedSubscriptionConfig;
+  subscriptions?: SubscriptionAuthorizationOption[];
 }
 
 export interface AuthorizedSubscriptionConfig {
@@ -113,6 +115,10 @@ export async function pollSubscriptionAuthorization(localSessionId: string): Pro
   const payload = await parseJson(response);
   const record = unwrapPayload(payload);
   const errorCode = stringValue(record.code) ?? stringValue(record.error_code) ?? nestedErrorCode(record.error);
+  const availableSubscriptions = parseSubscriptionOptions(record.subscriptions);
+  if (availableSubscriptions.length > 0) {
+    authorization.subscriptions = availableSubscriptions;
+  }
 
   if (response.ok) {
     try {
@@ -175,10 +181,24 @@ function publicStatus(id: string, authorization: PendingAuthorization): Subscrip
     ...(authorization.authorizedConfig ? {
       defaultModel: authorization.authorizedConfig.defaultModel,
       providerName: authorization.authorizedConfig.providerName,
-      subscriptionExpiresAt: authorization.authorizedConfig.expiresAt
+      subscriptionExpiresAt: authorization.authorizedConfig.expiresAt,
     } : {}),
+    ...(authorization.subscriptions ? { subscriptions: authorization.subscriptions } : {}),
     ...(authorization.error ? { error: authorization.error } : {})
   };
+}
+
+function parseSubscriptionOptions(value: unknown): SubscriptionAuthorizationOption[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+    const id = positiveNumber(item.id, 0);
+    const groupId = positiveNumber(item.group_id, 0);
+    const groupName = stringValue(item.group_name);
+    const expiresAt = stringValue(item.expires_at);
+    if (!id || !groupId || !groupName || !expiresAt) return [];
+    return [{ id, group_id: groupId, group_name: groupName, expires_at: expiresAt }];
+  });
 }
 
 function subscriptionServiceUrl(): URL {

@@ -13,7 +13,7 @@ import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
 import { getRuntimeStatus as inspectRuntimeStatus } from "./runtime.js";
 import { cancelSubscriptionAuthorization, getAuthorizedSubscriptionConfig } from "./subscription-auth.js";
-import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderModelsInput, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderModelsResult, ProviderTestResult, RestoreConfigBackupInput, RestoreConfigBackupResult, SessionHistorySyncResolvedSource, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
+import type { ConfigBackupInfo, CreateProfileInput, CreateProfileResult, LauncherResult, ManagedProfile, ProfileProviderModelsInput, ProfileProviderTestInput, ProfileRuntimeInfo, ProviderModelsResult, ProviderTestResult, ReauthorizeSubscriptionProfileInput, RestoreConfigBackupInput, RestoreConfigBackupResult, SessionHistorySyncResolvedSource, UpdateProfileInput, UpdateProfileResult } from "../shared/types.js";
 
 export { listProfiles };
 
@@ -197,6 +197,26 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
     configPath,
     launcherPath: launcher.launcherPath
   };
+}
+
+export async function reauthorizeSubscriptionProfile(input: ReauthorizeSubscriptionProfileInput): Promise<UpdateProfileResult> {
+  const profile = await mustFindProfile(input.profileId);
+  if ((profile.auth?.mode ?? "api_key") !== "subscription") {
+    throw new Error("Only subscription profiles can be reauthorized.");
+  }
+
+  const subscription = getAuthorizedSubscriptionConfig(input.subscriptionAuthorizationSessionId);
+  const result = await updateProfile({
+    profileId: profile.id,
+    provider: {
+      displayName: subscription.providerName,
+      baseUrl: subscription.baseUrl,
+      model: subscription.defaultModel,
+      apiKey: subscription.accessToken
+    }
+  });
+  cancelSubscriptionAuthorization(input.subscriptionAuthorizationSessionId);
+  return result;
 }
 
 export async function testProfileProvider(input: ProfileProviderTestInput): Promise<ProviderTestResult> {
