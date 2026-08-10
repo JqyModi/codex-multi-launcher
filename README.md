@@ -11,6 +11,7 @@
 - [Product website](https://jqymodi.github.io/codex-multi-launcher/)
 - [Download the latest release](https://github.com/JqyModi/codex-multi-launcher/releases/latest)
 - [User guide](https://jqymodi.github.io/codex-multi-launcher/manual.html)
+- [Subscription service guide](https://jqymodi.github.io/codex-multi-launcher/subscription.html)
 - [Report an issue](https://github.com/JqyModi/codex-multi-launcher/issues)
 
 ![Codex Multi Launcher dashboard](https://raw.githubusercontent.com/JqyModi/codex-multi-launcher/main/user-manual-assets/01-dashboard.png)
@@ -59,6 +60,10 @@ Creates an isolated app window where you can sign in with a ChatGPT account. Thi
 ### API key
 
 Supports the official OpenAI API and third-party endpoints that implement the Responses API. Compatibility depends on the provider's actual API behavior; a Chat Completions-only endpoint may not work with Codex Desktop.
+
+### Subscription service
+
+Creates a ready-to-use profile after the user completes browser-based registration, purchase, and device authorization. No Base URL or API key needs to be entered manually. See the [step-by-step guide](https://jqymodi.github.io/codex-multi-launcher/subscription.html).
 
 ## Conversation History Sync
 

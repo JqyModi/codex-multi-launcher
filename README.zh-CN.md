@@ -11,6 +11,7 @@
 - [产品官网](https://jqymodi.github.io/codex-multi-launcher/)
 - [下载最新版](https://github.com/JqyModi/codex-multi-launcher/releases/latest)
 - [查看用户手册](https://jqymodi.github.io/codex-multi-launcher/manual.html)
+- [订阅服务图文教程](https://jqymodi.github.io/codex-multi-launcher/subscription.html)
 - [反馈问题](https://github.com/JqyModi/codex-multi-launcher/issues)
 
 ![Codex 多开助手工作台](https://raw.githubusercontent.com/JqyModi/codex-multi-launcher/main/user-manual-assets/01-dashboard.png)
@@ -30,7 +31,7 @@ Codex 多开助手将这些操作整理成了可视化创建流程。
 ## 主要功能
 
 - 创建多个相互隔离的 Codex / ChatGPT 桌面配置。
-- 每个配置可选择 ChatGPT 账号登录或 API Key 模式。
+- 每个配置可选择订阅服务、ChatGPT 账号登录或 API Key 模式。
 - 独立配置 API Key、接口地址、模型和服务商名称。
 - 按需同步项目对话、临时任务对话或全部历史对话。
 - 支持从源 App 和已有多开配置中选择历史来源。
@@ -50,7 +51,11 @@ Codex 多开助手将这些操作整理成了可视化创建流程。
 
 请从 [Latest Release](https://github.com/JqyModi/codex-multi-launcher/releases/latest) 下载适合当前设备的版本。
 
-## 两种登录方式
+## 三种使用方式
+
+### 订阅服务
+
+在浏览器完成注册、购买和设备授权后，自动创建可直接使用的 Profile，无需手动填写接口地址或 API Key。完整流程见[订阅服务图文教程](https://jqymodi.github.io/codex-multi-launcher/subscription.html)。
 
 ### ChatGPT 账号登录
 
@@ -101,6 +106,7 @@ npm run package:win:x64
 - [配置结构](docs/CONFIG_SCHEMA.md)
 - [第三方接口兼容说明](docs/PROVIDER_COMPATIBILITY.md)
 - [历史对话迁移说明](docs/session-history-migration.zh-CN.md)
+- [订阅服务图文教程](docs/subscription-service-guide.zh-CN.md)
 - [发布检查清单](docs/RELEASE_CHECKLIST.md)
 
 ## 安全与隐私

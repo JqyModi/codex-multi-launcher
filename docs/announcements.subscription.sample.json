@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "subscription-service-launch-VERSION",
+      "enabled": true,
+      "priority": 120,
+      "placement": "dashboard_top",
+      "type": "promo",
+      "label": "新功能",
+      "title": "订阅服务已上线：无需填写 API Key，授权后直接使用",
+      "description": "创建 Profile 时选择“订阅服务”，完成登录、购买和授权后即可自动接入。支付宝、微信支付和国际银行卡可用，点击查看完整图文教程。",
+      "ctaText": "查看使用教程",
+      "ctaUrl": "https://jqymodi.github.io/codex-multi-launcher/subscription.html",
+      "startAt": "RELEASE_START_TIME",
+      "endAt": "RELEASE_END_TIME",
+      "platforms": ["darwin", "win32"],
+      "minAppVersion": "RELEASE_VERSION",
+      "maxAppVersion": null,
+      "dismissible": true
+    }
+  ]
+}

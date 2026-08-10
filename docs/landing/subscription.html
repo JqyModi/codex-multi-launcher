@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Codex 多开助手订阅服务图文教程：注册、选择套餐、支付宝微信或银行卡支付、自动授权并创建 Codex Profile。" />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/subscription.html" />
+    <title>订阅服务使用教程 | Codex 多开助手</title>
+    <link rel="icon" href="assets/app-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="manual-page">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="返回 Codex 多开助手首页">
+        <img src="assets/app-icon.png" alt="" />
+        <span>Codex 多开助手</span>
+      </a>
+      <nav aria-label="教程导航">
+        <a href="index.html">首页</a>
+        <a href="manual.html">完整手册</a>
+        <a class="nav-button" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">下载最新版</a>
+      </nav>
+    </header>
+
+    <main class="manual-layout">
+      <aside class="manual-toc" aria-label="教程目录">
+        <strong>订阅服务教程</strong>
+        <a href="#overview">开始前</a>
+        <a href="#create">创建配置</a>
+        <a href="#authorize">前往授权</a>
+        <a href="#account">注册或登录</a>
+        <a href="#payment">选择套餐与支付</a>
+        <a href="#finish">生成并打开</a>
+        <a href="#faq">常见问题</a>
+        <a href="#security">安全说明</a>
+      </aside>
+
+      <article class="manual-content">
+        <section id="overview" class="manual-hero">
+          <p class="eyebrow">新手图文教程</p>
+          <h1>不用填写 API Key，几分钟创建可用的 Codex Profile。</h1>
+          <p>订阅服务会把注册、套餐购买和设备授权连成一条流程。完成后，接口地址、模型和访问凭据会自动写入当前 Profile，无需手动配置。</p>
+          <div class="manual-note">
+            <strong>开始前请确认</strong>
+            <ul>
+              <li>已安装最新版 Codex / ChatGPT 桌面 App。</li>
+              <li>Codex 多开助手已更新到包含“订阅服务”的版本。</li>
+              <li>已有账号通常不到 1 分钟；新用户一般需要 2–5 分钟。</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="create" class="manual-section">
+          <h2>1. 创建新配置</h2>
+          <p>点击左侧配置列表旁的 <strong>+</strong>，填写容易识别的名称。建议保持“沿用当前 Codex 设置”开启；是否同步已有对话可按需要选择。</p>
+          <figure>
+            <img src="subscription-assets/01-create-profile.png" alt="Codex 多开助手创建配置页面，填写名称、选择颜色和继承设置。" />
+            <figcaption>名称和颜色只用于区分不同 Profile，不影响套餐和额度。</figcaption>
+          </figure>
+        </section>
+
+        <section id="authorize" class="manual-section">
+          <h2>2. 选择“订阅服务”并前往授权</h2>
+          <p>在“使用方式”中选择 <strong>订阅服务</strong>。此模式不需要填写 Base URL、模型或 API Key。</p>
+          <figure>
+            <img src="subscription-assets/02-select-subscription.png" alt="在三种使用方式中选择订阅服务。" />
+            <figcaption>点击“前往授权”，系统会打开浏览器并保留当前创建进度。</figcaption>
+          </figure>
+          <figure>
+            <img src="subscription-assets/03-waiting-authorization.png" alt="Codex 多开助手等待订阅服务授权完成。" />
+            <figcaption>授权期间请保持 App 运行。会话有效期为 30 分钟，超时后重新发起即可。</figcaption>
+          </figure>
+        </section>
+
+        <section id="account" class="manual-section">
+          <h2>3. 注册或登录</h2>
+          <p>第一次使用时填写邮箱和密码，并完成邮件验证码校验。注册成功后会自动进入当前授权对应的套餐页面，不需要返回 Dashboard 再找入口。</p>
+          <figure>
+            <img src="subscription-assets/04-register.png" alt="订阅服务创建账户页面。" />
+            <figcaption>已有账号直接登录；已有有效订阅时会直接授权，不会要求重复购买。</figcaption>
+          </figure>
+        </section>
+
+        <section id="payment" class="manual-section">
+          <h2>4. 选择套餐并完成支付</h2>
+          <p>根据使用强度选择套餐，价格、日/周/月额度和有效期以购买页实时显示为准。目前可用支付方式：</p>
+          <ul>
+            <li><strong>支付宝</strong>：人民币结算。</li>
+            <li><strong>微信支付</strong>：人民币结算。</li>
+            <li><strong>国际银行卡</strong>：美元结算，支持支付页实际显示的银行卡和 Link。</li>
+          </ul>
+          <div class="manual-note">
+            支付后请等待页面自动确认订单并恢复授权，不要重复付款。网页跳转不会被直接视为支付成功，只有服务端确认到账后才会开通套餐。
+          </div>
+        </section>
+
+        <section id="finish" class="manual-section">
+          <h2>5. 回到 App，生成并打开</h2>
+          <p>支付和授权完成后，Codex 多开助手会自动恢复到前台。看到“授权已完成”后继续向导并点击“生成”，随后在左侧选择新 Profile 并点击“打开”。</p>
+          <figure>
+            <img src="subscription-assets/05-profile-ready.png" alt="已创建的订阅服务 Profile 详情。" />
+            <figcaption>订阅 Profile 的接口、模型和访问凭据由授权服务管理，App 中保持只读，避免误改后无法使用。</figcaption>
+          </figure>
+        </section>
+
+        <section id="faq" class="manual-section">
+          <h2>常见问题</h2>
+          <details open>
+            <summary>已付款，但页面一直显示处理中</summary>
+            <p>先等待 1–2 分钟，不要重复付款。系统同时使用支付回调和主动查单恢复订单；超过 5 分钟仍未完成，请记录订单号和支付时间后联系支持。</p>
+          </details>
+          <details>
+            <summary>支付成功后没有自动回到 App</summary>
+            <p>切回 Codex 多开助手查看是否已显示“授权已完成”。如果仍在等待，回到原授权页刷新一次；会话过期则在 App 重新发起，已经生效的订阅不会要求再次付款。</p>
+          </details>
+          <details>
+            <summary>提示额度不足或请求过快</summary>
+            <p>额度不足表示日、周或月额度之一已经用完；请求过快通常表示达到 RPM 限制。RPM 是每分钟请求次数，不等于同时打开窗口的数量。</p>
+          </details>
+          <details>
+            <summary>更换电脑后还能继续用吗</summary>
+            <p>可以。在新设备使用相同账号重新授权即可。每台设备会获得独立凭据，但共同受账号当前订阅额度约束；旧设备可在服务中心的 API 密钥页面按设备密钥名称停用。</p>
+          </details>
+        </section>
+
+        <section id="security" class="manual-section">
+          <h2>安全与隐私</h2>
+          <ul>
+            <li>桌面端不会获得管理员凭据、上游主 Key 或支付密钥。</li>
+            <li>设备凭据通过一次性授权兑换并加密保存在本机，不写入启动脚本和诊断信息。</li>
+            <li>支付由对应支付平台处理，Codex 多开助手不保存银行卡、支付宝或微信支付资料。</li>
+            <li>订阅到期、退款或设备授权被撤销后，对应 Profile 将不能继续请求服务。</li>
+          </ul>
+          <p>仍有问题？请前往 <a href="https://github.com/JqyModi/codex-multi-launcher/issues"><strong>GitHub Issues</strong></a>，附上 App 版本、系统版本、发生步骤和错误截图，不要公开密码或 API Key。</p>
+        </section>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <span>Codex 多开助手</span>
+      <a href="index.html">返回首页</a>
+      <a href="manual.html">完整用户手册</a>
+      <a href="https://github.com/JqyModi/codex-multi-launcher/issues">问题反馈</a>
+    </footer>
+  </body>
+</html>
