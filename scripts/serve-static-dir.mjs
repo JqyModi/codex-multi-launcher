@@ -6,9 +6,18 @@ const root = path.resolve(process.argv[2] ?? ".");
 const port = Number.parseInt(process.argv[3] ?? "7421", 10);
 
 const contentTypes = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".gif", "image/gif"],
+  [".ico", "image/x-icon"],
+  [".jpeg", "image/jpeg"],
+  [".jpg", "image/jpeg"],
   [".json", "application/json; charset=utf-8"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".png", "image/png"],
+  [".svg", "image/svg+xml"],
   [".txt", "text/plain; charset=utf-8"],
-  [".html", "text/html; charset=utf-8"]
+  [".html", "text/html; charset=utf-8"],
+  [".webp", "image/webp"]
 ]);
 
 if (!existsSync(root) || !statSync(root).isDirectory()) {
