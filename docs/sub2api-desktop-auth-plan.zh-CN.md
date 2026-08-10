@@ -129,9 +129,9 @@ created_at
 
 - 名称：`Codex Multi Launcher - <设备名>`
 - 分组：用户当前订阅对应分组。
-- 有效期：不超过订阅到期时间。
+- 有效期：不设置独立到期时间；每次请求由服务端根据 Key 绑定的用户和分组实时检查有效订阅。
 - 总额度：由订阅分组控制，除非业务需要再设置 Key 限额。
-- 状态：订阅失效或设备撤销时变为 inactive。
+- 状态：设备撤销时变为 inactive；订阅到期或退款由请求期的订阅校验直接拒绝，不重复修改 Key 状态。
 
 ### 4.3 授权后配置返回
 
@@ -143,7 +143,6 @@ created_at
   "access_token": "user-device-token",
   "provider_name": "订阅服务",
   "default_model": "gpt-5-codex",
-  "expires_at": "2026-08-31T00:00:00Z",
   "subscription_id": "masked-id"
 }
 ```
@@ -434,7 +433,7 @@ POST /api/v1/desktop-auth/devices/:id/revoke
 - [x] 授权会话 API 客户端、PKCE 和内存状态机。
 - [x] 浏览器授权后的轮询回退机制。
 - [x] 授权配置接入现有 Profile 创建和本地加密存储。
-- [ ] 订阅授权状态和重新授权。
+- [x] 订阅授权状态、多套餐选择和原 Profile 重新授权。
 - [x] Provider、Profile 创建和 Token 不经 Renderer 暴露的自动化测试。
 - [ ] Mac 和 Windows 封闭测试。
 
