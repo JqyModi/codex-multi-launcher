@@ -82,7 +82,7 @@ App 显示 `授权已完成` 后，继续完成向导并点击 `生成`。生成
 
 ### 已付款，但页面长时间显示处理中
 
-请先等待 1–2 分钟，不要重复付款。系统会通过支付回调和主动查单两种方式恢复订单。超过 5 分钟仍未完成时，请提供订单号和支付时间联系支持；不要公开银行卡、支付宝或微信支付凭据。
+请先等待 1–2 分钟，不要重复付款。系统会通过支付回调和主动查单两种方式恢复订单。超过 5 分钟仍未完成时，请将注册邮箱、订单号和支付时间发送到 `jqy.tieniu@gmail.com`；不要公开银行卡、支付宝或微信支付凭据。
 
 ### 支付成功后没有回到 App
 
@@ -104,4 +104,6 @@ App 显示 `授权已完成` 后，继续完成向导并点击 `生成`。生成
 - App 诊断信息和启动脚本不包含明文访问凭据。
 - 支付由对应支付平台处理，Codex 多开助手不保存银行卡、支付宝或微信支付信息。
 
-遇到问题请前往 [GitHub Issues](https://github.com/JqyModi/codex-multi-launcher/issues)。反馈时请附上 App 版本、macOS/Windows 版本、发生在哪一步以及错误截图。
+技术问题请前往 [GitHub Issues](https://github.com/JqyModi/codex-multi-launcher/issues)。支付、退款或包含个人资料的问题请发送到 `jqy.tieniu@gmail.com`，不要在公开 Issue 中附订单号或付款凭证。
+
+购买前请阅读：[服务条款](https://sub2api.minai.eu.org/legal/terms)、[隐私政策](https://sub2api.minai.eu.org/legal/privacy-policy)和[退款规则](https://sub2api.minai.eu.org/legal/refund-policy)。
