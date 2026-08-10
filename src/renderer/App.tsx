@@ -699,12 +699,12 @@ export function App() {
             showToast(status.error || (language === "zh" ? "重新授权未完成，请重试。" : "Reauthorization did not complete. Try again."));
             return;
           }
-          const targetProfile = profiles.find((profile) => profile.id === subscriptionReauthorizationProfileId);
-          if (status.state === "authorized" && appliedReauthorizationSessionId.current !== subscriptionReauthorization.id && targetProfile) {
+          const targetProfileId = subscriptionReauthorizationProfileId;
+          if (status.state === "authorized" && appliedReauthorizationSessionId.current !== subscriptionReauthorization.id && targetProfileId) {
             appliedReauthorizationSessionId.current = subscriptionReauthorization.id;
             try {
               const result = await window.codexProfileManager.reauthorizeSubscriptionProfile({
-                profileId: targetProfile.id,
+                profileId: targetProfileId,
                 subscriptionAuthorizationSessionId: subscriptionReauthorization.id
               });
               await refresh();
@@ -715,7 +715,11 @@ export function App() {
               setSubscriptionReauthorizationProfileId(null);
             } catch (error) {
               appliedReauthorizationSessionId.current = null;
-              setSubscriptionReauthorizationStatus({ ...status, state: "error", error: error instanceof Error ? error.message : "Subscription reauthorization failed." });
+              await window.codexProfileManager.cancelSubscriptionAuthorization(subscriptionReauthorization.id).catch(() => ({ ok: true as const }));
+              setSubscriptionReauthorization(null);
+              setSubscriptionReauthorizationStatus(null);
+              setSubscriptionReauthorizationProfileId(null);
+              showToast(error instanceof Error ? error.message : language === "zh" ? "重新授权失败，请重试。" : "Subscription reauthorization failed. Try again.");
             }
           }
         })
@@ -728,7 +732,7 @@ export function App() {
     }, subscriptionReauthorizationStatus.pollIntervalMs);
 
     return () => window.clearTimeout(timeout);
-  }, [language, profiles, subscriptionReauthorization, subscriptionReauthorizationProfileId, subscriptionReauthorizationStatus]);
+  }, [language, subscriptionReauthorization, subscriptionReauthorizationProfileId, subscriptionReauthorizationStatus]);
 
   function showToast(nextMessage: string) {
     setToastMessage(nextMessage);

@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 
 const testRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-subscription-reauth-"));
+const originalCwd = process.cwd();
 const sessions = new Map();
 let sessionNumber = 0;
 
@@ -51,6 +52,7 @@ const address = server.address();
 assert.ok(address && typeof address === "object");
 process.env.CODEX_PROFILE_MANAGER_HOME_OVERRIDE = testRoot;
 process.env.CODEX_PROFILE_MANAGER_SUBSCRIPTION_SERVICE_URL = `http://127.0.0.1:${address.port}`;
+process.chdir(path.parse(originalCwd).root);
 
 try {
   const auth = await import("../dist-electron/main/subscription-auth.js");
@@ -93,6 +95,7 @@ try {
   assert.equal(registry.includes("sk-replacement-subscription-key"), false);
   console.log("Subscription profile reauthorization verification passed.");
 } finally {
+  process.chdir(originalCwd);
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   await fs.rm(testRoot, { force: true, recursive: true });
 }
