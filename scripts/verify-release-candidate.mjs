@@ -10,13 +10,23 @@ const packageJson = JSON.parse(await fs.readFile(path.join(projectDir, "package.
 const version = packageJson.version;
 const macArch = process.env.RELEASE_MAC_ARCH || "x64";
 const winArch = process.env.RELEASE_WIN_ARCH || "x64";
+const releasePlatform = process.env.RELEASE_PLATFORM || "all";
+const verifyMac = releasePlatform === "all" || releasePlatform === "mac";
+const verifyWindows = releasePlatform === "all" || releasePlatform === "windows";
+
+if (!verifyMac && !verifyWindows) {
+  throw new Error(`Unsupported RELEASE_PLATFORM: ${releasePlatform}`);
+}
 
 const requiredArtifacts = [
-  `Codex-Profile-Manager-Setup-${version}-${winArch}.exe`,
-  `Codex-Profile-Manager-Portable-${version}-${winArch}.exe`,
-  `codex-profile-manager-${version}-${macArch}-mac.zip`,
-  "latest.yml",
-  "latest-mac.yml",
+  ...(verifyWindows
+    ? [
+        `Codex-Profile-Manager-Setup-${version}-${winArch}.exe`,
+        `Codex-Profile-Manager-Portable-${version}-${winArch}.exe`,
+        "latest.yml",
+      ]
+    : []),
+  ...(verifyMac ? [`codex-profile-manager-${version}-${macArch}-mac.zip`, "latest-mac.yml"] : []),
 ];
 
 const forbiddenArchivePath = /(^|\/)(?:\.env(?:\.|$)|logs?(?:\/|$)|[^/]*\.log$|[^/]*\.(?:key|p8|p12|pem)$|(?:credentials?|secrets?)\.(?:json|ya?ml)$)/i;
@@ -72,22 +82,32 @@ for (const artifact of requiredArtifacts) {
   await assertFile(path.join(distDir, artifact));
 }
 
-for (const metadataName of ["latest.yml", "latest-mac.yml"]) {
+const metadataNames = [
+  ...(verifyWindows ? ["latest.yml"] : []),
+  ...(verifyMac ? ["latest-mac.yml"] : []),
+];
+for (const metadataName of metadataNames) {
   const metadata = await fs.readFile(path.join(distDir, metadataName), "utf8");
   if (!metadata.includes(`version: ${version}`)) {
     throw new Error(`${metadataName} does not declare version ${version}`);
   }
 }
 
-const macAsar = await findMacAsar();
-const winAsar = path.join(distDir, "win-unpacked", "resources", "app.asar");
-const macFileCount = await verifyAsar(macAsar, "macOS app.asar");
-const winFileCount = await verifyAsar(winAsar, "Windows app.asar");
+let macFileCount = null;
+let winFileCount = null;
+if (verifyMac) {
+  const macAsar = await findMacAsar();
+  macFileCount = await verifyAsar(macAsar, "macOS app.asar");
+}
+if (verifyWindows) {
+  const winAsar = path.join(distDir, "win-unpacked", "resources", "app.asar");
+  winFileCount = await verifyAsar(winAsar, "Windows app.asar");
+}
 
 const checksumNames = [
   ...requiredArtifacts,
-  `Codex-Profile-Manager-Setup-${version}-${winArch}.exe.blockmap`,
-  `codex-profile-manager-${version}-${macArch}-mac.zip.blockmap`,
+  ...(verifyWindows ? [`Codex-Profile-Manager-Setup-${version}-${winArch}.exe.blockmap`] : []),
+  ...(verifyMac ? [`codex-profile-manager-${version}-${macArch}-mac.zip.blockmap`] : []),
 ];
 const checksumLines = [];
 for (const name of checksumNames) {
@@ -100,6 +120,10 @@ const checksumFile = path.join(distDir, `SHA256SUMS-v${version}.txt`);
 await fs.writeFile(checksumFile, `${checksumLines.join("\n")}\n`, "utf8");
 
 console.log(`Release candidate verification passed for v${version}.`);
-console.log(`macOS asar files: ${macFileCount}`);
-console.log(`Windows asar files: ${winFileCount}`);
+if (macFileCount !== null) {
+  console.log(`macOS asar files: ${macFileCount}`);
+}
+if (winFileCount !== null) {
+  console.log(`Windows asar files: ${winFileCount}`);
+}
 console.log(`Checksums: ${checksumFile}`);

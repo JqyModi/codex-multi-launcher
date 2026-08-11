@@ -1,0 +1,90 @@
+name: Subscription release candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - jqy/sub2api-desktop-auth
+    paths:
+      - ".github/workflows/subscription-release-candidate.yml"
+      - "assets/**"
+      - "config/**"
+      - "scripts/**"
+      - "src/**"
+      - "electron-builder.yml"
+      - "package.json"
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    name: Windows x64 packaged app
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache Electron downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install Electron runtime
+        run: node node_modules/electron/install.js
+
+      - name: Run subscription and Windows checks
+        shell: pwsh
+        run: |
+          npm run typecheck
+          npm run verify:subscription-auth
+          npm run verify:subscription-profile
+          npm run verify:subscription-reauth
+          npm run verify:e2e
+          npm run verify:paths
+          npm run verify:win-launcher
+          npm run verify:win-inheritance
+
+      - name: Build Windows installer and portable app
+        run: npm run package:win:x64
+
+      - name: Audit Windows release candidate
+        shell: pwsh
+        run: |
+          $env:RELEASE_PLATFORM = "windows"
+          npm run verify:release-candidate
+
+      - name: Launch packaged app and verify visible window
+        shell: pwsh
+        run: ./scripts/verify-windows-packaged-app.ps1
+
+      - name: Upload Windows evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-profile-manager-v0.1.9-windows-x64
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            dist-app/Codex-Profile-Manager-Setup-0.1.9-x64.exe
+            dist-app/Codex-Profile-Manager-Portable-0.1.9-x64.exe
+            dist-app/latest.yml
+            dist-app/SHA256SUMS-v0.1.9.txt
+            ${{ runner.temp }}/codex-profile-manager-windows.png
