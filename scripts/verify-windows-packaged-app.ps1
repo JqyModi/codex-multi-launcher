@@ -54,6 +54,14 @@ try {
   Write-Host "PID=$($process.Id)"
   Write-Host "TITLE=$($process.MainWindowTitle)"
   Write-Host "SCREENSHOT=$ScreenshotPath"
+
+  $screenshotBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($ScreenshotPath))
+  Write-Host "SCREENSHOT_BASE64_BEGIN"
+  for ($offset = 0; $offset -lt $screenshotBase64.Length; $offset += 6000) {
+    $length = [Math]::Min(6000, $screenshotBase64.Length - $offset)
+    Write-Host "SCREENSHOT_BASE64:$($screenshotBase64.Substring($offset, $length))"
+  }
+  Write-Host "SCREENSHOT_BASE64_END"
 } finally {
   if ($null -ne $process -and -not $process.HasExited) {
     & taskkill.exe /PID $process.Id /T /F | Out-Null
