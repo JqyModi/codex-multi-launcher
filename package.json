@@ -37,6 +37,7 @@
     "verify:subscription-auth": "npm run build:main && node scripts/verify-subscription-auth.mjs",
     "verify:subscription-profile": "npm run build:main && node scripts/verify-subscription-profile-create.mjs",
     "verify:subscription-reauth": "npm run build:main && node scripts/verify-subscription-reauthorization.mjs",
+    "verify:release-candidate": "node scripts/verify-release-candidate.mjs",
     "verify:e2e": "npm run build && node scripts/verify-profile-generation.mjs",
     "verify:update-cdp": "node scripts/run-update-cdp-test.mjs"
   },
@@ -57,7 +58,7 @@
     "electron-builder": "26.8.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
-    "wait-on": "^9.0.3"
+    "wait-on": "9.0.3"
   },
   "author": "Modi"
 }
