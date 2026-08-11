@@ -61,6 +61,8 @@ jobs:
           npm run verify:paths
           npm run verify:win-launcher
           npm run verify:win-inheritance
+          npm run verify:win-profile-create
+          npm run verify:win-session-sync
 
       - name: Build Windows installer and portable app
         run: npm run package:win:x64
