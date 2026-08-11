@@ -19,7 +19,7 @@
     "package:mac:x64:dir": "npm run build:icon && npm run build && electron-builder --mac dir --x64 --config electron-builder.yml",
     "package:mac:universal": "npm run build:icon && npm run build && electron-builder --mac zip dir --universal --config electron-builder.yml",
     "package:win": "npm run package:win:x64",
-    "package:win:x64": "npm run build && electron-builder --win nsis portable --x64 --config electron-builder.yml",
+    "package:win:x64": "npm run build && electron-builder --win nsis portable --x64 --config electron-builder.yml --publish never",
     "package:win:x64:dir": "npm run build && electron-builder --win dir --x64 --config electron-builder.yml",
     "package:win:x64:installer": "npm run build && electron-builder --win nsis --x64 --config electron-builder.yml",
     "package:win:x64:portable": "npm run build && electron-builder --win portable --x64 --config electron-builder.yml",
