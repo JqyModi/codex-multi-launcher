@@ -68,6 +68,13 @@ GitHub Actions 已在真实 Windows runner 对当前候选提交完成同一套�
 
 完整清单位于构建目录的 `SHA256SUMS-v0.1.9.txt`。候选产物重新构建后必须重新运行 `npm run verify:release-candidate`，不能沿用旧哈希。
 
+### macOS x64 本机功能回归
+
+- 在 Intel Mac 上使用隔离的 Profile 管理目录和 Electron 用户数据目录启动 `dist-app/mac/Codex 多开助手.app`。
+- 主窗口标题为 `Codex Profile Manager`，空白新用户工作台渲染完整，无白屏、错误弹窗、布局重叠或异常退出。
+- 主进程和 Renderer/GPU/Network 子进程持续存活约 4 分钟后由验收进程主动关闭。
+- `codesign` 显示当前候选仍为 ad-hoc 签名、无 TeamIdentifier；该结果只证明本机功能回归，不满足正式分发签名门槛。
+
 ## 全新用户真实验收
 
 ### 测试身份
