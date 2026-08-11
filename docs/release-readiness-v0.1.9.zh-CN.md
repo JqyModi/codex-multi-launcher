@@ -9,7 +9,7 @@
 | 项目 | 基线 |
 | --- | --- |
 | 桌面端分支 | `jqy/sub2api-desktop-auth` |
-| 桌面端候选源码 | `d35e472` |
+| 桌面端候选源码 | `05e511f` |
 | Sub2API 分支 | `jqy/desktop-auth` |
 | Sub2API 生产源码 | `2cd3cb5` |
 | 桌面版本 | `0.1.9` |
@@ -44,6 +44,8 @@ npm run verify:e2e
 npm run verify:paths
 npm run verify:win-launcher
 npm run verify:win-inheritance
+npm run verify:win-profile-create
+npm run verify:win-session-sync
 npm run verify:release-candidate
 ```
 
@@ -53,6 +55,8 @@ npm run verify:release-candidate
 - 两个平台 `app.asar` 文件数量均为 4,276。
 - 未包含 `.env`、日志、私钥、证书或凭据配置文件。
 - `latest.yml` 与 `latest-mac.yml` 均指向 `0.1.9`。
+
+GitHub Actions 已在真实 Windows runner 完成同一套验证：[Run 31482847255](https://github.com/JqyModi/codex-multi-launcher/actions/runs/31482847255)。其中包括安装版/便携版构建、Windows Profile 创建与清理、线程历史同步、可见主窗口烟测和截图上传；烟测日志确认窗口标题为 `Codex Profile Manager`，进程在窗口出现后继续存活。
 
 ### 本地候选产物
 
@@ -120,7 +124,7 @@ npm run verify:release-candidate
 | --- | --- | --- |
 | macOS ARM64 签名与公证 | 未完成 | 使用 Developer ID Application 和 App Store Connect API Key 构建，完成 notarization、stapling 和 Gatekeeper 冷启动 |
 | macOS 当前候选 | 仅 x64、未签名 | 仅用于本机功能验收，不能作为正式公开附件 |
-| Windows 实机回归 | 未完成 | 在 Windows x64 上分别运行安装版和便携版，完成启动、授权、Profile 创建和首条对话 |
+| Windows 官方 Codex 集成回归 | 部分完成 | Windows runner 已完成安装版/便携版、Profile 创建、线程同步和可见窗口验证；仍需在安装官方 Codex 的 Windows/PD 环境完成授权、打开源 App 和首条对话 |
 | 全新用户真实支付 | 未完成 | 付款人确认金额后完成一次真实支付，并执行续期/换套餐/退款验证 |
 | 公告正式下发 | 未完成 | Release 附件和教程上线后，再启用旧版升级公告与新版教程公告 |
 | 正式 Release | 未完成 | 所有硬门槛通过后创建 Release，不得用本地未签名 macOS 包替代 |
