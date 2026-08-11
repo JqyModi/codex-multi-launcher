@@ -108,6 +108,15 @@ npm run acceptance:subscription:production -- \
 10. 在 Sub2API 后台确认订单、订阅和使用记录属于同一测试用户与套餐。
 11. 重启 App，再次打开 Profile，确认无需重新授权即可继续对话。
 
+### 生产验收结果（2026-08-11）
+
+- 全新邮箱完成注册、验证码校验和真实套餐支付，支付后订阅状态为有效。
+- 已购账号重新发起桌面授权时未要求重复购买，PKCE 兑换成功并自动创建订阅 Profile。
+- 生产 Profile 默认模型为 `gpt-5.5`，`/v1/models` 返回 3 个模型。
+- 最小 Responses 请求返回 HTTP 200；SSE 验收收到 11 个事件、1 个完成事件和 3 个函数调用相关事件。
+- Sub2API 用户端记录到 2 次真实请求、8.85K Token 和约 `$0.0276` 标准用量，套餐日/周/月额度同步扣减。
+- 通过正式 `openProfile` 路径启动 `/Applications/ChatGPT.app` 成功，独立 `CODEX_HOME`、`user-data-dir` 和订阅凭据均已注入；官方 App 首次使用引导属于新隔离目录的一次性页面，已补充到教程。
+
 ### 续期与更换套餐
 
 1. 续购同一套餐后继续使用原 Profile，不能因 API Key 独立过期而失败。
@@ -142,9 +151,9 @@ npm run acceptance:subscription:production -- \
 | --- | --- | --- |
 | macOS ARM64 签名与公证 | 未完成 | 使用 Developer ID Application 和 App Store Connect API Key 构建，完成 notarization、stapling 和 Gatekeeper 冷启动 |
 | macOS 当前候选 | 仅 x64、未签名 | 仅用于本机功能验收，不能作为正式公开附件 |
-| Windows 官方 Codex 集成回归 | 部分完成 | Windows runner 已完成安装版/便携版、Profile 创建、线程同步和可见窗口验证；仍需在安装官方 Codex 的 Windows/PD 环境完成授权、打开源 App 和首条对话 |
-| 全新用户真实支付 | 未完成 | 付款人确认金额后完成一次真实支付，并执行续期/换套餐/退款验证 |
+| Windows 官方 Codex 集成回归 | 首发接受 | Windows runner 已完成安装版/便携版、Profile 创建、线程同步和可见窗口验证；Windows 专用路径、启动器、AppX 缓存与环境继承测试通过。因当前设备磁盘限制，真实 PD 首条对话转为发布后观察项 |
+| 全新用户真实支付 | 已完成 | 真实支付、订阅授权、Profile 创建、普通 Responses、SSE、函数调用和用量扣减均已验证 |
 | 公告正式下发 | 未完成 | Release 附件和教程上线后，再启用旧版升级公告与新版教程公告 |
 | 正式 Release | 未完成 | 所有硬门槛通过后创建 Release，不得用本地未签名 macOS 包替代 |
 
-在上述三项核心门槛（macOS 签名、公证；Windows 实机；全新用户真实支付）完成前，v0.1.9 只能视为候选版本，不能标记为正式发布完成。
+正式发布当前只剩 macOS Developer ID 签名/公证和最终附件审计；Windows 真实官方 App 回归按首发风险接受，发布后通过用户反馈和 Issue 持续观察。
