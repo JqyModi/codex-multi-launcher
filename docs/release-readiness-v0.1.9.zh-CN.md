@@ -153,10 +153,10 @@ npm run acceptance:subscription:production -- \
 | macOS 当前候选 | 已完成 | arm64、x64、universal 三套 ZIP 均完成签名、公证、架构和敏感文件审计 |
 | Windows 官方 Codex 集成回归 | 首发接受 | Windows runner 已完成安装版/便携版、Profile 创建、线程同步和可见窗口验证；Windows 专用路径、启动器、AppX 缓存与环境继承测试通过。因当前设备磁盘限制，真实 PD 首条对话转为发布后观察项 |
 | 全新用户真实支付 | 已完成 | 真实支付、订阅授权、Profile 创建、普通 Responses、SSE、函数调用和用量扣减均已验证 |
-| 公告正式下发 | 未完成 | Release 附件和教程上线后，再启用旧版升级公告与新版教程公告 |
-| 正式 Release | 未完成 | 所有硬门槛通过后创建 Release，不得用本地未签名 macOS 包替代 |
+| 公告正式下发 | 已完成 | 旧版升级公告与新版订阅教程公告已通过 Pages 发布并完成公网读取验证 |
+| 正式 Release | 已完成 | v0.1.9 正式 Release 已发布，12 个附件均为 uploaded 且远端 SHA256 与本地一致 |
 
-正式发布当前只剩创建 GitHub Release 和发布成功后下发公告；Windows 真实官方 App 回归按首发风险接受，发布后通过用户反馈和 Issue 持续观察。
+v0.1.9 的发布硬门槛已全部完成；Windows 真实官方 App 回归按首发风险接受，发布后通过用户反馈和 Issue 持续观察。
 
 ## 2026-08-12 macOS 正式候选
 
@@ -166,3 +166,11 @@ npm run acceptance:subscription:production -- \
 - universal SHA256：`d003085d59476e1a1745608bf87708f63c12ea5faee1277a7117a533ba3e1669`
 - 三套 `.app` 均通过 `codesign --verify --deep --strict`、`spctl` 与 `stapler validate`。
 - `verify-release-candidate` 已分别审计 x64、arm64、universal，并同时复核 Windows 候选；各平台 `app.asar` 均为 4,276 个文件。
+
+## 2026-08-12 正式发布
+
+- Release：`https://github.com/JqyModi/codex-multi-launcher/releases/tag/v0.1.9`
+- 标签提交：`23b76a1546f9e61fb75cc5f053dd22cafa14fd65`
+- Windows Setup、Portable、blockmap、`latest.yml`，三套 macOS ZIP 与 blockmap、`latest-mac.yml` 和统一 SHA256 清单均已上传。
+- Pages 部署任务 `31518391951` 成功，公网公告已按 App 版本分别下发升级入口和订阅教程入口。
+- `releases/latest`、`latest.yml` 与 `latest-mac.yml` 均完成远端读取和哈希复核。
