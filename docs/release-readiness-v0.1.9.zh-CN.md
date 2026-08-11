@@ -9,7 +9,7 @@
 | 项目 | 基线 |
 | --- | --- |
 | 桌面端分支 | `jqy/sub2api-desktop-auth` |
-| 桌面端候选源码 | `e602fa1` |
+| 桌面端候选源码 | `363655b` |
 | Sub2API 分支 | `jqy/desktop-auth` |
 | Sub2API 生产源码 | `2cd3cb5` |
 | 桌面版本 | `0.1.9` |
@@ -56,7 +56,7 @@ npm run verify:release-candidate
 - 未包含 `.env`、日志、私钥、证书或凭据配置文件。
 - `latest.yml` 与 `latest-mac.yml` 均指向 `0.1.9`。
 
-GitHub Actions 已在真实 Windows runner 完成同一套验证：[Run 31482847255](https://github.com/JqyModi/codex-multi-launcher/actions/runs/31482847255)。其中包括安装版/便携版构建、Windows Profile 创建与清理、线程历史同步、可见主窗口烟测和截图上传；烟测日志确认窗口标题为 `Codex Profile Manager`，进程在窗口出现后继续存活。
+GitHub Actions 已在真实 Windows runner 对当前候选提交完成同一套验证：[Run 31492514919](https://github.com/JqyModi/codex-multi-launcher/actions/runs/31492514919)。其中包括安装版/便携版构建、Windows Profile 创建与清理、线程历史同步、可见主窗口烟测和截图上传；烟测日志确认窗口标题为 `Codex Profile Manager`，进程在窗口出现后继续存活。
 
 ### 本地候选产物
 
