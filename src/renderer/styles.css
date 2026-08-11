@@ -813,6 +813,35 @@ code {
   box-shadow: inset 0 0 0 1px rgb(125 211 252 / 48%);
 }
 
+.subscription-reauthorization-actions {
+  align-items: center;
+  width: min(100%, 360px);
+  margin-top: 14px;
+  gap: 10px;
+}
+
+.button-row.subscription-reauthorization-actions .button {
+  min-height: 34px;
+  padding: 0 14px;
+}
+
+.button-row.subscription-reauthorization-actions .subscription-reauthorization-primary {
+  flex: 0 1 168px;
+  min-width: 168px;
+}
+
+.button-row.subscription-reauthorization-actions.is-active .subscription-reauthorization-primary {
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.button-row.subscription-reauthorization-actions .subscription-reauthorization-cancel {
+  flex: 0 0 92px;
+  width: 92px;
+  color: #475569;
+  background: rgb(255 255 255 / 78%);
+}
+
 .account-profile-box p {
   max-width: 720px;
   margin: 6px 0 0;

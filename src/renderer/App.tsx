@@ -1370,13 +1370,13 @@ export function App() {
                   <div>
                     <h4>{t.subscriptionProfileTitle}</h4>
                     <p>{t.subscriptionProfileDesc}</p>
-                    <div className="button-row">
-                      <button className="button secondary compact" disabled={isStartingSubscriptionReauthorization || Boolean(subscriptionReauthorization)} onClick={() => void reauthorizeSelectedSubscription()} type="button">
+                    <div className={`button-row subscription-reauthorization-actions${subscriptionReauthorization ? " is-active" : ""}`}>
+                      <button className="button secondary compact subscription-reauthorization-primary" disabled={isStartingSubscriptionReauthorization || Boolean(subscriptionReauthorization)} onClick={() => void reauthorizeSelectedSubscription()} type="button">
                         <RefreshCcw size={14} />
                         {isStartingSubscriptionReauthorization || subscriptionReauthorization ? t.reauthorizingSubscription : t.reauthorizeSubscription}
                       </button>
                       {subscriptionReauthorization ? (
-                        <button className="button secondary compact" onClick={() => void cancelSelectedSubscriptionReauthorization()} type="button">
+                        <button className="button secondary compact subscription-reauthorization-cancel" onClick={() => void cancelSelectedSubscriptionReauthorization()} type="button">
                           <X size={14} />
                           {t.cancelSubscriptionReauthorization}
                         </button>
