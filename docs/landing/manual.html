@@ -44,7 +44,7 @@
           <p class="eyebrow">图文用户手册</p>
           <h1>从安装到创建第一个 Codex 多开窗口。</h1>
           <p>
-            Codex 多开助手用于创建多个相互隔离的 Codex 桌面窗口。每个窗口都可以拥有独立的工作区、配置文件、API Key、Base URL 和模型。
+            Codex 多开助手用于创建多个相互隔离的 Codex / ChatGPT 桌面窗口。每个窗口都可以拥有独立工作区、账号状态、模型配置和历史线程。
           </p>
           <div class="manual-note">
             <strong>适合这些场景</strong>
@@ -59,12 +59,12 @@
         <section id="install" class="manual-section">
           <h2>1. 安装与打开</h2>
           <ol>
-            <li>解压 `Codex 多开助手-版本号-arm64-mac.zip`。</li>
-            <li>将 `Codex 多开助手.app` 拖到 `Applications`，或直接双击打开。</li>
-            <li>如果 macOS 提示无法打开，说明这是未签名测试版，可以在终端执行下面的命令。</li>
+            <li>从 GitHub Releases 下载与系统匹配的最新文件。</li>
+            <li>macOS：使用 arm64 / x64 / universal 发布包，将 App 放入 `Applications` 后打开。</li>
+            <li>Windows：优先使用 x64 安装版，也可以使用便携版。</li>
+            <li>首次运行前请确认已安装最新版 Codex / ChatGPT 桌面 App。</li>
           </ol>
-          <pre><code>xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"</code></pre>
-          <p>当前测试版主要面向 macOS Apple Silicon。正式公开分发前需要签名和 notarization。</p>
+          <p>macOS 发布包已完成 Developer ID 签名和公证。若仍出现安全提示，请删除旧版本并从官方 GitHub Release 重新下载，不要从不明镜像获取安装包。</p>
         </section>
 
         <section id="dashboard" class="manual-section">

@@ -622,6 +622,12 @@ code {
   width: 100%;
 }
 
+.manual-section .manual-figure-narrow {
+  max-width: 560px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .manual-section figcaption {
   border-top: 1px solid #eef2f7;
   padding: 12px 14px;

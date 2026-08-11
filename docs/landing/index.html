@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Codex 多开助手是一款 macOS 小工具，用于创建多个独立 Codex 桌面窗口，并为每个窗口配置不同 API Key、Base URL 和模型。" />
+    <meta name="description" content="Codex 多开助手支持 macOS 和 Windows，可创建多个独立 Codex/ChatGPT 桌面 Profile，并使用官方账号、API Key 或订阅服务一键接入。" />
     <meta property="og:title" content="Codex 多开助手" />
-    <meta property="og:description" content="一键创建多个独立 Codex 桌面窗口，为每个窗口配置不同 API Key / Base URL。" />
+    <meta property="og:description" content="多 Profile 隔离、历史线程同步、官方账号、API Key 与订阅服务一键接入。" />
     <meta property="og:image" content="assets/app-icon.png" />
     <title>Codex 多开助手 | 独立窗口与第三方 API 配置工具</title>
     <link rel="icon" href="assets/app-icon.png" />
@@ -19,6 +19,7 @@
       </a>
       <nav aria-label="页面导航">
         <a href="#features">功能</a>
+        <a href="#subscription">订阅服务</a>
         <a href="#security">安全</a>
         <a href="#faq">常见问题</a>
         <a class="nav-button" href="https://github.com/JqyModi/codex-multi-launcher/issues">反馈问题</a>
@@ -28,19 +29,19 @@
     <main id="top">
       <section class="hero section">
         <div class="hero-copy">
-          <p class="eyebrow">macOS · Codex 多开 · 第三方 Responses API</p>
-          <h1>让每个 Codex 窗口都有自己的 API 配置。</h1>
+          <p class="eyebrow">macOS / Windows · Codex 多开 · 配置与线程隔离</p>
+          <h1>让每个 Codex 窗口都有自己的账号、配置和历史。</h1>
           <p class="hero-lede">
-            Codex 多开助手可以创建多个隔离的 Codex 桌面窗口，并为每个窗口配置独立的 API Key、Base URL、模型和启动器。
+            使用官方 ChatGPT 账号、自己的 API Key，或通过订阅服务一键接入；创建多个互不干扰的 Profile，并按需同步已有项目与线程。
           </p>
           <div class="hero-actions">
-            <a class="button primary" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">下载 macOS 测试版</a>
+            <a class="button primary" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">下载最新版</a>
             <a class="button secondary" href="manual.html">查看用户手册</a>
           </div>
           <div class="trust-row" aria-label="产品特性">
             <span>API Key 本地加密</span>
             <span>不修改原 Codex App</span>
-            <span>支持第三方 Responses 兼容接口</span>
+            <span>macOS 已签名 · Windows 可用</span>
           </div>
         </div>
         <div class="hero-art" aria-label="Codex 多开助手界面预览">
@@ -48,6 +49,23 @@
           <div class="screenshot-frame">
             <img src="../user-manual-assets/01-dashboard.png" alt="Codex 多开助手主界面，展示 Profile 列表和选中 Profile 的路径、Provider 与启动按钮。" />
           </div>
+        </div>
+      </section>
+
+      <section class="section split" id="subscription">
+        <div class="screenshot-frame">
+          <img src="subscription-assets/06-choose-plan.png" alt="Codex 多开助手订阅服务套餐选择页面。" />
+        </div>
+        <div class="split-copy">
+          <p class="eyebrow">订阅服务一键接入</p>
+          <h2>不找中转站，也不用复制 API Key。</h2>
+          <p>创建 Profile 时选择“订阅服务”，完成注册、购买和一次性授权后，App 会自动写入可用配置。支付宝、微信支付和国际银行卡可按支付页实际状态使用。</p>
+          <ul class="check-list">
+            <li>新用户从注册直接进入套餐购买，不绕回后台首页。</li>
+            <li>支付成功后自动恢复授权并回到桌面 App。</li>
+            <li>同一套餐续期自动生效，更换套餐可在原 Profile 重新授权。</li>
+          </ul>
+          <a class="text-link" href="subscription.html">查看订阅服务图文教程</a>
         </div>
       </section>
 
@@ -166,10 +184,10 @@
 
       <section class="section download" id="download">
         <div>
-          <p class="eyebrow">MVP 测试版</p>
-          <h2>欢迎小范围试用并提交反馈。</h2>
+          <p class="eyebrow">macOS 与 Windows</p>
+          <h2>下载最新版，选择适合你的接入方式。</h2>
           <p>
-            当前版本主要面向 macOS Apple Silicon，支持官方 OpenAI API Key 和第三方 Responses 兼容接口。未签名版本可能需要手动解除 macOS quarantine。
+            支持 ChatGPT 账号登录、API Key / Base URL 和订阅服务。macOS 发布包已签名并公证，Windows 提供安装版与便携版，具体文件以 GitHub Release 为准。
           </p>
         </div>
         <div class="download-card">
@@ -182,7 +200,7 @@
             </div>
             <img src="assets/wechat-official-account.jpg" alt="Codex 多开助手微信公众号二维码" />
           </div>
-          <code>xattr -dr com.apple.quarantine "/Applications/Codex 多开助手.app"</code>
+          <a class="button secondary full" href="subscription.html">订阅服务使用教程</a>
         </div>
       </section>
 
@@ -192,12 +210,12 @@
           <h2>分发试用前先说清边界。</h2>
         </div>
         <details open>
-          <summary>为什么打开时 macOS 提示无法验证？</summary>
-          <p>当前是未签名 MVP 测试版。正式公开分发前需要 Developer ID 签名和 notarization。</p>
+          <summary>macOS 提示无法验证或应用已损坏怎么办？</summary>
+          <p>请先确认从 GitHub Releases 下载最新签名版本。若旧包残留 quarantine 标记，可删除旧 App 后重新安装最新版；仍有问题请附版本号和系统版本提交 Issue。</p>
         </details>
         <details>
           <summary>是否支持 Windows？</summary>
-          <p>界面技术栈是 Electron，可跨平台；但当前启动器生成、路径检查和 Codex App 检测都按 macOS 实现，Windows 需要单独适配。</p>
+          <p>支持。Release 同时提供 Windows x64 安装版与便携版；建议优先使用安装版，并确保已安装 Codex / ChatGPT 桌面 App。</p>
         </details>
         <details>
           <summary>第三方中转站都能用吗？</summary>
