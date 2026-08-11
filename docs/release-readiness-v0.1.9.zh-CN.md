@@ -9,7 +9,7 @@
 | 项目 | 基线 |
 | --- | --- |
 | 桌面端分支 | `jqy/sub2api-desktop-auth` |
-| 桌面端候选源码 | `05e511f` |
+| 桌面端候选源码 | `e602fa1` |
 | Sub2API 分支 | `jqy/desktop-auth` |
 | Sub2API 生产源码 | `2cd3cb5` |
 | 桌面版本 | `0.1.9` |
@@ -77,6 +77,17 @@ GitHub Actions 已在真实 Windows runner 完成同一套验证：[Run 31482847
 - 记录注册时间、订单号、套餐名称和 Profile 名称，便于后台关联。
 
 ### 主流程
+
+开始真实支付前，先在仓库根目录启动完整授权验收进程。该进程会保留 PKCE 会话，并在支付授权成功后直接创建 Profile；不会输出 API Key 或 access token：
+
+```bash
+npm run acceptance:subscription:production -- \
+  --confirm-production \
+  --profile-name "Subscription Acceptance" \
+  --timeout-minutes 10
+```
+
+把命令输出的授权 URL 打开在验收用户已登录的浏览器中。必须保持命令运行到显示 `Subscription Profile created successfully.`；中途退出会主动取消本地授权会话，需重新发起。
 
 1. 从 v0.1.9 候选 App 创建 Profile，选择“订阅服务”。
 2. 点击“前往授权”，确认打开生产域名且授权会话参数存在。

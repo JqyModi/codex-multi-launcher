@@ -39,6 +39,7 @@
     "verify:subscription-auth": "npm run build:main && node scripts/verify-subscription-auth.mjs",
     "verify:subscription-profile": "npm run build:main && node scripts/verify-subscription-profile-create.mjs",
     "verify:subscription-reauth": "npm run build:main && node scripts/verify-subscription-reauthorization.mjs",
+    "acceptance:subscription:production": "npm run build:main && node scripts/run-production-subscription-acceptance.mjs",
     "verify:release-candidate": "node scripts/verify-release-candidate.mjs",
     "verify:e2e": "npm run build && node scripts/verify-profile-generation.mjs",
     "verify:update-cdp": "node scripts/run-update-cdp-test.mjs"
