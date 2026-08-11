@@ -19,9 +19,13 @@ Example:
 export APPLE_API_KEY="/absolute/path/to/AuthKey_XXXXXXXXXX.p8"
 export APPLE_API_KEY_ID="XXXXXXXXXX"
 export APPLE_API_ISSUER="00000000-0000-0000-0000-000000000000"
-export CSC_NAME="Developer ID Application: Your Name (ABCDE12345)"
+export CSC_NAME="Your Name (ABCDE12345)"
 npm run package:mac:arm64
 ```
+
+`electron-builder` adds the `Developer ID Application:` certificate type
+automatically. Keep that prefix out of `CSC_NAME`; otherwise current builder
+versions reject the identity name before signing starts.
 
 The App Store Connect API key is enough for notarization, but it does not replace the `Developer ID Application` signing certificate. If no `Developer ID Application` identity appears in `security find-identity -v -p codesigning`, create one from the Apple Developer Certificates page with the Account Holder account and install it into the macOS Keychain.
 

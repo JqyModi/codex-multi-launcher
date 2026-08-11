@@ -149,11 +149,20 @@ npm run acceptance:subscription:production -- \
 
 | 门槛 | 当前状态 | 完成条件 |
 | --- | --- | --- |
-| macOS ARM64 签名与公证 | 未完成 | 使用 Developer ID Application 和 App Store Connect API Key 构建，完成 notarization、stapling 和 Gatekeeper 冷启动 |
-| macOS 当前候选 | 仅 x64、未签名 | 仅用于本机功能验收，不能作为正式公开附件 |
+| macOS ARM64 签名与公证 | 已完成 | Developer ID 深度签名、Apple 公证、stapler 和 Gatekeeper 验证均通过 |
+| macOS 当前候选 | 已完成 | arm64、x64、universal 三套 ZIP 均完成签名、公证、架构和敏感文件审计 |
 | Windows 官方 Codex 集成回归 | 首发接受 | Windows runner 已完成安装版/便携版、Profile 创建、线程同步和可见窗口验证；Windows 专用路径、启动器、AppX 缓存与环境继承测试通过。因当前设备磁盘限制，真实 PD 首条对话转为发布后观察项 |
 | 全新用户真实支付 | 已完成 | 真实支付、订阅授权、Profile 创建、普通 Responses、SSE、函数调用和用量扣减均已验证 |
 | 公告正式下发 | 未完成 | Release 附件和教程上线后，再启用旧版升级公告与新版教程公告 |
 | 正式 Release | 未完成 | 所有硬门槛通过后创建 Release，不得用本地未签名 macOS 包替代 |
 
-正式发布当前只剩 macOS Developer ID 签名/公证和最终附件审计；Windows 真实官方 App 回归按首发风险接受，发布后通过用户反馈和 Issue 持续观察。
+正式发布当前只剩创建 GitHub Release 和发布成功后下发公告；Windows 真实官方 App 回归按首发风险接受，发布后通过用户反馈和 Issue 持续观察。
+
+## 2026-08-12 macOS 正式候选
+
+- 新签发证书：`Developer ID Application: Yun Jiang (ZZG8SS9R2S)`，有效期至 2031-08-12。
+- arm64 SHA256：`26c879a4c9bffd4de443c88ca9d9a739270e8ff76330a89bc51cd7ee7f016bae`
+- x64 SHA256：`de1ad45f4c54c1332a91672f536a5fd7e42b49025fc6263f011b45c8fd9df99e`
+- universal SHA256：`d003085d59476e1a1745608bf87708f63c12ea5faee1277a7117a533ba3e1669`
+- 三套 `.app` 均通过 `codesign --verify --deep --strict`、`spctl` 与 `stapler validate`。
+- `verify-release-candidate` 已分别审计 x64、arm64、universal，并同时复核 Windows 候选；各平台 `app.asar` 均为 4,276 个文件。

@@ -40,7 +40,8 @@ async function assertFile(filePath) {
 }
 
 async function findMacAsar() {
-  const macDir = path.join(distDir, macArch === "x64" ? "mac" : `mac-${macArch}`);
+  const macDirName = macArch === "x64" ? "mac" : macArch === "universal" ? "mac-universal" : `mac-${macArch}`;
+  const macDir = path.join(distDir, macDirName);
   const entries = await fs.readdir(macDir, { withFileTypes: true });
   const app = entries.find((entry) => entry.isDirectory() && entry.name.endsWith(".app"));
   if (!app) {
