@@ -1246,7 +1246,7 @@ export function App() {
               <AnnouncementBanner
                 item={announcement}
                 onDismiss={() => void dismissAnnouncement(announcement.id)}
-                onOpen={(url) => void openExternalUrl(url)}
+                onOpen={(url) => { void window.codexProfileManager.trackAnnouncementClick(announcement.id); void openExternalUrl(url); }}
               />
             ) : null}
             {updateCheck?.status === "update_available" && updateCheck.latestVersion && !isSkippedUpdate(updateCheck.latestVersion) && dismissedUpdatePromptVersion !== updateCheck.latestVersion ? (

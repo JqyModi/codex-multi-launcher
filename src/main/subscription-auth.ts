@@ -48,6 +48,8 @@ export async function startSubscriptionAuthorization(input: StartSubscriptionAut
     body: JSON.stringify({
       client_id: CLIENT_ID,
       platform: platformName(),
+      app_version: input.appVersion?.trim() || undefined,
+      campaign_id: input.campaignId?.trim() || undefined,
       device_name: sanitizeDeviceName(input.deviceName),
       code_challenge: codeChallenge,
       code_challenge_method: "S256"
@@ -82,6 +84,29 @@ export async function startSubscriptionAuthorization(input: StartSubscriptionAut
     pollIntervalMs,
     state: "pending"
   };
+}
+
+export async function trackDesktopGrowthEvent(input: {
+  eventType: "announcement_viewed" | "announcement_clicked";
+  campaignId: string;
+  appVersion: string;
+  enabled: boolean;
+}): Promise<boolean> {
+  if (!input.enabled) return false;
+  try {
+    const response = await serviceRequest(subscriptionServiceUrl(), "/api/v1/desktop-auth/events", {
+      method: "POST",
+      body: JSON.stringify({
+        event_type: input.eventType,
+        campaign_id: input.campaignId,
+        platform: platformName(),
+        app_version: input.appVersion
+      })
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function pollSubscriptionAuthorization(localSessionId: string): Promise<SubscriptionAuthorizationStatus> {

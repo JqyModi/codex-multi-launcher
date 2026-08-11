@@ -24,7 +24,7 @@ import {
   updateProfile
 } from "./profile-service.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
-import { cancelSubscriptionAuthorization, pollSubscriptionAuthorization, startSubscriptionAuthorization } from "./subscription-auth.js";
+import { cancelSubscriptionAuthorization, pollSubscriptionAuthorization, startSubscriptionAuthorization, trackDesktopGrowthEvent } from "./subscription-auth.js";
 import type { AnnouncementItem, AnnouncementPlatform, AnnouncementResult, CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTestInput, ProviderModelsInput, ProviderTestInput, ReauthorizeSubscriptionProfileInput, RestoreConfigBackupInput, UpdateDownloadEvent, UpdateProfileInput } from "../shared/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -160,6 +160,7 @@ function registerIpc(): void {
   }));
   ipcMain.handle("app:get-announcement", () => getAnnouncement());
   ipcMain.handle("app:dismiss-announcement", (_event, id: string) => dismissAnnouncement(id));
+  ipcMain.handle("app:track-announcement-click", (_event, id: string) => trackAnnouncementClick(id));
   ipcMain.handle("app:check-for-updates", () => checkForUpdates());
   ipcMain.handle("app:download-update", async () => {
     if (!app.isPackaged) {
@@ -218,7 +219,14 @@ function registerIpc(): void {
   ipcMain.handle("profiles:test-provider", (_event, input: ProfileProviderTestInput) => testProfileProvider(input));
   ipcMain.handle("provider:models", (_event, input: ProviderModelsInput) => listProviderModels(input));
   ipcMain.handle("profiles:models", (_event, input: ProfileProviderModelsInput) => listProfileProviderModels(input));
-  ipcMain.handle("subscription-auth:start", (_event, input) => startSubscriptionAuthorization(input));
+  ipcMain.handle("subscription-auth:start", async (_event, input) => {
+    const state = await readAnnouncementState();
+    return startSubscriptionAuthorization({
+      ...input,
+      campaignId: recentAnnouncementCampaign(state),
+      appVersion: app.getVersion()
+    });
+  });
   ipcMain.handle("subscription-auth:poll", async (_event, sessionId: string) => {
     const status = await pollSubscriptionAuthorization(sessionId);
     if (status.state === "authorized") {
@@ -265,29 +273,35 @@ async function getAnnouncement(): Promise<AnnouncementResult> {
     const config = await fetchAnnouncementsConfig();
     await writeAnnouncementCache(config, fetchedAt);
     const state = await readAnnouncementState();
-    return {
+    const result: AnnouncementResult = {
       item: selectAnnouncement(config.items, currentVersion, new Set(state.dismissedIds)),
       source: "remote",
       fetchedAt
     };
+    void trackAnnouncementView(result.item);
+    return result;
   } catch {
     const cached = await readAnnouncementCache();
     if (!cached) {
       if (!app.isPackaged) {
         const state = await readAnnouncementState();
-        return {
+        const result: AnnouncementResult = {
           item: selectAnnouncement(getDevelopmentAnnouncements(), currentVersion, new Set(state.dismissedIds)),
           source: "none"
         };
+        void trackAnnouncementView(result.item);
+        return result;
       }
       return { item: null, source: "none" };
     }
     const state = await readAnnouncementState();
-    return {
+    const result: AnnouncementResult = {
       item: selectAnnouncement(cached.items, currentVersion, new Set(state.dismissedIds)),
       source: "cache",
       fetchedAt: cached.fetchedAt
     };
+    void trackAnnouncementView(result.item);
+    return result;
   }
 }
 
@@ -390,7 +404,40 @@ async function dismissAnnouncement(id: string): Promise<{ ok: true }> {
   const state = await readAnnouncementState();
   const dismissedIds = new Set(state.dismissedIds);
   dismissedIds.add(id);
-  await writeAnnouncementState({ dismissedIds: [...dismissedIds] });
+  await writeAnnouncementState({ ...state, dismissedIds: [...dismissedIds] });
+  return { ok: true };
+}
+
+async function trackAnnouncementView(item: AnnouncementItem | null): Promise<void> {
+  if (!item) return;
+  const state = await readAnnouncementState();
+  if (state.viewedIds.includes(item.id)) return;
+  state.viewedIds.push(item.id);
+  await writeAnnouncementState(state);
+  void trackDesktopGrowthEvent({
+    eventType: "announcement_viewed",
+    campaignId: item.id,
+    appVersion: app.getVersion(),
+    enabled: app.isPackaged || Boolean(process.env.CODEX_PROFILE_MANAGER_SUBSCRIPTION_SERVICE_URL?.trim())
+  });
+}
+
+async function trackAnnouncementClick(id: string): Promise<{ ok: true }> {
+  const state = await readAnnouncementState();
+  state.activeCampaignId = id;
+  state.activeCampaignAt = new Date().toISOString();
+  if (!state.clickedIds.includes(id)) {
+    state.clickedIds.push(id);
+    await writeAnnouncementState(state);
+    void trackDesktopGrowthEvent({
+      eventType: "announcement_clicked",
+      campaignId: id,
+      appVersion: app.getVersion(),
+      enabled: app.isPackaged || Boolean(process.env.CODEX_PROFILE_MANAGER_SUBSCRIPTION_SERVICE_URL?.trim())
+    });
+  } else {
+    await writeAnnouncementState(state);
+  }
   return { ok: true };
 }
 
@@ -411,18 +458,38 @@ async function readAnnouncementCache(): Promise<({ items: AnnouncementItem[]; fe
   }
 }
 
-async function readAnnouncementState(): Promise<{ dismissedIds: string[] }> {
+interface AnnouncementState {
+  dismissedIds: string[];
+  viewedIds: string[];
+  clickedIds: string[];
+  activeCampaignId?: string;
+  activeCampaignAt?: string;
+}
+
+function recentAnnouncementCampaign(state: AnnouncementState): string | undefined {
+  if (!state.activeCampaignId || !state.activeCampaignAt) return undefined;
+  const clickedAt = Date.parse(state.activeCampaignAt);
+  return Number.isFinite(clickedAt) && Date.now() - clickedAt <= 7 * 24 * 60 * 60 * 1000
+    ? state.activeCampaignId
+    : undefined;
+}
+
+async function readAnnouncementState(): Promise<AnnouncementState> {
   try {
-    const parsed = JSON.parse(await fs.readFile(getAnnouncementStatePath(), "utf8")) as { dismissedIds?: unknown };
+    const parsed = JSON.parse(await fs.readFile(getAnnouncementStatePath(), "utf8")) as { dismissedIds?: unknown; viewedIds?: unknown; clickedIds?: unknown; activeCampaignId?: unknown; activeCampaignAt?: unknown };
     return {
-      dismissedIds: Array.isArray(parsed.dismissedIds) ? parsed.dismissedIds.filter((id): id is string => typeof id === "string") : []
+      dismissedIds: Array.isArray(parsed.dismissedIds) ? parsed.dismissedIds.filter((id): id is string => typeof id === "string") : [],
+      viewedIds: Array.isArray(parsed.viewedIds) ? parsed.viewedIds.filter((id): id is string => typeof id === "string") : [],
+      clickedIds: Array.isArray(parsed.clickedIds) ? parsed.clickedIds.filter((id): id is string => typeof id === "string") : [],
+      activeCampaignId: typeof parsed.activeCampaignId === "string" ? parsed.activeCampaignId : undefined,
+      activeCampaignAt: typeof parsed.activeCampaignAt === "string" ? parsed.activeCampaignAt : undefined
     };
   } catch {
-    return { dismissedIds: [] };
+    return { dismissedIds: [], viewedIds: [], clickedIds: [] };
   }
 }
 
-async function writeAnnouncementState(state: { dismissedIds: string[] }): Promise<void> {
+async function writeAnnouncementState(state: AnnouncementState): Promise<void> {
   await fs.mkdir(getAnnouncementDir(), { recursive: true });
   await fs.writeFile(getAnnouncementStatePath(), JSON.stringify(state, null, 2), "utf8");
 }

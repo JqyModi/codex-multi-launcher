@@ -265,6 +265,8 @@ export interface ProviderTestResult {
 
 export interface StartSubscriptionAuthorizationInput {
   deviceName?: string;
+  campaignId?: string;
+  appVersion?: string;
 }
 
 export interface SubscriptionAuthorizationSession {
@@ -353,6 +355,7 @@ export interface CodexApi {
   getAppInfo(): Promise<AppInfo>;
   getAnnouncement(): Promise<AnnouncementResult>;
   dismissAnnouncement(id: string): Promise<{ ok: true }>;
+  trackAnnouncementClick(id: string): Promise<{ ok: true }>;
   checkForUpdates(): Promise<UpdateCheckResult>;
   downloadUpdate(): Promise<{ ok: true }>;
   installUpdate(): Promise<{ ok: true }>;

@@ -4,7 +4,8 @@ import http from "node:http";
 
 const seen = {
   codeChallenge: "",
-  tokenPolls: 0
+  tokenPolls: 0,
+  growthEvents: 0
 };
 
 const server = http.createServer(async (request, response) => {
@@ -17,6 +18,8 @@ const server = http.createServer(async (request, response) => {
     assert.equal(typeof body.code_challenge, "string");
     assert.ok(body.code_challenge.length > 20);
     assert.ok(!body.code_verifier);
+    assert.equal(body.campaign_id, "subscription-launch-v019");
+    assert.equal(body.app_version, "0.1.9");
     seen.codeChallenge = body.code_challenge;
     sendJson(response, 200, {
       data: {
@@ -26,6 +29,15 @@ const server = http.createServer(async (request, response) => {
         poll_interval: 1
       }
     });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/v1/desktop-auth/events") {
+    assert.equal(body.event_type, "announcement_clicked");
+    assert.equal(body.campaign_id, "subscription-launch-v019");
+    assert.equal(body.app_version, "0.1.9");
+    seen.growthEvents += 1;
+    sendJson(response, 200, { data: { ok: true } });
     return;
   }
 
@@ -70,7 +82,7 @@ process.env.CODEX_PROFILE_MANAGER_SUBSCRIPTION_SERVICE_URL = `http://127.0.0.1:$
 
 try {
   const auth = await import("../dist-electron/main/subscription-auth.js");
-  const session = await auth.startSubscriptionAuthorization({ deviceName: "Verification Device" });
+  const session = await auth.startSubscriptionAuthorization({ deviceName: "Verification Device", campaignId: "subscription-launch-v019", appVersion: "0.1.9" });
   assert.equal(session.state, "pending");
   assert.equal(session.pollIntervalMs, 1_000);
   assert.match(session.authorizationUrl, /\/desktop\/authorize/);
@@ -92,6 +104,9 @@ try {
   assert.equal(config.baseUrl, process.env.CODEX_PROFILE_MANAGER_SUBSCRIPTION_SERVICE_URL + "/v1");
   auth.cancelSubscriptionAuthorization(session.id);
   assert.throws(() => auth.getAuthorizedSubscriptionConfig(session.id), /not found/);
+
+  assert.equal(await auth.trackDesktopGrowthEvent({ eventType: "announcement_clicked", campaignId: "subscription-launch-v019", appVersion: "0.1.9", enabled: true }), true);
+  assert.equal(seen.growthEvents, 1);
 
   console.log("Subscription authorization verification passed.");
 } finally {
