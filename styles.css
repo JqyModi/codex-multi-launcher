@@ -730,11 +730,26 @@ h3 {
   margin: 24px 0;
 }
 
+.manual-section figure.manual-figure-narrow {
+  width: min(100%, 516px);
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .manual-section figure img {
+  display: block;
   width: 100%;
+  height: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
+}
+
+.manual-section figure.manual-figure-narrow img {
+  width: auto;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .manual-section figcaption {
