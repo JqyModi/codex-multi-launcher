@@ -182,3 +182,4 @@ v0.1.9 的发布硬门槛已全部完成；Windows 真实官方 App 回归按首
 - 部署前生成本地备份 `daily-20260812T002951Z`，PostgreSQL、Redis 和配置校验通过；隔离恢复演练成功读取 3 个用户、69 个订单、5 个订阅和 10 个 API Key。
 - 同一备份已上传 OCI Object Storage：`daily/daily-20260812T002951Z.tar.gz` 及其 `.sha256` 校验文件。
 - 本次仅更新服务端和 Web 订阅页面，没有修改 v0.1.9 桌面二进制；正式 Release 附件与更新元数据无需重建。
+- 验证码投递记录已整理到 Sub2API 的 `docs/email-delivery.zh-CN.md`：新版 multipart 邮件、验证码主题和注册页垃圾邮件提示已部署，用户实测邮件不再进入垃圾邮件；DNS 认证记录保持不变。
