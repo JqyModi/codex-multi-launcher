@@ -1,6 +1,6 @@
 # v0.1.9 订阅版本上线就绪记录
 
-更新时间：2026-08-11（Asia/Shanghai）
+更新时间：2026-08-12（Asia/Shanghai）
 
 本文记录 v0.1.9 候选版本的可复验证据、真实支付验收步骤和剩余发布门槛。通用检查项仍以 [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) 为准。
 
@@ -174,3 +174,11 @@ v0.1.9 的发布硬门槛已全部完成；Windows 真实官方 App 回归按首
 - Windows Setup、Portable、blockmap、`latest.yml`，三套 macOS ZIP 与 blockmap、`latest-mac.yml` 和统一 SHA256 清单均已上传。
 - Pages 部署任务 `31518391951` 成功，公网公告已按 App 版本分别下发升级入口和订阅教程入口。
 - `releases/latest`、`latest.yml` 与 `latest-mac.yml` 均完成远端读取和哈希复核。
+
+## 2026-08-12 发布后生产加固
+
+- Sub2API 生产环境已更新到 `6fca676`，容器、PostgreSQL、Redis 和 `/health` 均正常。
+- 套餐名称、描述和功能增加中英文内容；购买页、我的订阅、购买页当前订阅和桌面多套餐授权均按界面语言显示，并兼容已下架的历史套餐。
+- 部署前生成本地备份 `daily-20260812T002951Z`，PostgreSQL、Redis 和配置校验通过；隔离恢复演练成功读取 3 个用户、69 个订单、5 个订阅和 10 个 API Key。
+- 同一备份已上传 OCI Object Storage：`daily/daily-20260812T002951Z.tar.gz` 及其 `.sha256` 校验文件。
+- 本次仅更新服务端和 Web 订阅页面，没有修改 v0.1.9 桌面二进制；正式 Release 附件与更新元数据无需重建。
