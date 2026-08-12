@@ -11,6 +11,7 @@ Run multiple isolated Codex / ChatGPT desktop profiles on macOS and Windows. Eac
 - [Product website](https://jqymodi.github.io/codex-multi-launcher/)
 - [Download](https://github.com/JqyModi/codex-multi-launcher/releases/latest)
 - [User guide](https://jqymodi.github.io/codex-multi-launcher/manual.html)
+- [Subscription setup guide](https://jqymodi.github.io/codex-multi-launcher/en/subscription.html)
 - [Report an issue](https://github.com/JqyModi/codex-multi-launcher/issues)
 
 <p align="center">
@@ -29,6 +30,7 @@ Run multiple isolated Codex / ChatGPT desktop profiles on macOS and Windows. Eac
 
 - Isolated `CODEX_HOME` and `--user-data-dir` for every profile.
 - ChatGPT account login and API-key authentication modes.
+- Guided subscription setup without manually entering a Base URL, model, or API key.
 - Separate API key, Base URL, model, and provider settings.
 - Conversation history sync from the source app or existing profiles.
 - Project-only, temporary-task-only, or full supported history scope.
@@ -55,6 +57,7 @@ Windows builds are currently unsigned. macOS builds use Developer ID signing and
 - [Conversation history sync](https://jqymodi.github.io/codex-multi-launcher/features/session-sync/)
 - [Windows installation and troubleshooting](https://jqymodi.github.io/codex-multi-launcher/guides/windows/)
 - [Custom Base URL and API providers](https://jqymodi.github.io/codex-multi-launcher/guides/custom-base-url/)
+- [Subscription setup without entering an API key](https://jqymodi.github.io/codex-multi-launcher/en/subscription.html)
 
 ## Feedback
 

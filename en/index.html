@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f5f7fa" />
-    <meta name="description" content="Run multiple isolated ChatGPT desktop app windows and Codex Desktop profiles with separate personal or work accounts, API providers, and conversation history on macOS and Windows." />
+    <meta name="description" content="Run multiple isolated ChatGPT desktop app windows and Codex Desktop profiles on macOS and Windows. Use separate accounts, API providers, conversation history, or one-click subscription setup without entering an API key." />
     <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/en/" />
     <link rel="alternate" hreflang="en" href="https://jqymodi.github.io/codex-multi-launcher/en/" />
     <link rel="alternate" hreflang="zh-CN" href="https://jqymodi.github.io/codex-multi-launcher/" />
@@ -13,10 +13,13 @@
     <meta property="og:site_name" content="Codex Multi Launcher" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:title" content="Codex Multi Launcher | ChatGPT Desktop App &amp; Codex Desktop Profiles" />
-    <meta property="og:description" content="Run multiple ChatGPT desktop app windows and Codex Desktop profiles with separate accounts, API providers, and selected conversation history." />
+    <meta property="og:description" content="Run isolated ChatGPT and Codex Desktop profiles with separate accounts, API providers, conversation history, or one-click subscription setup." />
     <meta property="og:url" content="https://jqymodi.github.io/codex-multi-launcher/en/" />
     <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Codex Multi Launcher | Multiple ChatGPT &amp; Codex Profiles" />
+    <meta name="twitter:description" content="Multiple isolated profiles with account login, API keys, history sync, or subscription setup without entering an API key." />
+    <meta name="twitter:image" content="https://jqymodi.github.io/codex-multi-launcher/marketing-assets/social-preview.png" />
     <title>Multiple ChatGPT Desktop App Windows &amp; Codex Desktop Profiles</title>
     <link rel="icon" href="../assets/favicon.png" />
     <link rel="stylesheet" href="../styles.css" />
@@ -25,7 +28,9 @@
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "name": "Codex Multi Launcher",
-        "description": "Run multiple isolated ChatGPT desktop app windows and Codex Desktop profiles with separate accounts, API providers, and conversation history.",
+        "description": "Run multiple isolated ChatGPT desktop app windows and Codex Desktop profiles with separate accounts, API providers, conversation history, or one-click subscription setup without entering an API key.",
+        "softwareVersion": "0.1.9",
+        "featureList": "Multiple isolated ChatGPT and Codex profiles, account login, API key providers, one-click subscription setup, selected conversation history sync",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "macOS, Windows",
         "isAccessibleForFree": true,
@@ -38,14 +43,14 @@
   <body>
     <header class="site-header">
       <a class="brand" href="./"><img src="../assets/app-icon.webp" alt="" width="36" height="36" /><span>Codex Multi Launcher</span></a>
-      <nav aria-label="Main navigation"><a href="#workflows">Features</a><a href="../manual.html">Guide</a><a href="../changelog/">Changelog</a><a href="../" lang="zh-CN">中文</a><a class="nav-download" href="../download/">Download</a></nav>
+      <nav aria-label="Main navigation"><a href="#workflows">Features</a><a href="subscription.html">Subscription</a><a href="../manual.html">Guide</a><a href="../changelog/">Changelog</a><a href="../" lang="zh-CN">中文</a><a class="nav-download" href="../download/">Download</a></nav>
     </header>
     <main>
       <section class="hero">
         <div class="hero-copy">
           <p class="eyebrow">ChatGPT desktop app · Codex Desktop · multiple windows · macOS · Windows</p>
           <h1>Multiple ChatGPT desktop app windows<br /><span>and isolated Codex Desktop profiles</span></h1>
-          <p class="hero-lede">Run multiple ChatGPT desktop app and Codex Desktop windows side by side. Each profile can use a separate account, API provider, app data directory, and selected conversation history.</p>
+          <p class="hero-lede">Run multiple ChatGPT desktop app and Codex Desktop windows side by side. Each profile can use a separate account, API provider, app data directory, selected conversation history, or a subscription configured without entering an API key.</p>
           <div class="hero-actions"><a class="button primary" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">Download latest release</a><a class="button secondary" href="#workflows">Explore workflows</a></div>
           <ul class="trust-list"><li>macOS builds are Developer ID signed and notarized</li><li>Windows installer and portable builds</li><li>API keys stay encrypted on your device</li></ul>
         </div>
@@ -60,11 +65,12 @@
           <a class="workflow-item" href="../features/session-sync/"><span class="workflow-number">02</span><div><h3>Copy selected conversation history</h3><p>Bring project conversations, temporary tasks, or both into a new profile.</p><strong>History sync guide</strong></div></a>
           <a class="workflow-item" href="../guides/custom-base-url/"><span class="workflow-number">03</span><div><h3>Use a different API in each window</h3><p>Configure OpenAI API keys or providers that actually implement the Responses API.</p><strong>Provider configuration</strong></div></a>
           <a class="workflow-item" href="../guides/windows/"><span class="workflow-number">04</span><div><h3>Run isolated profiles on Windows</h3><p>Windows x64 installer and portable builds with path and permission handling.</p><strong>Windows guide</strong></div></a>
+          <a class="workflow-item" href="subscription.html"><span class="workflow-number">05</span><div><h3>Start without entering an API key</h3><p>Register, choose a plan, pay, and authorize a ready-to-use Codex profile in one guided flow.</p><strong>Subscription setup guide</strong></div></a>
         </div>
       </section>
       <section class="section platform-section"><div class="section-heading"><p class="eyebrow">Platforms</p><h2>Choose the package for your device.</h2></div><div class="platform-table"><div class="platform-row platform-head"><span>Platform</span><span>Packages</span><span>Status</span></div><div class="platform-row"><strong>Apple Silicon Mac</strong><span>arm64 / universal</span><span class="status-good">Signed and notarized</span></div><div class="platform-row"><strong>Intel Mac</strong><span>x64 / universal</span><span class="status-good">Signed and notarized</span></div><div class="platform-row"><strong>Windows x64</strong><span>installer / portable</span><span>Currently unsigned</span></div></div></section>
       <section class="cta-band"><div><p class="eyebrow">Get started</p><h2>Give each Codex workflow its own window.</h2></div><div class="hero-actions"><a class="button primary" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">Download</a><a class="button secondary" href="https://github.com/JqyModi/codex-multi-launcher">View GitHub</a></div></section>
     </main>
-    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>Independent community project. Not affiliated with, endorsed by, or sponsored by OpenAI.</p></div><nav aria-label="Footer navigation"><a href="../manual.html">User guide</a><a href="../support/">Support</a><a href="../changelog/">Changelog</a><a href="https://github.com/JqyModi/codex-multi-launcher">GitHub</a></nav></footer>
+    <footer class="site-footer"><div><strong>Codex Multi Launcher</strong><p>Independent community project. Not affiliated with, endorsed by, or sponsored by OpenAI.</p></div><nav aria-label="Footer navigation"><a href="subscription.html">Subscription</a><a href="../manual.html">User guide</a><a href="../support/">Support</a><a href="../changelog/">Changelog</a><a href="https://github.com/JqyModi/codex-multi-launcher">GitHub</a></nav></footer>
   </body>
 </html>

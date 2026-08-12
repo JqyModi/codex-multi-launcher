@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Codex Multi Launcher 更新记录：多账号登录、历史对话同步、Windows 兼容、自动更新与 Codex 新版适配。" />
+    <meta name="description" content="Codex Multi Launcher 更新记录：订阅服务一键接入、多账号登录、历史对话同步、Windows 兼容、自动更新与 Codex 新版适配。" />
     <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/changelog/" />
     <title>更新记录 | Codex Multi Launcher</title>
     <link rel="icon" href="../assets/favicon.png" />
@@ -20,12 +20,13 @@
         <header class="article-hero"><p class="eyebrow">Changelog</p><h1>持续跟进 Codex 桌面版变化。</h1><p class="hero-lede">这里整理影响用户使用的重要更新。完整文件列表、校验信息和所有历史版本以 GitHub Releases 为准。</p></header>
         <section class="article-section" id="latest">
           <h2>当前最新版</h2>
-          <p>2026 年 7 月 22 日发布的 v0.1.8 重点完善 Windows 多开兼容性和运行诊断。</p>
-          <ul><li>修复 Microsoft Store / AppX 版 ChatGPT / Codex 缓存复制可能生成无效 <code>app.asar</code>、导致 Profile 无法打开的问题。</li><li>修复 Windows 多开窗口在任务栏显示通用图标的问题。</li><li>将环境检测移入“设置 &gt; 通用 &gt; 运行诊断”，避免可选 CLI / Node 信息干扰首页。</li><li>修复并发环境检查可能误判目录不可写的问题。</li><li>优化设置页与诊断弹窗的中文文案、布局和间距。</li></ul>
+          <p>2026 年 8 月 11 日发布的 v0.1.9 新增订阅服务一键接入，并完善授权、支付和运行体验。</p>
+          <ul><li>创建 Profile 时新增“订阅服务”，无需手动填写 Base URL、模型或 API Key。</li><li>串联注册、套餐购买、支付、授权和 Profile 创建，支持支付宝、微信支付与国际银行卡。</li><li>支持原 Profile 重新授权；套餐续期后继续使用，更换套餐时可重新选择有效订阅。</li><li>新增首页公告和最小化转化统计，便于发布重要更新并持续改进流程。</li><li>保留官方 ChatGPT 账号和 API Key 两种原有使用方式。</li></ul>
           <p><a class="text-link" href="https://github.com/JqyModi/codex-multi-launcher/releases/latest">查看最新版 Release</a></p>
         </section>
         <section class="article-section" id="history">
           <h2>近期版本</h2>
+          <h3>v0.1.8</h3><p>完善 Windows 多开兼容性和运行诊断，修复 AppX 缓存复制、任务栏图标及并发环境检查问题。</p>
           <h3>v0.1.7</h3><p>继续完善 Windows 与 macOS 的发布包，并为后续 Windows AppX 兼容性修复做准备。</p>
           <h3>v0.1.6</h3><p>解决 Codex / ChatGPT 新版状态持久化与官方账号登录问题，macOS 多架构包完成 Developer ID 签名和 Apple 公证。</p>
           <h3>v0.1.5</h3><p>完善历史对话同步范围与来源选择，并修复仅同步临时任务时出现空项目目录的问题。</p>

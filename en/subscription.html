@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Set up a Codex Multi Launcher subscription without entering an API key: create an account, choose a plan, pay, authorize, and open a ready-to-use Codex profile." />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://jqymodi.github.io/codex-multi-launcher/en/subscription.html" />
+    <link rel="alternate" hreflang="en" href="https://jqymodi.github.io/codex-multi-launcher/en/subscription.html" />
+    <link rel="alternate" hreflang="zh-CN" href="https://jqymodi.github.io/codex-multi-launcher/subscription.html" />
+    <link rel="alternate" hreflang="x-default" href="https://jqymodi.github.io/codex-multi-launcher/en/subscription.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Codex Multi Launcher" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="One-click Subscription Setup | Codex Multi Launcher" />
+    <meta property="og:description" content="A step-by-step guide from account registration and payment to an authorized Codex profile, without manually entering an API key." />
+    <meta property="og:url" content="https://jqymodi.github.io/codex-multi-launcher/en/subscription.html" />
+    <meta property="og:image" content="https://jqymodi.github.io/codex-multi-launcher/subscription-assets/05-profile-ready.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="One-click Subscription Setup | Codex Multi Launcher" />
+    <meta name="twitter:description" content="Register, pay, authorize, and create a ready-to-use Codex profile without entering an API key." />
+    <meta name="twitter:image" content="https://jqymodi.github.io/codex-multi-launcher/subscription-assets/05-profile-ready.png" />
+    <title>Codex Subscription Setup Without an API Key | Codex Multi Launcher</title>
+    <link rel="icon" href="../assets/favicon.png" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="manual-page">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Back to the Codex Multi Launcher home page">
+        <img src="../assets/app-icon.webp" alt="" width="36" height="36" />
+        <span>Codex Multi Launcher</span>
+      </a>
+      <nav aria-label="Guide navigation">
+        <a href="./">Home</a>
+        <a href="../manual.html">Full guide</a>
+        <a href="../subscription.html" lang="zh-CN">中文</a>
+        <a class="nav-download" href="../download/">Download</a>
+      </nav>
+    </header>
+
+    <main class="manual-layout">
+      <aside class="manual-toc" aria-label="Guide contents">
+        <strong>Subscription setup</strong>
+        <a href="#overview">Before you start</a>
+        <a href="#create">Create a profile</a>
+        <a href="#authorize">Authorize</a>
+        <a href="#account">Register or sign in</a>
+        <a href="#payment">Choose a plan and pay</a>
+        <a href="#finish">Create and open</a>
+        <a href="#renew">Renew or switch plans</a>
+        <a href="#faq">Troubleshooting</a>
+        <a href="#security">Security</a>
+      </aside>
+
+      <article class="manual-content">
+        <section id="overview" class="manual-hero">
+          <p class="eyebrow">Step-by-step guide</p>
+          <h1>Create a ready-to-use Codex profile without entering an API key.</h1>
+          <p>The subscription flow connects registration, plan purchase, payment, and device authorization. Codex Multi Launcher then configures the service URL, model, and device credential automatically.</p>
+          <div class="manual-note"><strong>Before you start</strong><ul><li>Install the latest official Codex / ChatGPT desktop app.</li><li>Update Codex Multi Launcher to v0.1.9 or later.</li><li>Keep Codex Multi Launcher open while completing authorization in your browser.</li></ul></div>
+        </section>
+
+        <section id="create" class="manual-section">
+          <h2>1. Create a profile</h2>
+          <p>Select the <strong>+</strong> button beside the profile list, give the profile a recognizable name, and choose whether to copy existing settings or conversations.</p>
+          <figure><img src="../subscription-assets/01-create-profile.png" alt="Create-profile screen in Codex Multi Launcher." /><figcaption>The name and color only help identify the profile; they do not affect your plan or usage limits.</figcaption></figure>
+        </section>
+
+        <section id="authorize" class="manual-section">
+          <h2>2. Select Subscription Service</h2>
+          <p>Under the usage method, select <strong>Subscription Service</strong>. You do not need to enter a Base URL, model, or API key.</p>
+          <figure><img src="../subscription-assets/02-select-subscription.png" alt="Subscription Service selected as the profile usage method." /><figcaption>Select “Go to authorization” to continue in your browser.</figcaption></figure>
+          <figure><img src="../subscription-assets/03-waiting-authorization.png" alt="Codex Multi Launcher waiting for subscription authorization." /><figcaption>The authorization session lasts 30 minutes. Start it again from the app if it expires.</figcaption></figure>
+        </section>
+
+        <section id="account" class="manual-section">
+          <h2>3. Register or sign in</h2>
+          <p>New users create an account and verify their email. After verification, the original authorization flow continues to the available plans. Existing users can sign in directly.</p>
+          <figure><img src="../subscription-assets/04-register.png" alt="Subscription service account registration page." /><figcaption>If your account already has one valid subscription, authorization can complete without another purchase.</figcaption></figure>
+        </section>
+
+        <section id="payment" class="manual-section">
+          <h2>4. Choose a plan and pay</h2>
+          <p>Choose a plan based on your usage. Current price, validity period, and daily, weekly, or monthly limits are shown on the purchase page.</p>
+          <figure class="manual-figure-narrow"><img src="../subscription-assets/06-choose-plan.png" alt="Subscription purchase page with available plans and usage limits." /><figcaption>Trial plans may have inventory or per-account purchase limits.</figcaption></figure>
+          <ul><li><strong>International card</strong>: charged in USD, with the available card and Link options shown by Stripe.</li><li><strong>Alipay</strong>: charged in CNY.</li><li><strong>WeChat Pay</strong>: charged in CNY.</li></ul>
+          <figure class="manual-figure-narrow"><img src="../subscription-assets/07-payment-methods.png" alt="Checkout with Alipay, WeChat Pay, and international card options." /><figcaption>The confirmation page always shows the exact currency and amount before payment.</figcaption></figure>
+          <div class="manual-note">After payment, wait for the page to confirm the order and resume authorization. Do not pay twice. Access is activated only after the server verifies the payment.</div>
+        </section>
+
+        <section id="finish" class="manual-section">
+          <h2>5. Return to the app</h2>
+          <p>Codex Multi Launcher returns to the foreground after payment and authorization. When “Authorization complete” appears, finish the wizard, create the profile, and select <strong>Open</strong>.</p>
+          <figure><img src="../subscription-assets/05-profile-ready.png" alt="A completed subscription profile in Codex Multi Launcher." /><figcaption>Subscription-managed connection details stay read-only to prevent accidental changes.</figcaption></figure>
+        </section>
+
+        <section id="renew" class="manual-section">
+          <h2>6. Renew or switch plans</h2>
+          <p>Renewing the same plan lets the original profile continue automatically. After buying a different plan, open the existing profile and select <strong>Reauthorize subscription</strong> to bind the new active subscription. Your local projects and conversations remain intact.</p>
+          <figure><img src="../subscription-assets/08-reauthorize-profile.png" alt="Reauthorize subscription action on an existing profile." /><figcaption>Reauthorization updates the subscription binding without recreating the profile.</figcaption></figure>
+        </section>
+
+        <section id="faq" class="manual-section">
+          <h2>Troubleshooting</h2>
+          <details open><summary>Payment remains “Processing”</summary><p>Wait 1–2 minutes and do not pay again. If it remains unchanged after 5 minutes, email your account email, order number, and payment time to jqy.tieniu@gmail.com.</p></details>
+          <details><summary>The browser did not return to the app</summary><p>Switch back to Codex Multi Launcher first. If it still shows a waiting state, refresh the original authorization page or start a new authorization session. An already active subscription will not require another payment.</p></details>
+          <details><summary>I renewed or switched plans</summary><p>The same-plan renewal works automatically. For a different plan, use “Reauthorize subscription” on the existing profile and select the active plan.</p></details>
+          <details><summary>Usage limit or too many requests</summary><p>A usage-limit error means one of the plan limits has been reached. RPM means requests per minute; it is not the number of open windows.</p></details>
+        </section>
+
+        <section id="security" class="manual-section">
+          <h2>Security and support</h2>
+          <ul><li>The desktop app never receives administrator credentials, upstream master keys, or payment secrets.</li><li>A one-time authorization exchange creates a device credential, which is encrypted locally.</li><li>Payment details are handled by the selected payment provider and are not stored by Codex Multi Launcher.</li><li>Expired, refunded, or revoked subscriptions can no longer send requests.</li></ul>
+          <p>For technical issues, use <a href="https://github.com/JqyModi/codex-multi-launcher/issues"><strong>GitHub Issues</strong></a>. For payment, refunds, or private account details, contact <strong>jqy.tieniu@gmail.com</strong>.</p>
+          <p><a href="https://sub2api.minai.eu.org/legal/terms"><strong>Terms of Service</strong></a> · <a href="https://sub2api.minai.eu.org/legal/privacy-policy"><strong>Privacy Policy</strong></a> · <a href="https://sub2api.minai.eu.org/legal/refund-policy"><strong>Refund Policy</strong></a></p>
+        </section>
+      </article>
+    </main>
+
+    <footer class="site-footer"><span>Codex Multi Launcher</span><a href="./">Home</a><a href="../manual.html">Full user guide</a><a href="https://github.com/JqyModi/codex-multi-launcher/issues">Support</a></footer>
+  </body>
+</html>
