@@ -2,7 +2,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 const api = {
   getAppInfo: () => ipcRenderer.invoke("app:get-info"),
-  getAnnouncement: () => ipcRenderer.invoke("app:get-announcement"),
+  getAnnouncement: (locale) => ipcRenderer.invoke("app:get-announcement", locale),
+  setLanguage: (locale) => ipcRenderer.invoke("app:set-language", locale),
   dismissAnnouncement: (id) => ipcRenderer.invoke("app:dismiss-announcement", id),
   trackAnnouncementClick: (id) => ipcRenderer.invoke("app:track-announcement-click", id),
   checkForUpdates: () => ipcRenderer.invoke("app:check-for-updates"),

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
 import electronUpdater from "electron-updater";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -25,7 +25,7 @@ import {
 } from "./profile-service.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { cancelSubscriptionAuthorization, pollSubscriptionAuthorization, startSubscriptionAuthorization, trackDesktopGrowthEvent } from "./subscription-auth.js";
-import type { AnnouncementItem, AnnouncementPlatform, AnnouncementResult, CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTestInput, ProviderModelsInput, ProviderTestInput, ReauthorizeSubscriptionProfileInput, RestoreConfigBackupInput, UpdateDownloadEvent, UpdateProfileInput } from "../shared/types.js";
+import type { AnnouncementItem, AnnouncementLocale, AnnouncementPlatform, AnnouncementResult, AnnouncementTranslation, CreateProfileInput, ProfileProviderModelsInput, ProfileProviderTestInput, ProviderModelsInput, ProviderTestInput, ReauthorizeSubscriptionProfileInput, RestoreConfigBackupInput, UpdateDownloadEvent, UpdateProfileInput } from "../shared/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +58,154 @@ autoUpdater.on("error", (error) => {
   emitUpdateEvent({ state: "error", error: error.message });
 });
 let mainWindow: BrowserWindow | null = null;
+
+const UI_MENU_TEXT: Record<AnnouncementLocale, {
+  windowTitle: string;
+  file: string;
+  edit: string;
+  view: string;
+  window: string;
+  help: string;
+  close: string;
+  quit: string;
+  undo: string;
+  redo: string;
+  cut: string;
+  copy: string;
+  paste: string;
+  selectAll: string;
+  reload: string;
+  forceReload: string;
+  toggleDevTools: string;
+  minimize: string;
+  zoom: string;
+  about: string;
+}> = {
+  zh: {
+    windowTitle: "Codex 多开助手",
+    file: "文件",
+    edit: "编辑",
+    view: "视图",
+    window: "窗口",
+    help: "帮助",
+    close: "关闭",
+    quit: "退出",
+    undo: "撤销",
+    redo: "重做",
+    cut: "剪切",
+    copy: "复制",
+    paste: "粘贴",
+    selectAll: "全选",
+    reload: "重新加载",
+    forceReload: "强制重新加载",
+    toggleDevTools: "开发者工具",
+    minimize: "最小化",
+    zoom: "缩放",
+    about: "关于"
+  },
+  en: {
+    windowTitle: "Profile Manager",
+    file: "File",
+    edit: "Edit",
+    view: "View",
+    window: "Window",
+    help: "Help",
+    close: "Close",
+    quit: "Quit",
+    undo: "Undo",
+    redo: "Redo",
+    cut: "Cut",
+    copy: "Copy",
+    paste: "Paste",
+    selectAll: "Select All",
+    reload: "Reload",
+    forceReload: "Force Reload",
+    toggleDevTools: "Toggle Developer Tools",
+    minimize: "Minimize",
+    zoom: "Zoom",
+    about: "About"
+  },
+  ru: {
+    windowTitle: "Менеджер профилей",
+    file: "Файл",
+    edit: "Правка",
+    view: "Вид",
+    window: "Окно",
+    help: "Справка",
+    close: "Закрыть",
+    quit: "Выход",
+    undo: "Отменить",
+    redo: "Повторить",
+    cut: "Вырезать",
+    copy: "Копировать",
+    paste: "Вставить",
+    selectAll: "Выделить всё",
+    reload: "Перезагрузить",
+    forceReload: "Принудительно перезагрузить",
+    toggleDevTools: "Инструменты разработчика",
+    minimize: "Свернуть",
+    zoom: "Масштаб",
+    about: "О программе"
+  }
+};
+
+function normalizeUiLanguage(value: unknown): AnnouncementLocale {
+  const normalized = String(value ?? "").toLowerCase();
+  if (normalized === "zh" || normalized.startsWith("zh-")) return "zh";
+  if (normalized === "ru" || normalized.startsWith("ru-")) return "ru";
+  return "en";
+}
+
+function buildApplicationMenu(language: AnnouncementLocale): void {
+  const labels = UI_MENU_TEXT[language];
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    {
+      label: labels.file,
+      submenu: [
+        { label: labels.close, role: "close" },
+        { type: "separator" },
+        { label: labels.quit, role: "quit" }
+      ]
+    },
+    {
+      label: labels.edit,
+      submenu: [
+        { label: labels.undo, role: "undo" },
+        { label: labels.redo, role: "redo" },
+        { type: "separator" },
+        { label: labels.cut, role: "cut" },
+        { label: labels.copy, role: "copy" },
+        { label: labels.paste, role: "paste" },
+        { label: labels.selectAll, role: "selectAll" }
+      ]
+    },
+    {
+      label: labels.view,
+      submenu: [
+        { label: labels.reload, role: "reload" },
+        { label: labels.forceReload, role: "forceReload" },
+        { label: labels.toggleDevTools, role: "toggleDevTools" }
+      ]
+    },
+    {
+      label: labels.window,
+      submenu: [
+        { label: labels.minimize, role: "minimize" },
+        { label: labels.zoom, role: "zoom" },
+        { label: labels.close, role: "close" }
+      ]
+    },
+    {
+      label: labels.help,
+      submenu: [{ label: labels.about, role: "about" }]
+    }
+  ]));
+}
+
+function applyWindowLanguage(language: AnnouncementLocale): void {
+  buildApplicationMenu(language);
+  mainWindow?.setTitle(UI_MENU_TEXT[language].windowTitle);
+}
 
 if (process.platform === "win32") {
   app.disableHardwareAcceleration();
@@ -97,12 +245,13 @@ function focusMainWindow(): void {
 }
 
 function createWindow(): void {
+  const initialLanguage = normalizeUiLanguage(app.getLocale());
   mainWindow = new BrowserWindow({
     width: 1180,
     height: 760,
     minWidth: 1040,
     minHeight: 680,
-    title: "Codex 多开助手",
+    title: UI_MENU_TEXT[initialLanguage].windowTitle,
     backgroundColor: "#F6F7F9",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.cjs"),
@@ -110,6 +259,7 @@ function createWindow(): void {
       nodeIntegration: false
     }
   });
+  applyWindowLanguage(initialLanguage);
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -158,7 +308,11 @@ function registerIpc(): void {
     author: "Modi",
     ...APP_LINKS
   }));
-  ipcMain.handle("app:get-announcement", () => getAnnouncement());
+  ipcMain.handle("app:get-announcement", (_event, locale?: AnnouncementLocale) => getAnnouncement(normalizeUiLanguage(locale ?? app.getLocale())));
+  ipcMain.handle("app:set-language", (_event, locale: AnnouncementLocale) => {
+    applyWindowLanguage(normalizeUiLanguage(locale));
+    return { ok: true as const };
+  });
   ipcMain.handle("app:dismiss-announcement", (_event, id: string) => dismissAnnouncement(id));
   ipcMain.handle("app:track-announcement-click", (_event, id: string) => trackAnnouncementClick(id));
   ipcMain.handle("app:check-for-updates", () => checkForUpdates());
@@ -266,7 +420,7 @@ function simulateUpdateDownload(): void {
   }, 240);
 }
 
-async function getAnnouncement(): Promise<AnnouncementResult> {
+async function getAnnouncement(locale: AnnouncementLocale = normalizeUiLanguage(app.getLocale())): Promise<AnnouncementResult> {
   const currentVersion = app.getVersion();
   const fetchedAt = new Date().toISOString();
   try {
@@ -274,7 +428,7 @@ async function getAnnouncement(): Promise<AnnouncementResult> {
     await writeAnnouncementCache(config, fetchedAt);
     const state = await readAnnouncementState();
     const result: AnnouncementResult = {
-      item: selectAnnouncement(config.items, currentVersion, new Set(state.dismissedIds)),
+      item: localizeAnnouncement(selectAnnouncement(config.items, currentVersion, new Set(state.dismissedIds)), locale),
       source: "remote",
       fetchedAt
     };
@@ -286,7 +440,7 @@ async function getAnnouncement(): Promise<AnnouncementResult> {
       if (!app.isPackaged) {
         const state = await readAnnouncementState();
         const result: AnnouncementResult = {
-          item: selectAnnouncement(getDevelopmentAnnouncements(), currentVersion, new Set(state.dismissedIds)),
+          item: localizeAnnouncement(selectAnnouncement(getDevelopmentAnnouncements(), currentVersion, new Set(state.dismissedIds)), locale),
           source: "none"
         };
         void trackAnnouncementView(result.item);
@@ -296,13 +450,31 @@ async function getAnnouncement(): Promise<AnnouncementResult> {
     }
     const state = await readAnnouncementState();
     const result: AnnouncementResult = {
-      item: selectAnnouncement(cached.items, currentVersion, new Set(state.dismissedIds)),
+      item: localizeAnnouncement(selectAnnouncement(cached.items, currentVersion, new Set(state.dismissedIds)), locale),
       source: "cache",
       fetchedAt: cached.fetchedAt
     };
     void trackAnnouncementView(result.item);
     return result;
   }
+}
+
+function localizeAnnouncement(item: AnnouncementItem | null, locale: AnnouncementLocale): AnnouncementItem | null {
+  if (!item) return null;
+  const translation = item.translations?.[locale];
+  const localized = translation ? { ...item, ...translation } : item;
+  if (locale === "zh" || !containsCjkText(localized)) return localized;
+  return {
+    ...localized,
+    label: locale === "ru" ? "Объявление" : "Announcement",
+    title: locale === "ru" ? "Доступно новое объявление" : "New announcement available",
+    description: locale === "ru" ? "Откройте ссылку, чтобы узнать подробности." : "Open the link to learn more.",
+    ctaText: locale === "ru" ? "Открыть" : "Open"
+  };
+}
+
+function containsCjkText(item: AnnouncementItem): boolean {
+  return /[\u3400-\u9fff]/u.test([item.label, item.title, item.description, item.ctaText].filter(Boolean).join(" "));
 }
 
 function getDevelopmentAnnouncements(): AnnouncementItem[] {
@@ -375,8 +547,27 @@ function normalizeAnnouncementItem(value: unknown): AnnouncementItem | null {
     platforms: Array.isArray(item.platforms) ? item.platforms.filter((platform): platform is AnnouncementPlatform => typeof platform === "string") : undefined,
     minAppVersion: typeof item.minAppVersion === "string" ? item.minAppVersion : undefined,
     maxAppVersion: typeof item.maxAppVersion === "string" ? item.maxAppVersion : item.maxAppVersion === null ? null : undefined,
-    dismissible: item.dismissible !== false
+    dismissible: item.dismissible !== false,
+    translations: normalizeAnnouncementTranslations(item.translations)
   };
+}
+
+function normalizeAnnouncementTranslations(value: unknown): Partial<Record<AnnouncementLocale, AnnouncementTranslation>> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const source = value as Record<string, unknown>;
+  const result: Partial<Record<AnnouncementLocale, AnnouncementTranslation>> = {};
+  for (const locale of ["zh", "en", "ru"] as const) {
+    const candidate = source[locale];
+    if (!candidate || typeof candidate !== "object") continue;
+    const translation = candidate as Record<string, unknown>;
+    result[locale] = {
+      label: typeof translation.label === "string" ? translation.label : undefined,
+      title: typeof translation.title === "string" ? translation.title : undefined,
+      description: typeof translation.description === "string" ? translation.description : undefined,
+      ctaText: typeof translation.ctaText === "string" ? translation.ctaText : undefined
+    };
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function selectAnnouncement(items: AnnouncementItem[], currentVersion: string, dismissedIds: Set<string>): AnnouncementItem | null {

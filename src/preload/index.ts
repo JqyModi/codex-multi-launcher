@@ -1,9 +1,10 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { CodexApi, CreateProfileInput, ReauthorizeSubscriptionProfileInput, UpdateDownloadEvent } from "../shared/types.js";
+import type { AnnouncementLocale, CodexApi, CreateProfileInput, ReauthorizeSubscriptionProfileInput, UpdateDownloadEvent } from "../shared/types.js";
 
 const api: CodexApi = {
   getAppInfo: () => ipcRenderer.invoke("app:get-info"),
-  getAnnouncement: () => ipcRenderer.invoke("app:get-announcement"),
+  getAnnouncement: (locale?: AnnouncementLocale) => ipcRenderer.invoke("app:get-announcement", locale),
+  setLanguage: (locale: AnnouncementLocale) => ipcRenderer.invoke("app:set-language", locale),
   dismissAnnouncement: (id: string) => ipcRenderer.invoke("app:dismiss-announcement", id),
   trackAnnouncementClick: (id: string) => ipcRenderer.invoke("app:track-announcement-click", id),
   checkForUpdates: () => ipcRenderer.invoke("app:check-for-updates"),
