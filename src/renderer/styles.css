@@ -2588,6 +2588,377 @@ code {
   }
 }
 
+.theme-control button {
+  min-width: 84px;
+  justify-content: center;
+}
+
+:root[data-theme="dark"] {
+  color: #edf2f8;
+  background: #080b10;
+}
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 78% 0%, rgb(30 74 92 / 30%), transparent 36%),
+    radial-gradient(circle at 18% 8%, rgb(96 67 24 / 22%), transparent 30%),
+    #080b10;
+}
+
+html[data-theme="dark"] .sidebar {
+  border-color: rgb(47 58 73 / 78%);
+  background: rgb(10 14 20 / 88%);
+}
+
+html[data-theme="dark"] .sidebar-footer,
+html[data-theme="dark"] .settings-row,
+html[data-theme="dark"] .path-row,
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .update-modal-header,
+html[data-theme="dark"] .update-notes-heading,
+html[data-theme="dark"] .diagnostics-actions,
+html[data-theme="dark"] .wizard-actions,
+html[data-theme="dark"] .update-modal-footer {
+  border-color: #273140;
+}
+
+html[data-theme="dark"] :is(
+  .panel,
+  .profile-row,
+  .settings-tabs,
+  .dashboard-summary-card,
+  .dashboard-subpanel,
+  .dashboard-compact-row,
+  .about-card,
+  .review-box,
+  .edit-box,
+  .auth-mode-panel,
+  .auth-mode-option,
+  .account-profile-box,
+  .subscription-profile-box,
+  .account-preview-note,
+  .subscription-authorization,
+  .history-sync-panel,
+  .history-source-option,
+  .history-scope-row,
+  .history-empty-note,
+  .model-discovery,
+  .model-option,
+  .color-control,
+  .toggle-card,
+  .backup-row,
+  .diagnostics-optional,
+  .diagnostics-content .checks
+) {
+  border-color: #273140;
+  color: #edf2f8;
+  background: rgb(16 21 29 / 92%);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 26%);
+}
+
+html[data-theme="dark"] .wizard-nav li {
+  color: #9ba8b9;
+  background: #171e28;
+}
+
+html[data-theme="dark"] .wizard-nav li.current {
+  color: #8fc4ff;
+  background: #14253c;
+}
+
+html[data-theme="dark"] :is(.modal, .update-modal) {
+  border-color: #313d4e;
+  color: #edf2f8;
+  background: linear-gradient(180deg, rgb(18 24 33 / 98%), rgb(11 15 22 / 98%));
+  box-shadow: 0 28px 90px rgb(0 0 0 / 58%);
+}
+
+html[data-theme="dark"] :is(.button, .language-switch, .segmented-control, input, select, textarea, .color-input) {
+  border-color: #303b4b;
+  color: #e6edf6;
+  background: #121821;
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: #6f7d90;
+}
+
+html[data-theme="dark"] select option {
+  color: #e6edf6;
+  background: #121821;
+}
+
+html[data-theme="dark"] :is(.button.secondary, .icon-button, .sidebar-add-button) {
+  color: #b8c4d4;
+  background: #141b25;
+}
+
+html[data-theme="dark"] :is(.button:hover, .icon-button:hover, .dashboard-compact-row:hover, .about-card:hover) {
+  border-color: #3b82d0;
+  color: #f5f8fc;
+  background: #182436;
+}
+
+html[data-theme="dark"] :is(
+  .profile-row.selected,
+  .sidebar-nav-button:hover,
+  .sidebar-nav-button.selected,
+  .settings-tabs button.selected,
+  .segmented-control button.selected,
+  .auth-mode-option.selected,
+  .history-source-option.selected,
+  .model-option.selected
+) {
+  border-color: #315f94;
+  color: #8fc4ff;
+  background: #14253c;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 18%);
+}
+
+html[data-theme="dark"] :is(.sidebar-nav-button, .settings-tabs button, .segmented-control button) {
+  color: #9ba8b9;
+}
+
+html[data-theme="dark"] :is(
+  .form label,
+  .color-field-heading,
+  .toggle-copy strong,
+  .auth-mode-copy strong,
+  .history-section-heading span,
+  .history-source-copy strong,
+  .history-scope-row > span,
+  .model-discovery strong,
+  .model-option span,
+  .subscription-authorization strong
+) {
+  color: #dce5f1;
+}
+
+html[data-theme="dark"] :is(
+  .brand p,
+  .toolbar p,
+  .panel-heading p,
+  .profile-meta,
+  .sidebar-toggle,
+  .sidebar-section-title,
+  .empty-state p,
+  .field-note,
+  .path-label,
+  .status-kicker,
+  .settings-row p,
+  .about-hero p,
+  .about-card p,
+  .announcement-copy p,
+  .update-prompt-main p,
+  .modal-title p,
+  .diagnostics-summary p,
+  .diagnostics-content .check-row p,
+  .diagnostics-optional summary small,
+  .history-empty-note,
+  .history-source-copy p,
+  .history-source-copy small,
+  .history-section-heading small,
+  .toggle-copy small,
+  .auth-mode-copy small,
+  .account-preview-note p,
+  .subscription-authorization p,
+  .model-discovery p,
+  .model-option code,
+  .update-modal-body p,
+  .dashboard-empty-copy,
+  .muted
+) {
+  color: #94a3b5;
+}
+
+html[data-theme="dark"] .release-notes {
+  color: #b8c4d4;
+}
+
+html[data-theme="dark"] :is(
+  .brand h1,
+  .toolbar h2,
+  .panel h3,
+  .panel h4,
+  .profile-name,
+  .empty-state h3,
+  .dashboard-summary-card strong,
+  .dashboard-subpanel-heading h4,
+  .dashboard-compact-row,
+  .about-card,
+  .modal-title h3,
+  .diagnostics-summary strong,
+  .diagnostics-optional summary strong,
+  .announcement-copy strong,
+  .update-prompt-main strong
+) {
+  color: #edf2f8;
+}
+
+html[data-theme="dark"] :is(code, .path-value code, .release-notes code, .release-notes pre) {
+  color: #c9d5e5;
+  background: #0b1119;
+}
+
+html[data-theme="dark"] .brand-logo,
+html[data-theme="dark"] .about-app-icon {
+  border-color: #303b4b;
+  background: #111720;
+  box-shadow: 0 16px 36px rgb(0 0 0 / 34%);
+}
+
+html[data-theme="dark"] :is(.modal-icon, .auth-mode-icon, .advanced-summary-icon, .model-discovery-heading span) {
+  color: #8fc4ff;
+  background: #14253c;
+}
+
+html[data-theme="dark"] .profile-group-separator::before,
+html[data-theme="dark"] .profile-group-separator::after {
+  border-color: #344154;
+}
+
+html[data-theme="dark"] .sidebar-section-title strong,
+html[data-theme="dark"] .dashboard-subpanel-heading span,
+html[data-theme="dark"] .about-version-pill,
+html[data-theme="dark"] .about-status-pill {
+  border-color: #303b4b;
+  color: #aebac9;
+  background: #171e28;
+}
+
+html[data-theme="dark"] :is(.runtime-badge.not_running, .runtime-badge.unknown, .badge.neutral) {
+  color: #b4c0cf;
+  background: #202835;
+}
+
+html[data-theme="dark"] :is(.runtime-badge.running, .test-result.passed, .update-status.up_to_date, .about-status-pill.up_to_date, .diagnostics-summary) {
+  border-color: #245f43;
+  color: #77dba6;
+  background: #10291f;
+}
+
+html[data-theme="dark"] .badge.success {
+  color: #77dba6;
+  background: #10291f;
+}
+
+html[data-theme="dark"] :is(.runtime-badge.error, .runtime-badge.unknown, .test-result.failed, .diagnostics-summary.issue) {
+  border-color: #6b4d24;
+  color: #f3c679;
+  background: #2a2113;
+}
+
+html[data-theme="dark"] :is(.runtime-badge.deleted, .about-status-pill.error, .update-status.error) {
+  border-color: #713939;
+  color: #ff9b9b;
+  background: #2d1719;
+}
+
+html[data-theme="dark"] :is(.about-status-pill.update_available, .update-status.update_available) {
+  border-color: #315f94;
+  color: #8fc4ff;
+  background: #14253c;
+}
+
+html[data-theme="dark"] .announcement-banner,
+html[data-theme="dark"] .update-prompt-banner {
+  border-color: #315f94;
+  color: #dbe8f7;
+  background: linear-gradient(135deg, rgb(20 37 60 / 94%), rgb(14 42 42 / 86%));
+  box-shadow: 0 14px 32px rgb(0 0 0 / 24%);
+}
+
+html[data-theme="dark"] .announcement-banner.promo {
+  border-color: #72439b;
+  background: rgb(41 24 55 / 94%);
+}
+
+html[data-theme="dark"] .announcement-banner.warning {
+  border-color: #755827;
+  background: rgb(45 34 16 / 94%);
+}
+
+html[data-theme="dark"] .announcement-banner.success {
+  border-color: #286144;
+  background: rgb(16 43 31 / 94%);
+}
+
+html[data-theme="dark"] .announcement-label,
+html[data-theme="dark"] .update-prompt-icon,
+html[data-theme="dark"] .diagnostics-summary > span {
+  color: #8fc4ff;
+  background: rgb(8 12 18 / 72%);
+}
+
+html[data-theme="dark"] .announcement-banner.promo .announcement-label {
+  color: #d8a0ff;
+}
+
+html[data-theme="dark"] .announcement-banner.warning .announcement-label {
+  color: #f3c679;
+}
+
+html[data-theme="dark"] .announcement-banner.success .announcement-label {
+  color: #77dba6;
+}
+
+html[data-theme="dark"] :is(.wizard-actions, .update-modal-footer) {
+  background: #0d131b;
+}
+
+html[data-theme="dark"] .download-progress > div {
+  background: #263142;
+}
+
+html[data-theme="dark"] .update-ready {
+  color: #77dba6;
+  background: #123323;
+}
+
+html[data-theme="dark"] .modal-backdrop {
+  background: rgb(0 0 0 / 66%);
+}
+
+html[data-theme="dark"] .color-swatch {
+  border-color: #455267;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+}
+
+html[data-theme="dark"] .color-swatch.selected {
+  box-shadow: 0 0 0 2px #121821, 0 0 0 4px color-mix(in srgb, var(--profile-color, #34c759) 72%, #60a5fa), 0 4px 12px rgb(0 0 0 / 42%);
+}
+
+html[data-theme="dark"] .switch-track {
+  background: #3a4657;
+}
+
+html[data-theme="dark"] .switch-track span {
+  background: #e5edf7;
+}
+
+html[data-theme="dark"] :is(.advanced-details, .advanced-path-list, .backup-list) {
+  border-color: #273140;
+}
+
+html[data-theme="dark"] :is(.advanced-path-list, .backup-list) {
+  background: rgb(13 19 27 / 78%);
+}
+
+html[data-theme="dark"] .advanced-details summary:hover {
+  background: #141b25;
+}
+
+html[data-theme="dark"] :is(.button.danger, .toast) {
+  border-color: #713939;
+  color: #ffaaaa;
+  background: #2d1719;
+}
+
+html[data-theme="dark"] * {
+  scrollbar-color: #39475b #0b1017;
+}
+
 .modal-badge-row {
   display: flex;
   justify-content: flex-end;
