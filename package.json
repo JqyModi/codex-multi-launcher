@@ -31,6 +31,7 @@
     "serve:announcements": "node scripts/serve-static-dir.mjs docs 7421",
     "start": "npm run build && electron .",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "verify:application-menu": "npm run build:main && node scripts/verify-application-menu.mjs",
     "verify:paths": "npm run build:main && node scripts/verify-path-provider.mjs",
     "verify:win-launcher": "npm run build:main && node scripts/verify-windows-launcher.mjs",
     "verify:win-inheritance": "npm run build:main && node scripts/verify-windows-inheritance.mjs",
