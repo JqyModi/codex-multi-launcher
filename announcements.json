@@ -2,6 +2,24 @@
   "version": 1,
   "items": [
     {
+      "id": "subscription-growth-v020",
+      "enabled": true,
+      "priority": 150,
+      "placement": "dashboard_top",
+      "type": "promo",
+      "label": "上新福利",
+      "title": "新用户送 $20｜套餐限时加量",
+      "description": "邮箱验证即领 3 天试用；四档套餐同价加量，创建 Profile 选择订阅服务即可领取。",
+      "ctaText": "查看福利",
+      "ctaUrl": "https://jqymodi.github.io/codex-multi-launcher/subscription.html#activity",
+      "startAt": "2026-08-16T00:00:00+08:00",
+      "endAt": "2026-09-16T00:00:00+08:00",
+      "platforms": ["darwin", "win32"],
+      "minAppVersion": "0.1.9",
+      "maxAppVersion": null,
+      "dismissible": true
+    },
+    {
       "id": "subscription-update-v019",
       "enabled": true,
       "priority": 130,
