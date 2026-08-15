@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:main && npm run build:renderer",
-    "build:main": "tsc -p tsconfig.main.json && cp src/preload/index.cjs dist-electron/preload/index.cjs",
+    "build:main": "tsc -p tsconfig.main.json && node scripts/copy-preload.mjs",
     "build:renderer": "tsc -p tsconfig.renderer.json && vite build",
     "dev": "npm run build:main && concurrently -k \"tsc -p tsconfig.main.json --watch\" \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build:icon": "node scripts/build-icon.mjs",
@@ -31,6 +31,7 @@
     "serve:announcements": "node scripts/serve-static-dir.mjs docs 7421",
     "start": "npm run build && electron .",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "verify:application-menu": "npm run build:main && node scripts/verify-application-menu.mjs",
     "verify:paths": "npm run build:main && node scripts/verify-path-provider.mjs",
     "verify:win-launcher": "npm run build:main && node scripts/verify-windows-launcher.mjs",
     "verify:win-inheritance": "npm run build:main && node scripts/verify-windows-inheritance.mjs",

@@ -46,9 +46,10 @@ import type {
   UpdateDownloadEvent,
   UpdateCheckResult
 } from "../shared/types";
+import { RU_TEXT } from "./locales/ru";
 
 type WizardStep = "profile" | "provider" | "test" | "launcher" | "generate";
-type Language = "zh" | "en";
+type Language = "zh" | "en" | "ru";
 type ActiveView = "dashboard" | "profile" | "settings";
 type SettingsTab = "general" | "about";
 
@@ -110,6 +111,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     language: "语言",
     chinese: "中文",
     english: "English",
+    russian: "Русский",
     noProfilesTitle: "还没有配置",
     noProfilesBody: "创建一套独立保存密钥、模型服务和启动器的 Codex 配置。",
     createProfileTitle: "创建配置",
@@ -326,8 +328,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     settings: "Settings",
     general: "General",
     language: "Language",
-    chinese: "中文",
+    chinese: "Chinese",
     english: "English",
+    russian: "Russian",
     noProfilesTitle: "No profiles yet",
     noProfilesBody: "Create a Codex profile with its own API key, provider, config, and launcher.",
     createProfileTitle: "Create Profile",
@@ -494,7 +497,8 @@ const TEXT: Record<Language, Record<string, string>> = {
     later: "Later",
     restartNow: "Restart Now",
     close: "Close"
-  }
+  },
+  ru: RU_TEXT
 };
 
 const DEFAULT_FORM = {
@@ -548,7 +552,12 @@ export function App() {
   const [isCopyingDiagnostics, setIsCopyingDiagnostics] = useState(false);
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   const [isEnvironmentOpen, setIsEnvironmentOpen] = useState(false);
-  const [language, setLanguage] = useState<Language>("zh");
+  const [language, setLanguage] = useState<Language>(() => {
+    const stored = window.localStorage.getItem("codex-profile-manager-language");
+    if (stored === "zh" || stored === "en" || stored === "ru") return stored;
+    const browserLanguage = window.navigator.language.toLowerCase();
+    return browserLanguage.startsWith("zh") ? "zh" : browserLanguage.startsWith("ru") ? "ru" : "en";
+  });
   const [providerTest, setProviderTest] = useState<ProviderTestResult | null>(null);
   const [editProviderTest, setEditProviderTest] = useState<ProviderTestResult | null>(null);
   const [providerModels, setProviderModels] = useState<ProviderModelsResult | null>(null);
@@ -584,6 +593,7 @@ export function App() {
   const canGoBack = currentStepIndex > 0;
   const canGoNext = currentStepIndex < WIZARD_STEPS.length - 1 && isCurrentStepValid(wizardStep, form, subscriptionStatus);
   const t = TEXT[language];
+  const languageText = (zh: string, en: string, ru: string): string => language === "zh" ? zh : language === "ru" ? ru : en;
   const runningProfiles = useMemo(
     () => activeProfiles.filter((profile) => runtimeByProfileId.get(profile.id)?.status === "running"),
     [activeProfiles, runtimeByProfileId]
@@ -624,10 +634,12 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    void window.codexProfileManager.getAnnouncement()
+    window.localStorage.setItem("codex-profile-manager-language", language);
+    void window.codexProfileManager.setLanguage(language);
+    void window.codexProfileManager.getAnnouncement(language)
       .then((result) => setAnnouncement(result.item))
       .catch(() => setAnnouncement(null));
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     if (hasCheckedForUpdatesOnLaunch.current) return;
@@ -696,7 +708,7 @@ export function App() {
             setSubscriptionReauthorization(null);
             setSubscriptionReauthorizationStatus(null);
             setSubscriptionReauthorizationProfileId(null);
-            showToast(status.error || (language === "zh" ? "重新授权未完成，请重试。" : "Reauthorization did not complete. Try again."));
+            showToast(status.error || languageText("重新授权未完成，请重试。", "Reauthorization did not complete. Try again.", "Повторная авторизация не завершена. Повторите попытку."));
             return;
           }
           const targetProfileId = subscriptionReauthorizationProfileId;
@@ -709,7 +721,7 @@ export function App() {
               });
               await refresh();
               setSelectedProfileId(result.profile.id);
-              showToast(language === "zh" ? `已更新 ${result.profile.name} 的订阅授权，请重新打开 Profile。` : `Updated ${result.profile.name}'s subscription authorization. Reopen the Profile to apply it.`);
+              showToast(languageText(`已更新 ${result.profile.name} 的订阅授权，请重新打开 Profile。`, `Updated ${result.profile.name}'s subscription authorization. Reopen the Profile to apply it.`, `Авторизация подписки профиля ${result.profile.name} обновлена. Откройте профиль заново.`));
               setSubscriptionReauthorization(null);
               setSubscriptionReauthorizationStatus(null);
               setSubscriptionReauthorizationProfileId(null);
@@ -719,7 +731,7 @@ export function App() {
               setSubscriptionReauthorization(null);
               setSubscriptionReauthorizationStatus(null);
               setSubscriptionReauthorizationProfileId(null);
-              showToast(error instanceof Error ? error.message : language === "zh" ? "重新授权失败，请重试。" : "Subscription reauthorization failed. Try again.");
+              showToast(error instanceof Error ? error.message : languageText("重新授权失败，请重试。", "Subscription reauthorization failed. Try again.", "Не удалось повторно авторизовать подписку. Повторите попытку."));
             }
           }
         })
@@ -727,7 +739,7 @@ export function App() {
           setSubscriptionReauthorization(null);
           setSubscriptionReauthorizationStatus(null);
           setSubscriptionReauthorizationProfileId(null);
-          showToast(error instanceof Error ? error.message : language === "zh" ? "重新授权失败，请重试。" : "Subscription reauthorization failed. Try again.");
+          showToast(error instanceof Error ? error.message : languageText("重新授权失败，请重试。", "Subscription reauthorization failed. Try again.", "Не удалось повторно авторизовать подписку. Повторите попытку."));
         });
     }, subscriptionReauthorizationStatus.pollIntervalMs);
 
@@ -847,8 +859,8 @@ export function App() {
       setProviderTest({
         status: "unknown_error",
         ok: false,
-        summary: language === "zh" ? "连接测试失败" : "Provider test failed",
-        details: error instanceof Error ? error.message : language === "zh" ? "未知连接测试错误。" : "Unknown provider test error.",
+        summary: languageText("连接测试失败", "Provider test failed", "Проверка соединения не пройдена"),
+        details: error instanceof Error ? error.message : languageText("未知连接测试错误。", "Unknown provider test error.", "Неизвестная ошибка проверки соединения."),
         testedModelsEndpoint: false,
         testedResponsesEndpoint: false
       });
@@ -872,8 +884,8 @@ export function App() {
       setProviderModels({
         status: "unknown_error",
         ok: false,
-        summary: language === "zh" ? "获取模型列表失败" : "Model list failed",
-        details: error instanceof Error ? error.message : language === "zh" ? "未知模型列表错误。" : "Unknown model list error.",
+        summary: languageText("获取模型列表失败", "Model list failed", "Не удалось получить список моделей"),
+        details: error instanceof Error ? error.message : languageText("未知模型列表错误。", "Unknown model list error.", "Неизвестная ошибка получения списка моделей."),
         models: []
       });
     } finally {
@@ -899,8 +911,8 @@ export function App() {
       setEditProviderTest({
         status: "unknown_error",
         ok: false,
-        summary: language === "zh" ? "连接测试失败" : "Provider test failed",
-        details: error instanceof Error ? error.message : language === "zh" ? "未知连接测试错误。" : "Unknown provider test error.",
+        summary: languageText("连接测试失败", "Provider test failed", "Проверка соединения не пройдена"),
+        details: error instanceof Error ? error.message : languageText("未知连接测试错误。", "Unknown provider test error.", "Неизвестная ошибка проверки соединения."),
         testedModelsEndpoint: false,
         testedResponsesEndpoint: false
       });
@@ -926,8 +938,8 @@ export function App() {
       setEditProviderModels({
         status: "unknown_error",
         ok: false,
-        summary: language === "zh" ? "获取模型列表失败" : "Model list failed",
-        details: error instanceof Error ? error.message : language === "zh" ? "未知模型列表错误。" : "Unknown model list error.",
+        summary: languageText("获取模型列表失败", "Model list failed", "Не удалось получить список моделей"),
+        details: error instanceof Error ? error.message : languageText("未知模型列表错误。", "Unknown model list error.", "Неизвестная ошибка получения списка моделей."),
         models: []
       });
     } finally {
@@ -939,33 +951,37 @@ export function App() {
     if (!selectedProfile) return;
     try {
       const result = await window.codexProfileManager.openProfile(selectedProfile.id);
-      showToast(language === "zh"
-        ? result.pid ? `已打开 ${selectedProfile.name}，进程号 ${result.pid}。` : `已打开 ${selectedProfile.name}。`
-        : result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`);
+      showToast(languageText(
+        result.pid ? `已打开 ${selectedProfile.name}，进程号 ${result.pid}。` : `已打开 ${selectedProfile.name}。`,
+        result.pid ? `Launched ${selectedProfile.name} with PID ${result.pid}.` : `Launched ${selectedProfile.name}.`,
+        result.pid ? `Профиль ${selectedProfile.name} открыт, PID: ${result.pid}.` : `Профиль ${selectedProfile.name} открыт.`
+      ));
       window.setTimeout(() => void refresh(), 1200);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : language === "zh" ? "打开失败。" : "Failed to open profile.");
+      showToast(error instanceof Error ? error.message : languageText("打开失败。", "Failed to open profile.", "Не удалось открыть профиль."));
     }
   }
 
   async function deleteSelectedProfile() {
     if (!selectedProfile) return;
-    const confirmed = window.confirm(language === "zh"
-      ? `要从列表中移除“${selectedProfile.name}”吗？本地文件会保留。`
-      : `Remove "${selectedProfile.name}" from the dashboard? Profile files will be kept on disk.`);
+    const confirmed = window.confirm(languageText(
+      `要从列表中移除“${selectedProfile.name}”吗？本地文件会保留。`,
+      `Remove "${selectedProfile.name}" from the dashboard? Profile files will be kept on disk.`,
+      `从列表中移除“${selectedProfile.name}”吗？本地文件会保留。`
+    ));
     if (!confirmed) return;
 
     await window.codexProfileManager.deleteProfile(selectedProfile.id);
     setSelectedProfileId(null);
     setActiveView("dashboard");
-    showToast(language === "zh" ? `已从列表中移除 ${selectedProfile.name}，本地文件已保留。` : `Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`);
+    showToast(languageText(`已从列表中移除 ${selectedProfile.name}，本地文件已保留。`, `Removed ${selectedProfile.name} from the dashboard. Files were kept on disk.`, `Профиль ${selectedProfile.name} убран из списка. Файлы сохранены на диске.`));
     await refresh();
   }
 
   async function restoreSelectedProfile() {
     if (!selectedProfile) return;
     await window.codexProfileManager.restoreProfile(selectedProfile.id);
-    showToast(language === "zh" ? `已恢复 ${selectedProfile.name}。` : `Restored ${selectedProfile.name}.`);
+    showToast(languageText(`已恢复 ${selectedProfile.name}。`, `Restored ${selectedProfile.name}.`, `Профиль ${selectedProfile.name} восстановлен.`));
     await refresh();
   }
 
@@ -1002,9 +1018,9 @@ export function App() {
       await refresh();
       setSelectedProfileId(result.profile.id);
       setEditForm((current) => ({ ...current, apiKey: "", iconBackgroundColor: getProfileColor(result.profile) }));
-      showToast(language === "zh" ? `已保存 ${result.profile.name}，配置和启动器已更新。` : `Updated ${result.profile.name}. Config and launcher were regenerated.`);
+      showToast(languageText(`已保存 ${result.profile.name}，配置和启动器已更新。`, `Updated ${result.profile.name}. Config and launcher were regenerated.`, `Профиль ${result.profile.name} сохранён. Конфигурация и ярлык обновлены.`));
     } catch (error) {
-      showToast(error instanceof Error ? error.message : language === "zh" ? "保存失败。" : "Failed to update profile.");
+      showToast(error instanceof Error ? error.message : languageText("保存失败。", "Failed to update profile.", "Не удалось сохранить профиль."));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -1022,7 +1038,7 @@ export function App() {
       setSubscriptionReauthorizationStatus({ id: session.id, expiresAt: session.expiresAt, pollIntervalMs: session.pollIntervalMs, state: session.state });
       await window.codexProfileManager.openExternalUrl(session.authorizationUrl);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : language === "zh" ? "无法开始重新授权。" : "Could not start reauthorization.");
+      showToast(error instanceof Error ? error.message : languageText("无法开始重新授权。", "Could not start reauthorization.", "Не удалось начать повторную авторизацию."));
     } finally {
       setIsStartingSubscriptionReauthorization(false);
     }
@@ -1092,9 +1108,11 @@ export function App() {
       releaseName: "v" + bumpPatchVersion(currentVersion),
       releaseUrl: appInfo?.releasesUrl,
       publishedAt: new Date().toISOString(),
-      changelog: language === "zh"
-        ? "- 模拟发现一个新版本。\n- 立即更新按钮会进入应用内下载流程。"
-        : "- Simulated a newer release.\n- The update button runs the in-app download flow."
+      changelog: languageText(
+        "- 模拟发现一个新版本。\n- 立即更新按钮会进入应用内下载流程。",
+        "- Simulated a newer release.\n- The update button runs the in-app download flow.",
+        "- Найдена новая версия (симуляция).\n- Кнопка обновления запускает загрузку внутри приложения."
+      )
     });
     setUpdateEvent(null);
     setDismissedUpdatePromptVersion(null);
@@ -1142,7 +1160,7 @@ export function App() {
       profileId: backup.profileId,
       backupPath: backup.backupPath
     });
-    showToast(language === "zh" ? "配置备份已恢复。重启该 Codex Profile 后生效。" : "Config backup restored. Restart this Codex profile for the restored config to take effect.");
+    showToast(languageText("配置备份已恢复。重启该 Codex Profile 后生效。", "Config backup restored. Restart this Codex profile for the restored config to take effect.", "Резервная копия восстановлена. Перезапустите профиль, чтобы применить конфигурацию."));
     setConfigBackups(await window.codexProfileManager.listConfigBackups(backup.profileId));
   }
 
@@ -1247,6 +1265,7 @@ export function App() {
                 item={announcement}
                 onDismiss={() => void dismissAnnouncement(announcement.id)}
                 onOpen={(url) => { void window.codexProfileManager.trackAnnouncementClick(announcement.id); void openExternalUrl(url); }}
+                fallbackCtaText={t.viewUpdate}
               />
             ) : null}
             {updateCheck?.status === "update_available" && updateCheck.latestVersion && !isSkippedUpdate(updateCheck.latestVersion) && dismissedUpdatePromptVersion !== updateCheck.latestVersion ? (
@@ -1787,10 +1806,12 @@ function UpdateModal({
 }
 
 function AnnouncementBanner({
+  fallbackCtaText,
   item,
   onDismiss,
   onOpen
 }: {
+  fallbackCtaText: string;
   item: AnnouncementItem;
   onDismiss: () => void;
   onOpen: (url: string | undefined) => void;
@@ -1810,7 +1831,7 @@ function AnnouncementBanner({
       <div className="announcement-actions">
         {item.ctaUrl ? (
           <button className="button secondary compact" onClick={() => onOpen(item.ctaUrl)} type="button">
-            {item.ctaText || "查看"}
+            {item.ctaText || fallbackCtaText}
           </button>
         ) : null}
         {item.dismissible !== false ? (
@@ -1921,7 +1942,7 @@ function SettingsPage({
           <div className="settings-row">
             <div>
               <strong>{t.language}</strong>
-              <p>{language === "zh" ? t.chinese : t.english}</p>
+              <p>{language === "zh" ? t.chinese : language === "ru" ? t.russian : t.english}</p>
             </div>
             <div className="segmented-control">
               <button className={language === "zh" ? "selected" : ""} onClick={() => onChangeLanguage("zh")} type="button">
@@ -1930,6 +1951,9 @@ function SettingsPage({
               </button>
               <button className={language === "en" ? "selected" : ""} onClick={() => onChangeLanguage("en")} type="button">
                 {t.english}
+              </button>
+              <button className={language === "ru" ? "selected" : ""} onClick={() => onChangeLanguage("ru")} type="button">
+                {t.russian}
               </button>
             </div>
           </div>

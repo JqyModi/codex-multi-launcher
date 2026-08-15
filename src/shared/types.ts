@@ -325,6 +325,14 @@ export interface UpdateDownloadEvent {
 }
 
 export type AnnouncementPlatform = "aix" | "android" | "darwin" | "freebsd" | "haiku" | "linux" | "openbsd" | "sunos" | "win32" | "cygwin" | "netbsd";
+export type AnnouncementLocale = "zh" | "en" | "ru";
+
+export interface AnnouncementTranslation {
+  label?: string;
+  title?: string;
+  description?: string;
+  ctaText?: string;
+}
 
 export interface AnnouncementItem {
   id: string;
@@ -343,6 +351,7 @@ export interface AnnouncementItem {
   minAppVersion?: string;
   maxAppVersion?: string | null;
   dismissible?: boolean;
+  translations?: Partial<Record<AnnouncementLocale, AnnouncementTranslation>>;
 }
 
 export interface AnnouncementResult {
@@ -353,7 +362,8 @@ export interface AnnouncementResult {
 
 export interface CodexApi {
   getAppInfo(): Promise<AppInfo>;
-  getAnnouncement(): Promise<AnnouncementResult>;
+  getAnnouncement(locale?: AnnouncementLocale): Promise<AnnouncementResult>;
+  setLanguage(locale: AnnouncementLocale): Promise<{ ok: true }>;
   dismissAnnouncement(id: string): Promise<{ ok: true }>;
   trackAnnouncementClick(id: string): Promise<{ ok: true }>;
   checkForUpdates(): Promise<UpdateCheckResult>;
