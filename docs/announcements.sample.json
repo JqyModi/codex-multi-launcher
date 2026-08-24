@@ -11,7 +11,7 @@
       "title": "注册即得 $10，邀请最高再得 $20",
       "description": "新用户邮箱验证即得 2 天/$10 试用；邀请好友完成首笔付费后再得 $20，最高累计 $30。点击立即领取，名额与规则以活动页为准。",
       "ctaText": "立即领取",
-      "ctaUrl": "https://sub2api.minai.eu.org/register",
+      "ctaUrl": "https://sub2api.minai.eu.org/register?aff=5BMXH73H52X4",
       "platforms": ["darwin", "win32"],
       "minAppVersion": "0.0.0",
       "maxAppVersion": null,
