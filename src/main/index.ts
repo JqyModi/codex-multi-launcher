@@ -426,10 +426,10 @@ function getDevelopmentAnnouncements(): AnnouncementItem[] {
     placement: "dashboard_top",
     type: "promo",
     label: "限时福利",
-    title: "注册即得 $10，邀请最高再得 $20",
-    description: "新用户邮箱验证即得 2 天/$10 试用；邀请好友完成首笔付费后再得 $20，最高累计 $30。点击立即领取。",
+    title: "注册得 $10，邀请再得 $20",
+    description: "新用户邮箱验证得 2 天/$10 试用；邀请好友首充再得 $20，最高累计 $30。",
     ctaText: "立即领取",
-    ctaUrl: APP_LINKS.productPageUrl,
+    ctaUrl: "https://sub2api.minai.eu.org/register",
     platforms: [process.platform],
     minAppVersion: "0.0.0",
     dismissible: true
