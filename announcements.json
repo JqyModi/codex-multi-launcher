@@ -2,14 +2,14 @@
   "version": 1,
   "items": [
     {
-      "id": "subscription-growth-v021",
+      "id": "subscription-growth-v022",
       "enabled": true,
       "priority": 150,
       "placement": "dashboard_top",
       "type": "promo",
       "label": "限时福利",
-      "title": "注册得 $10，邀请再得 $20",
-      "description": "新用户邮箱验证得 2 天/$10 试用；邀请好友首充再得 $20，最高累计 $30。",
+      "title": "注册领 $1.5 试用，邀请首充再得 $20",
+      "description": "新用户邮箱验证即得 24 小时/$1.5 试用；邀请好友完成首笔付费后，再得 30 天/$20 奖励。",
       "ctaText": "立即领取",
       "ctaUrl": "https://sub2api.minai.eu.org/register?aff=5BMXH73H52X4",
       "startAt": "2026-08-16T00:00:00+08:00",
