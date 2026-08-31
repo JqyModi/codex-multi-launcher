@@ -2,6 +2,7 @@ import path from "node:path";
 import { ensureDir, readJsonFile, writeJsonFile } from "./fs-utils.js";
 import { getAppPaths, isWindowsCodexGuiExecutable, launcherFileName, resolveCodexDesktopApp, slugifyProfileName } from "./paths.js";
 import { pathExists } from "./fs-utils.js";
+import { currentWindowsAppxPathForManagedCache } from "./windows-appx-cache.js";
 import type { CreateProfileInput, ManagedProfile, ProfileRegistry, UpdateProfileInput } from "../shared/types.js";
 
 export const DEFAULT_PROFILE_ICON_BACKGROUND_COLOR = "#34C759";
@@ -172,6 +173,14 @@ export async function updateProfileCodexAppPath(profileId: string, codexAppPath:
 
 export async function repairProfileCodexAppPath(profile: ManagedProfile): Promise<ManagedProfile> {
   const resolvedDesktopApp = resolveCodexDesktopApp(profile.paths.codexAppPath);
+  const currentWindowsAppxPath = currentWindowsAppxPathForManagedCache(resolvedDesktopApp.executablePath);
+  if (currentWindowsAppxPath
+    && currentWindowsAppxPath !== profile.paths.codexAppPath
+    && await pathExists(currentWindowsAppxPath)
+    && isWindowsCodexGuiExecutable(currentWindowsAppxPath)) {
+    return updateProfileCodexAppPath(profile.id, currentWindowsAppxPath);
+  }
+
   if (resolvedDesktopApp.source === "preferred" && await pathExists(resolvedDesktopApp.executablePath) && isWindowsCodexGuiExecutable(resolvedDesktopApp.executablePath)) {
     return profile;
   }
