@@ -12,6 +12,32 @@ export interface CachedWindowsAppxDesktopApp extends WindowsAppxDesktopApp {
   cachedExecutablePath: string;
 }
 
+export function currentWindowsAppxPathForManagedCache(
+  candidatePath: string,
+  findInstalledAppx: () => WindowsAppxDesktopApp | null = findWindowsCodexAppxDesktopApp
+): string | null {
+  if (!isWindowsAppxDesktopCachePath(candidatePath)) {
+    return null;
+  }
+
+  return findInstalledAppx()?.executablePath ?? null;
+}
+
+export function isWindowsAppxDesktopCachePath(candidatePath: string): boolean {
+  if (getRuntimePlatform() !== "win32") {
+    return false;
+  }
+
+  const cacheRoot = path.win32.resolve(windowsAppxCacheRoot());
+  const resolvedCandidate = path.win32.resolve(candidatePath);
+  const relativePath = path.win32.relative(cacheRoot, resolvedCandidate);
+
+  return relativePath !== ""
+    && relativePath !== ".."
+    && !relativePath.startsWith(`..${path.win32.sep}`)
+    && !path.win32.isAbsolute(relativePath);
+}
+
 export async function ensureWindowsAppxDesktopCache(): Promise<CachedWindowsAppxDesktopApp | null> {
   if (getRuntimePlatform() !== "win32") {
     return null;
