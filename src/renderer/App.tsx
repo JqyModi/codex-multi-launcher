@@ -18,11 +18,14 @@ import {
   Languages,
   MessageSquare,
   Megaphone,
+  Monitor,
+  Moon,
   Play,
   Plus,
   RefreshCcw,
   Rocket,
   Settings,
+  Sun,
   TestTube2,
   Trash2,
   TriangleAlert,
@@ -47,6 +50,7 @@ import type {
   UpdateCheckResult
 } from "../shared/types";
 import { RU_TEXT } from "./locales/ru";
+import { applyTheme, loadThemePreference, saveThemePreference, watchSystemTheme, type ThemePreference } from "./theme";
 
 type WizardStep = "profile" | "provider" | "test" | "launcher" | "generate";
 type Language = "zh" | "en" | "ru";
@@ -109,6 +113,11 @@ const TEXT: Record<Language, Record<string, string>> = {
     settings: "设置",
     general: "通用",
     language: "语言",
+    theme: "主题",
+    themeDescription: "选择界面外观，或跟随系统设置。",
+    themeSystem: "跟随系统",
+    themeLight: "浅色",
+    themeDark: "深色",
     chinese: "中文",
     english: "English",
     russian: "Русский",
@@ -328,6 +337,11 @@ const TEXT: Record<Language, Record<string, string>> = {
     settings: "Settings",
     general: "General",
     language: "Language",
+    theme: "Theme",
+    themeDescription: "Choose an interface appearance or follow the system setting.",
+    themeSystem: "System",
+    themeLight: "Light",
+    themeDark: "Dark",
     chinese: "Chinese",
     english: "English",
     russian: "Russian",
@@ -558,6 +572,7 @@ export function App() {
     const browserLanguage = window.navigator.language.toLowerCase();
     return browserLanguage.startsWith("zh") ? "zh" : browserLanguage.startsWith("ru") ? "ru" : "en";
   });
+  const [themePreference, setThemePreference] = useState<ThemePreference>(loadThemePreference);
   const [providerTest, setProviderTest] = useState<ProviderTestResult | null>(null);
   const [editProviderTest, setEditProviderTest] = useState<ProviderTestResult | null>(null);
   const [providerModels, setProviderModels] = useState<ProviderModelsResult | null>(null);
@@ -640,6 +655,12 @@ export function App() {
       .then((result) => setAnnouncement(result.item))
       .catch(() => setAnnouncement(null));
   }, [language]);
+
+  useEffect(() => {
+    saveThemePreference(themePreference);
+    applyTheme(themePreference);
+    return watchSystemTheme(themePreference, () => applyTheme(themePreference));
+  }, [themePreference]);
 
   useEffect(() => {
     if (hasCheckedForUpdatesOnLaunch.current) return;
@@ -1245,11 +1266,13 @@ export function App() {
             isCheckingUpdates={isCheckingUpdates}
             isRefreshing={isRefreshing}
             language={language}
+            themePreference={themePreference}
             environment={environment}
             settingsTab={settingsTab}
             t={t}
             updateCheck={updateCheck}
             onChangeLanguage={setLanguage}
+            onChangeTheme={setThemePreference}
             onCheckForUpdates={() => void checkForUpdates({ openModal: true })}
             onClearUpdateSimulation={clearUpdateSimulation}
             onOpenExternal={(url) => void openExternalUrl(url)}
@@ -1885,7 +1908,9 @@ function SettingsPage({
   isCheckingUpdates,
   isRefreshing,
   language,
+  themePreference,
   onChangeLanguage,
+  onChangeTheme,
   onCheckForUpdates,
   onClearUpdateSimulation,
   onOpenExternal,
@@ -1902,7 +1927,9 @@ function SettingsPage({
   isCheckingUpdates: boolean;
   isRefreshing: boolean;
   language: Language;
+  themePreference: ThemePreference;
   onChangeLanguage: (language: Language) => void;
+  onChangeTheme: (theme: ThemePreference) => void;
   onCheckForUpdates: () => void;
   onClearUpdateSimulation: () => void;
   onOpenExternal: (url: string | undefined) => void;
@@ -1954,6 +1981,26 @@ function SettingsPage({
               </button>
               <button className={language === "ru" ? "selected" : ""} onClick={() => onChangeLanguage("ru")} type="button">
                 {t.russian}
+              </button>
+            </div>
+          </div>
+          <div className="settings-row theme-settings-row">
+            <div>
+              <strong>{t.theme}</strong>
+              <p>{t.themeDescription}</p>
+            </div>
+            <div className="segmented-control theme-control">
+              <button className={themePreference === "system" ? "selected" : ""} onClick={() => onChangeTheme("system")} type="button">
+                <Monitor size={14} />
+                {t.themeSystem}
+              </button>
+              <button className={themePreference === "light" ? "selected" : ""} onClick={() => onChangeTheme("light")} type="button">
+                <Sun size={14} />
+                {t.themeLight}
+              </button>
+              <button className={themePreference === "dark" ? "selected" : ""} onClick={() => onChangeTheme("dark")} type="button">
+                <Moon size={14} />
+                {t.themeDark}
               </button>
             </div>
           </div>
