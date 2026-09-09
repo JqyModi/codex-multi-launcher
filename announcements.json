@@ -2,34 +2,34 @@
   "version": 1,
   "items": [
     {
-      "id": "local-promo-preview",
+      "id": "subscription-growth-v022",
       "enabled": true,
       "priority": 100,
       "placement": "dashboard_top",
       "type": "promo",
-      "label": "公告测试",
-      "title": "Grok 4.5最近这么火，用过的佬友来L站帖子下冒个泡，让我知道公告栏是生效的可以吗？",
-      "description": "公告验证：检查展示、跳转和关闭。",
-      "ctaText": "查看",
-      "ctaUrl": "https://linux.do/t/topic/2392021",
+      "label": "限时福利",
+      "title": "注册领 $1.5 试用，邀请首充再得 $20",
+      "description": "新用户邮箱验证即得 24 小时/$1.5 试用；邀请好友完成首笔付费后，再得 30 天/$20 奖励。",
+      "ctaText": "立即领取",
+      "ctaUrl": "https://sub2api.minai.eu.org/register?aff=5BMXH73H52X4",
       "translations": {
         "zh": {
-          "label": "公告测试",
-          "title": "Grok 4.5最近这么火，用过的佬友来L站帖子下冒个泡，让我知道公告栏是生效的可以吗？",
-          "description": "公告验证：检查展示、跳转和关闭。",
-          "ctaText": "查看"
+          "label": "限时福利",
+          "title": "注册领 $1.5 试用，邀请首充再得 $20",
+          "description": "新用户邮箱验证即得 24 小时/$1.5 试用；邀请好友完成首笔付费后，再得 30 天/$20 奖励。",
+          "ctaText": "立即领取"
         },
         "en": {
-          "label": "Announcement test",
-          "title": "Announcement test",
-          "description": "This checks announcement display, links, and dismissal.",
-          "ctaText": "Open"
+          "label": "Limited-time offer",
+          "title": "Get a $1.50 trial, earn $20 by inviting",
+          "description": "Verify your email for a 24-hour/$1.50 trial. Earn a 30-day/$20 reward when an invited friend completes their first payment.",
+          "ctaText": "Claim now"
         },
         "ru": {
-          "label": "Проверка объявления",
-          "title": "Проверка баннера объявлений",
-          "description": "Проверяет отображение, переход по ссылке и закрытие объявления.",
-          "ctaText": "Открыть"
+          "label": "Выгодное предложение",
+          "title": "Пробный доступ $1,50 и $20 за приглашение",
+          "description": "Подтвердите почту и получите пробный доступ на 24 часа/$1,50. После первой оплаты приглашенного друга вы получите награду $20 на 30 дней.",
+          "ctaText": "Получить сейчас"
         }
       },
       "platforms": ["darwin", "win32"],

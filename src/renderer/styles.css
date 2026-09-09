@@ -1562,15 +1562,54 @@ code {
 }
 
 .announcement-copy strong {
+  flex: 0 1 auto;
+  max-width: 100%;
   color: #172033;
   font-size: 13px;
   line-height: 18px;
+  text-overflow: clip;
 }
 
 .announcement-copy p {
+  flex: 1 1 auto;
+  min-width: 0;
   color: #667085;
   font-size: 12px;
   line-height: 17px;
+}
+
+@media (max-width: 760px) {
+  .announcement-banner {
+    align-items: flex-start;
+  }
+
+  .announcement-main {
+    align-items: flex-start;
+  }
+
+  .announcement-copy {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .announcement-copy strong,
+  .announcement-copy p {
+    white-space: normal;
+  }
+
+  .announcement-copy strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .announcement-copy p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }
 
 .announcement-actions {
