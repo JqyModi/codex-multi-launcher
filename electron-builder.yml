@@ -11,6 +11,9 @@ files:
   - dist-electron/**/*
   - assets/**/*
   - package.json
+extraResources:
+  - from: resources/windows-packaged-launch.ps1
+    to: windows-packaged-launch.ps1
 mac:
   icon: build/icon.icns
   artifactName: codex-profile-manager-${version}-${arch}-mac.${ext}

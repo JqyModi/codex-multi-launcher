@@ -1,16 +1,17 @@
 const { createProfile, openProfile, permanentlyDeleteProfile } = await import("../dist-electron/main/profile-service.js");
-const { ensureWindowsAppxDesktopCache } = await import("../dist-electron/main/windows-appx-cache.js");
+const { findWindowsCodexAppxDesktopApp } = await import("../dist-electron/main/paths.js");
 
-const cachedAppx = await ensureWindowsAppxDesktopCache();
-assert(cachedAppx, "expected a Microsoft Store/AppX Codex package to be detected and cached");
+const appx = findWindowsCodexAppxDesktopApp();
+assert(appx, "expected a registered Microsoft Store/MSIX Codex package");
 console.log(JSON.stringify({
-  packageFullName: cachedAppx.packageFullName,
-  cachedExecutablePath: cachedAppx.cachedExecutablePath
+  packageFullName: appx.packageFullName,
+  executablePath: appx.executablePath
 }, null, 2));
 
-const profileName = `Win AppX Cache ${Date.now()}`;
+const profileName = `Win Packaged ${Date.now()}`;
 const result = await createProfile({
   name: profileName,
+  codexAppPath: appx.executablePath,
   inheritDefaultConfig: false,
   provider: {
     type: "third_party_responses",
@@ -24,8 +25,8 @@ const result = await createProfile({
 
 try {
   const launchResult = await openProfile(result.profile.id);
-  assert(typeof launchResult.pid === "number" || launchResult.pid === null, "openProfile should return a launch result");
-  console.log("Windows AppX cache launch verification passed.");
+  assert(typeof launchResult.pid === "number" && launchResult.pid > 0, "packaged activation must return the launched PID");
+  console.log(`Windows packaged launch verification passed (PID ${launchResult.pid}).`);
 } finally {
   await permanentlyDeleteProfile(result.profile.id);
 }

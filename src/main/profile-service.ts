@@ -7,7 +7,7 @@ import { createProfileRecord, findProfile, listProfiles, removeProfileRecord, re
 import { generateLauncher } from "./launcher.js";
 import { codexExecutablePath, findWindowsCodexAppxDesktopApp, getDefaultCodexHome, getRuntimePlatform, isWindowsAppsPath, isWindowsCodexGuiExecutable } from "./paths.js";
 import { pathExists } from "./fs-utils.js";
-import { ensureWindowsAppxDesktopCache } from "./windows-appx-cache.js";
+import { launchWindowsPackagedApp } from "./windows-packaged-launch.js";
 import { restoreWindowsDesktopTaskbarIdentity } from "./windows-window-icon.js";
 import { listProviderModels, testProvider } from "./provider-test.js";
 import { deleteProfileSecrets, getApiKey, upsertApiKey } from "./secrets.js";
@@ -326,39 +326,35 @@ export async function openProfile(profileId: string): Promise<{ pid: number | nu
 
     await launchLog.append("repairing profile global state");
     await repairProfileGlobalState(profile);
-    let codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
+    const codexExecutable = codexExecutablePath(profile.paths.codexAppPath);
     const installedWindowsAppx = getRuntimePlatform() === "win32" ? findWindowsCodexAppxDesktopApp() : null;
     const windowsAppUserModelId = installedWindowsAppx
       ? `${installedWindowsAppx.packageFamilyName}!${installedWindowsAppx.applicationId}`
       : null;
     await launchLog.append("resolved desktop executable", { codexExecutable });
 
-    const shouldUseAppxCache = getRuntimePlatform() === "win32" && (!(await pathExists(codexExecutable)) || isWindowsAppsPath(codexExecutable));
-    if (shouldUseAppxCache) {
-      await launchLog.append("checking Windows AppX cache", { requestedExecutable: codexExecutable });
-      const cachedAppx = await ensureWindowsAppxDesktopCache();
-      if (cachedAppx) {
-        codexExecutable = cachedAppx.cachedExecutablePath;
-        await launchLog.append("using Windows AppX cache executable", { codexExecutable });
-      } else {
-        await launchLog.append("Windows AppX cache executable unavailable");
-      }
+    const executableExists = await pathExists(codexExecutable);
+    const normalizedExecutable = codexExecutable.replace(/\\/g, "/").toLowerCase();
+    const shouldActivateWindowsPackage = installedWindowsAppx && (
+      !executableExists
+      || isWindowsAppsPath(codexExecutable)
+      || normalizedExecutable.includes("/microsoft/windowsapps/")
+      || normalizedExecutable.includes("/codex profile manager/windowsappscache/")
+    );
+
+    if (shouldActivateWindowsPackage) {
+      const result = await launchWindowsPackagedApp({
+        packageFullName: installedWindowsAppx.packageFullName,
+        appUserModelId: windowsAppUserModelId!,
+        arguments: `--user-data-dir="${profile.paths.userDataDir}"`,
+        environment: profileEnvironment(profile, apiKey)
+      });
+      await updateProfileLaunchMetadata(profile.id, result.pid);
+      await launchLog.append("openProfile finished", { pid: result.pid, launchMode: "packaged", logPath: launchLog.path });
+      return { pid: result.pid };
     }
 
-    if (!(await pathExists(codexExecutable)) || !isWindowsCodexGuiExecutable(codexExecutable)) {
-      if (getRuntimePlatform() === "win32") {
-        const appx = findWindowsCodexAppxDesktopApp();
-        if (appx || isWindowsAppsPath(codexExecutable)) {
-          throw new Error([
-            "Microsoft Store / WindowsApps Codex is installed, but Windows blocks direct launching from the protected WindowsApps directory.",
-            "Codex Multi Launcher cannot reliably open isolated profiles with the Store/AppX package yet because the launch needs per-profile environment variables and --user-data-dir.",
-            appx ? `Detected package: ${appx.packageFullName}` : null,
-            appx ? `Detected executable: ${appx.executablePath}` : `Requested executable: ${codexExecutable}`,
-            "Profile creation is fixed; Store/AppX profile launching still needs a separate compatibility path."
-          ].filter(Boolean).join(" "));
-        }
-      }
-
+    if (!executableExists || !isWindowsCodexGuiExecutable(codexExecutable)) {
       throw new Error(`Codex desktop executable was not found: ${codexExecutable}. Install Codex for Windows or update this profile with the correct Codex.exe path.`);
     }
 
@@ -423,15 +419,8 @@ async function cleanupFailedProfileCreation(profile: ManagedProfile): Promise<vo
 function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, apiKey: string | null): LaunchCommand {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    CODEX_HOME: profile.paths.codexHome,
-    USER_DATA_DIR: profile.paths.userDataDir
+    ...profileEnvironment(profile, apiKey)
   };
-  if (apiKey) {
-    env[profile.provider.envKeyName] = apiKey;
-    if (profile.provider.type === "official_openai") {
-      env.OPENAI_API_KEY = apiKey;
-    }
-  }
 
   return {
     command: codexExecutable,
@@ -439,6 +428,18 @@ function profileLaunchCommand(profile: ManagedProfile, codexExecutable: string, 
     cwd: path.dirname(codexExecutable),
     env
   };
+}
+
+function profileEnvironment(profile: ManagedProfile, apiKey: string | null): Record<string, string> {
+  const environment: Record<string, string> = {
+    CODEX_HOME: profile.paths.codexHome,
+    USER_DATA_DIR: profile.paths.userDataDir
+  };
+  if (apiKey) {
+    environment[profile.provider.envKeyName] = apiKey;
+    if (profile.provider.type === "official_openai") environment.OPENAI_API_KEY = apiKey;
+  }
+  return environment;
 }
 
 function profileManagedLauncherCommand(profile: ManagedProfile, launcherExecutable: string, codexExecutable: string, apiKey: string | null): LaunchCommand {
